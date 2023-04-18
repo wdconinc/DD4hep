@@ -48,6 +48,7 @@ class DD4hepSimulation(object):
   def __init__(self):
     self.steeringFile = None
     self.compactFile = []
+    self.setupFiles = []
     self.inputFiles = []
     self.outputFile = "dummyOutput.slcio"
     self.runType = "batch"
@@ -131,6 +132,9 @@ class DD4hepSimulation(object):
                         default=ConfigHelper.makeList(self.compactFile), type=str,
                         help="The compact XML file, or multiple compact files, if the last one is the closer.")
 
+    parser.add_argument("--setupFiles", nargs='+', action="store",
+                        default=self.setupFiles, help="Setup XML files.")
+
     parser.add_argument("--runType", action="store", choices=("batch", "vis", "run", "shell", "qt"),
                         default=self.runType,
                         help="The type of action to do in this invocation"  # Note: implicit string concatenation
@@ -212,6 +216,7 @@ class DD4hepSimulation(object):
     self._dumpSteeringFile = parsed.dumpSteeringFile
 
     self.compactFile = ConfigHelper.makeList(parsed.compactFile)
+    self.setupFiles = parsed.setupFiles
     self.inputFiles = parsed.inputFiles
     self.inputFiles = self.__checkFileFormat(self.inputFiles, POSSIBLEINPUTFILES)
     self.outputFile = parsed.outputFile
@@ -292,6 +297,10 @@ class DD4hepSimulation(object):
 
     for compactFile in self.compactFile:
       kernel.loadGeometry(str("file:" + os.path.abspath(compactFile)))
+      
+    for setupFile in self.setupFiles:
+      kernel.loadXML(str("file:" + os.path.abspath(setupFile)))
+
     detectorDescription = kernel.detectorDescription()
 
     DDG4.importConstants(detectorDescription)
