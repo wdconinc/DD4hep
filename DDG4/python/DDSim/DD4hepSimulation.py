@@ -528,8 +528,8 @@ class DD4hepSimulation(object):
       if self.numberOfEvents != 0:
         eventTime = totalTimeUser - startUpTime
         perEventTime = eventTime / self.numberOfEvents
-        logger.info("DDSim            INFO  StartUp Time: %3.2f s, Event Processing: %3.2f s (%3.2f s/Event) "
-                    % (startUpTime, eventTime, perEventTime))
+        logger.info("DDSim            INFO  StartUp Time: %3.2f s, Event Processing: %3.2f s (%3.2f s/Event @ %d threads) "
+                    % (startUpTime, eventTime, perEventTime, self.numberOfThreads))
 
   def __setMagneticFieldOptions(self, geant4):
     """ create and configure the magnetic tracking setup """
