@@ -73,7 +73,7 @@ void Geant4FullTruthParticleHandler::end(const G4Track* track, Particle& p)
   // 4. Apply flowchart logic by manipulating the reason bits
   if (created_in_tracker) {
       // If created in tracker BUT left NO hit there AND below energy threshold, discard.
-      if (!left_hit_in_tracker && !is_above_global_threshold) {
+      if (!left_hit_in_tracker && !left_hit_in_calo && !is_above_global_threshold) {
           p.reason = 0;
       }
       // If created in tracker AND left a hit OR above energy threshold, it will be kept by default logic.
