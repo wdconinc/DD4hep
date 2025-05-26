@@ -122,11 +122,11 @@ class ParticleHandler(ConfigHelper):
     if not self.userParticleHandler:
       return
 
-    if self.userParticleHandler not in ["Geant4TCUserParticleHandler", "Geant4TVUserParticleHandler"]:
+    if self.userParticleHandler not in ["Geant4TCUserParticleHandler", "Geant4TVUserParticleHandler", "Geant4FullTruthParticleHandler"]:
       logger.error("unknown UserParticleHandler: %r" % self.userParticleHandler)
       exit(1)
 
-    if self.userParticleHandler == "Geant4TCUserParticleHandler":
+    if self.userParticleHandler in ["Geant4TCUserParticleHandler", "Geant4FullTruthParticleHandler"]:
       user = DDG4.Action(kernel, "%s/UserParticleHandler" % self.userParticleHandler)
       try:
         user.TrackingVolume_Zmax = DDG4.tracker_region_zmax
