@@ -70,27 +70,25 @@ void Geant4FullTruthParticleHandler::end(const G4Track* track, Particle& p)
   // 3. Check energy threshold
   bool is_above_global_threshold = reasonMask.isSet(G4PARTICLE_ABOVE_ENERGY_THRESHOLD);
 
-  // 4. Apply flowchart logic by manipulating the reason bits
+  // 4. Apply truth selection logic - determine if particle should be kept
+  bool should_keep = false;
+  
   if (created_in_tracker) {
-      // If created in tracker BUT left NO hit there AND below energy threshold, discard.
-      if (!left_hit_in_tracker && !left_hit_in_calo && !is_above_global_threshold) {
-          p.reason = 0;
-      }
-      // If created in tracker AND left a hit OR above energy threshold, it will be kept by default logic.
-  } else { // Created outside tracker
-      if (ended_in_calo) {
-          // If ended in calo, keep ONLY if above global E threshold AND left a hit in calo
-          if (!(is_above_global_threshold && left_hit_in_calo)) {
-              p.reason = 0; // Discard otherwise
-          }
-          // If kept, ensure G4PARTICLE_ABOVE_ENERGY_THRESHOLD is set if needed by downstream logic,
-
-      } else { // Ended outside calo (i.e. ended in tracker or left detector)
-          // Keep ONLY if it left a hit in the tracker (e.g. backscatter)
-          if (!left_hit_in_tracker) {
-               p.reason = 0; // Discard otherwise
-          }
-      }
+    // Particles born in tracker: keep if they left any hit OR are above energy threshold
+    should_keep = (left_hit_in_tracker || left_hit_in_calo || is_above_global_threshold);
+    
+  } else if (ended_in_calo) {
+    // Particles born outside, ended in calo: keep if above threshold AND left calo hit, OR left tracker hit
+    should_keep = ((is_above_global_threshold && left_hit_in_calo) || left_hit_in_tracker);
+    
+  } else {
+    // Particles born outside, ended in tracker/outside detector (backscatter): keep if left tracker hit
+    should_keep = left_hit_in_tracker;
+  }
+  
+  // Discard particle if it doesn't meet keeping criteria
+  if (!should_keep) {
+    p.reason = 0;
   }
 
   // 5. Set standard simulator status bits (using the helper function is good practice)
