@@ -88,6 +88,7 @@ class DD4hepSimulation(object):
     self._errorMessages = []
     self._dumpParameter = False
     self._dumpSteeringFile = False
+    self._generationInit = None
 
     # objects for extended configuration option
     self.output = Output()
@@ -419,10 +420,10 @@ class DD4hepSimulation(object):
       actionList.append(gen)
       self.__applyBoostOrSmear(kernel, actionList, index)
 
-    generationInit = None
+    self._generationInit = None
     if actionList:
-      generationInit = self._buildInputStage(geant4, actionList, output_level=self.output.inputStage,
-                                             have_mctruth=self._enablePrimaryHandler())
+      self._generationInit = self._buildInputStage(geant4, actionList, output_level=self.output.inputStage,
+                                                   have_mctruth=self._enablePrimaryHandler())
 
     # ================================================================================================
 
@@ -613,8 +614,8 @@ class DD4hepSimulation(object):
 
     totalTimeUser, totalTimeSys, _cuTime, _csTime, _elapsedTime = os.times()
     processedEvents = self.numberOfEvents
-    if generationInit:
-      processedEvents = int(generationInit.numberOfEvents)
+    if self._generationInit:
+      processedEvents = int(self._generationInit.numberOfEvents)
       if self.numberOfEvents < 0:
         processedEvents -= 1
         logger.debug(f"Correcting number of events to: {processedEvents}")
@@ -631,9 +632,20 @@ class DD4hepSimulation(object):
 
   def __setMagneticFieldOptions(self, geant4):
     """ create and configure the magnetic tracking setup """
-    field = geant4.addConfig('Geant4FieldTrackingSetupAction/MagFieldTrackingSetup')
-    field.stepper = self.field.stepper
-    field.equation = self.field.equation
+    # In multi-threaded mode, field setup must be attached to detector construction
+    # so that each worker thread receives the field. In single-thread mode, the
+    # configure-phase setup is sufficient.
+    if self.numberOfThreads > 1:
+      _seq, field = geant4.setupTrackingFieldMT(
+          name='MagFieldTrackingSetup',
+          stepper=self.field.stepper,
+          equation=self.field.equation,
+          prt=False)
+    else:
+      field = geant4.addConfig('Geant4FieldTrackingSetupAction/MagFieldTrackingSetup')
+      field.stepper = self.field.stepper
+      field.equation = self.field.equation
+    # Apply common tuning parameters
     field.eps_min = self.field.eps_min
     field.eps_max = self.field.eps_max
     field.min_chord_step = self.field.min_chord_step
