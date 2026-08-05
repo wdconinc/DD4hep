@@ -34,6 +34,12 @@ target_link_libraries(materialBudget DD4hep::DDRec ROOT::Core ROOT::Geom ROOT::H
 add_executable(graphicalScan src/graphicalScan.cpp)
 target_link_libraries(graphicalScan  DD4hep::DDRec ROOT::Core ROOT::Geom ROOT::Hist)
 #-----------------------------------------------------------------------------------
+add_executable(materialScanDiff src/materialScanDiff.cpp)
+target_link_libraries(materialScanDiff DD4hep::DDRec ROOT::Core ROOT::Geom ROOT::Hist)
+#-----------------------------------------------------------------------------------
+add_executable(graphicalScanDiff src/graphicalScanDiff.cpp)
+target_link_libraries(graphicalScanDiff DD4hep::DDRec ROOT::Core ROOT::Geom ROOT::Hist)
+#-----------------------------------------------------------------------------------
 
 if(TARGET Geant4::Interface)
   add_executable(dumpdetector src/dumpdetector.cpp)
@@ -95,8 +101,10 @@ INSTALL(TARGETS geoDisplay
   dumpBfield
   print_materials
   materialScan
+  materialScanDiff
   materialBudget
   graphicalScan
+  graphicalScanDiff
   ${OPTIONAL_EXECUTABLES}
   EXPORT DD4hep
   RUNTIME DESTINATION bin
