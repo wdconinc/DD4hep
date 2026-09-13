@@ -21,7 +21,9 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
+#ifndef __EMSCRIPTEN__
 #include <execinfo.h>
+#endif
 
 using namespace dd4hep;
 
@@ -168,6 +170,7 @@ int SignalHandler::implementation::unsubscribe(int signum, void* user_context)  
 
 /// Create simple backtrace
 void SignalHandler::implementation::back_trace(int /* signum */) {
+    #ifndef __EMSCRIPTEN__
   if ( s_exit_handler_backtrace )   {
     void *bt[256];
     char text[512];
@@ -189,6 +192,7 @@ void SignalHandler::implementation::back_trace(int /* signum */) {
       ::write(STDERR_FILENO, text, len);
     }
   }
+    #endif
 }
 
 /// Install handler for a single signal

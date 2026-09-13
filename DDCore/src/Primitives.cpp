@@ -22,7 +22,7 @@
 
 #if defined(__linux) || defined(__APPLE__) || defined(__powerpc64__)
 #include <cxxabi.h>
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__EMSCRIPTEN__)
 typedef abi::__class_type_info class_t;
 using   abi::__dynamic_cast;
 #endif
@@ -518,7 +518,7 @@ namespace dd4hep   {
   }
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
 /// Initializing Constructor
 dd4hep::Cast::Cast(const std::type_info& t, cast_t c) : type(t), cast(c)  {
 }
@@ -542,7 +542,7 @@ void* dd4hep::Cast::apply_dynCast(const Cast& to, const void* ptr) const
   if (&to == this) {
     return (void*) ptr;
   }
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
   // First try down cast
   void *r = (*to.cast)(ptr);
   if (r)
@@ -591,7 +591,7 @@ void* dd4hep::Cast::apply_downCast(const Cast& to, const void* ptr) const
   if (&to == this) {
     return (void*) ptr;
   }
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
   void *r = (*to.cast)(ptr);
   if (r) return r;
   throw unrelated_type_error(type, to.type, "Failed to apply abi dynamic cast operation!");

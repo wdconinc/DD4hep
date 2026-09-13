@@ -702,7 +702,7 @@ namespace dd4hep {
 #else
     const std::type_info& type;
 #endif
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
     typedef void* (*cast_t)(const void*);
     cast_t      cast;
   protected:
