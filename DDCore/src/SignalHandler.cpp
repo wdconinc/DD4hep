@@ -172,6 +172,7 @@ int SignalHandler::implementation::unsubscribe(int signum, void* user_context)  
 void SignalHandler::implementation::back_trace(int /* signum */) {
     #ifndef __EMSCRIPTEN__
   if ( s_exit_handler_backtrace )   {
+#ifndef __EMSCRIPTEN__
     void *bt[256];
     char text[512];
     int bt_size = ::backtrace(bt, sizeof(bt) / sizeof(void *));
@@ -191,6 +192,7 @@ void SignalHandler::implementation::back_trace(int /* signum */) {
       text[sizeof(text)-1] = 0;
       ::write(STDERR_FILENO, text, len);
     }
+#endif
   }
     #endif
 }
