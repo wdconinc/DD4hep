@@ -756,7 +756,7 @@ macro(DD4HEP_SETUP_ROOT_TARGETS)
   unset(_python_site_subdir)
 
   #ROOT CXX Flags are a string with quotes, not a list, so we need to convert to a list...
-  string(REPLACE " " ";" DD4HEP_ROOT_CXX_FLAGS ${ROOT_CXX_FLAGS})
+  string(REPLACE " " ";" DD4HEP_ROOT_CXX_FLAGS "${ROOT_CXX_FLAGS}")
 
   IF(NOT TARGET ROOT::Core)
     #in ROOT before 6.10 there is no ROOT namespace, so we create ROOT::Core ourselves
