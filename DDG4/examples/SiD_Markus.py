@@ -10,7 +10,6 @@
 # ==========================================================================
 #
 #
-from __future__ import absolute_import, unicode_literals
 import os
 import time
 import logging
@@ -19,6 +18,8 @@ from DDG4 import OutputLevel as Output
 from g4units import keV, GeV, mm, ns, MeV
 #
 global geant4
+geant4 = None
+
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 #
@@ -143,7 +144,6 @@ def setupMaster():
 
 
 def setupSensitives():
-  global geant4
   # First the tracking detectors
   seq, act = geant4.setupTracker('SiVertexBarrel')
   act.OutputLevel = Output.ERROR

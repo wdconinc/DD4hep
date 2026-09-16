@@ -21,7 +21,6 @@ using namespace std;
 using namespace dd4hep;
 using namespace dd4hep::ConditionExamples;
 using cond::DependencyBuilder;
-using cond::ConditionsLoadInfo;
 
 namespace {
   static int num_any_ingredients = 0;
@@ -209,7 +208,7 @@ int ConditionsAnyDataAccess::accessConditions(DetElement de, const std::vector<C
   ConditionKey key_derived3    (de,"derived_data/derived_3");
   ConditionKey key_derived4    (de,"derived_data/derived_4");
   ConditionKey key_path        (de,"de_path");
-  int result = 0, count = 0;
+  int count = 0;
 
   // Let's go for the deltas....
   for( auto condition : conditions )  {
@@ -221,98 +220,88 @@ int ConditionsAnyDataAccess::accessConditions(DetElement de, const std::vector<C
     }
    
     if ( cond.item_key() == key_path.item_key() )  {
-      result += int(cond.as<string>().length());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_temperature.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(), 
-	       typeName(cond.any_type()).c_str());
+               key_temperature.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(), 
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", cond.value<string>().c_str());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_temperature.item_key() )  {
-      result += int(cond.as<double>());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_temperature.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(), 
-	       typeName(cond.any_type()).c_str());
+               key_temperature.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(), 
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %f", cond.as<double>());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_pressure.item_key() )  {
-      result += int(cond.as<double>());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_pressure.toString().c_str(), 
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_pressure.toString().c_str(), 
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %f", cond.as<double>());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_double_table.item_key() )  {
-      result += int(cond.as<vector<double> >().size());
       __prt(str,cond.as<vector<double> >());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_double_table.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_double_table.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", str.str().c_str());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_int_table.item_key() )  {
-      result += int(cond.as<vector<int> >().size());
       __prt(str,cond.as<vector<int> >());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_int_table.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_int_table.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", str.str().c_str());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_derived_data.item_key() )  {
-      result += int(cond.as<int>());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_derived_data.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_derived_data.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %d", cond.as<int>());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_derived1.item_key() )  {
-      result += int(cond.as<vector<int> >().size());
       __prt(str,cond.as<vector<int> >());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_derived1.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_derived1.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", str.str().c_str());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_derived2.item_key() )  {
-      result += int(cond.as<vector<int> >().size());
       __prt(str,cond.as<vector<int> >());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_derived2.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_derived2.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", str.str().c_str());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_derived3.item_key() )  {
-      result += int(cond.as<vector<int> >().size());
       __prt(str,cond.as<vector<int> >());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_derived3.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_derived3.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", str.str().c_str());
       ++num_any_ingredients;
     }
     else if ( cond.item_key() == key_derived4.item_key() )  {
-      result += int(cond.as<vector<int> >().size());
       __prt(str,cond.as<vector<int> >());
       printout(printLevel, "accessConditions", "Condition: %s type: %s [%s]",
-	       key_derived4.toString().c_str(),
-	       typeName(typeid(cond.get())).c_str(),
-	       typeName(cond.any_type()).c_str());
+               key_derived4.toString().c_str(),
+               typeName(typeid(cond.get())).c_str(),
+               typeName(cond.any_type()).c_str());
       printout(printLevel, "accessConditions", "           value: %s", str.str().c_str());
       ++num_any_ingredients;
     }

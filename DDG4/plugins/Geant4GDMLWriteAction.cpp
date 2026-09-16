@@ -100,12 +100,10 @@ namespace dd4hep {
 #include <unistd.h>
 #include <memory>
 
-using namespace std;
-using namespace dd4hep;
 using namespace dd4hep::sim;
 
 /// Standard constructor
-Geant4GDMLWriteAction::Geant4GDMLWriteAction(Geant4Context* ctxt, const string& nam)
+Geant4GDMLWriteAction::Geant4GDMLWriteAction(Geant4Context* ctxt, const std::string& nam)
   : Geant4Action(ctxt, nam)
 {
   m_needsControl = true;
@@ -130,25 +128,28 @@ void Geant4GDMLWriteAction::installCommandMessenger()   {
 
 /// Write geometry to GDML
 void Geant4GDMLWriteAction::writeGDML()   {
-  string fname = m_output;
+  std::string fname = m_output;
   struct stat buff;
   if ( fname.empty() )   {
     error("+++ No GDML file name given. Please set the output file (property Output)");
     return;
   }
-  if ( 0 == ::stat(fname.c_str(), &buff) )   {
-    if ( !m_overWrite )  {
-      error("+++ GDML file %s elready exists. Please set another output file (property Output)",
-            fname.c_str());
-      return;
-    }
-    warning("+++ GDML file %s already exists. Overwriting existing file.", fname.c_str());
+  if ( (0 == ::stat(fname.c_str(), &buff)) && !m_overWrite )  {
+    error("+++ GDML file %s elready exists. Please set another output file (property Output)",
+          fname.c_str());
+    return;
+  }
+  else if ( 0 != ::stat(fname.c_str(), &buff) &&
+            S_ISREG(buff.st_mode) &&
+            buff.st_uid == getuid() &&
+            ::access(fname.c_str(), W_OK) )  {
     ::unlink(fname.c_str());
+    warning("+++ GDML file %s already exists. Overwriting existing file.", fname.c_str());
   }
 #ifdef GEANT4_NO_GDML
   warning("+++ writeGDML: GDML not found in the present Geant4 build! Output: %s not written", fname.c_str());
 #else
-  unique_ptr<G4GDMLParser> parser(new G4GDMLParser());
+  std::unique_ptr<G4GDMLParser> parser(new G4GDMLParser());
   parser->SetRegionExport(m_exportRegions != 0);
   parser->SetEnergyCutsExport(m_exportEnergyCuts != 0);
 #if G4VERSION_NUMBER>=1030

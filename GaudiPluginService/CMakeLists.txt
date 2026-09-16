@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(GaudiPluginService)
+project(GaudiPluginService LANGUAGES CXX)
 find_package(ROOT REQUIRED)
 
 add_library(DD4hepGaudiPluginMgr src/PluginServiceV1.cpp src/PluginServiceV2.cpp interface/DD4hepV1.cpp interface/DD4hepV2.cpp)
@@ -41,6 +41,4 @@ set_target_properties(listcomponents
   OUTPUT_NAME listcomponents_dd4hep
   )
 INSTALL(TARGETS listcomponents DD4hepGaudiPluginMgr EXPORT DD4hep
-  RUNTIME DESTINATION bin
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+  RUNTIME DESTINATION bin)

@@ -52,37 +52,42 @@ endif()
 if(BUILD_TESTING)
   if(DD4HEP_USE_LCIO)
     add_executable(test_surfaces src/test_surfaces.cpp)
-    target_link_libraries(test_surfaces DD4hep::DDRec DD4hep::DDTest LCIO::LCIO)
+    target_link_libraries(test_surfaces DD4hep::DDRec DD4hep::DDTest LCIO::lcio)
 
     add_executable(test_cellid_position_converter src/test_cellid_position_converter.cpp)
-    target_link_libraries(test_cellid_position_converter DD4hep::DDRec DD4hep::DDTest LCIO::LCIO)
+    target_link_libraries(test_cellid_position_converter DD4hep::DDRec DD4hep::DDTest LCIO::lcio)
 
     LIST(APPEND OPTIONAL_EXECUTABLES test_surfaces)
     LIST(APPEND OPTIONAL_EXECUTABLES test_cellid_position_converter)
   endif()
   #-----------------------------------------------------------------------------------
 endif()
-dd4hep_add_dictionary( G__eve
-  SOURCES src/EvNavHandler.h
-  LINKDEF src/LinkDef.h
-  USES    DD4hep::DDCore ROOT::Geom
-  )
 
 # #-----------------------------------------------------------------------------------
-if (DD4HEP_USE_LCIO)
+if (DD4HEP_USE_LCIO AND TARGET ROOT::Eve)
   dd4hep_add_dictionary( G__eve1
     SOURCES src/EvNavHandler.h
     LINKDEF src/LinkDef.h
     USES    DD4hep::DDCore ROOT::Geom
     )
   add_executable(teveLCIO G__eve1.cxx src/teve_display.cpp src/next_event_lcio.cpp)
-  target_link_libraries(teveLCIO DD4hep::DDRec LCIO::LCIO ROOT::Core ROOT::Eve ROOT::Gui ROOT::Graf3d ROOT::RGL)
+  target_link_libraries(teveLCIO DD4hep::DDRec LCIO::lcio ROOT::Core ROOT::Eve ROOT::Gui ROOT::Graf3d ROOT::RGL)
   LIST(APPEND OPTIONAL_EXECUTABLES teveLCIO)
 endif()
 
 # #-----------------------------------------------------------------------------------
-add_executable(teveDisplay src/teve_display.cpp src/next_event_dummy.cpp G__eve.cxx)
-target_link_libraries(teveDisplay DD4hep::DDRec ROOT::Core ROOT::Eve ROOT::Gui ROOT::Graf3d ROOT::RGL )
+if (TARGET ROOT::Eve)
+  dd4hep_add_dictionary( G__eve
+    SOURCES src/EvNavHandler.h
+    LINKDEF src/LinkDef.h
+    USES    DD4hep::DDCore ROOT::Geom
+  )
+  add_executable(teveDisplay src/teve_display.cpp src/next_event_dummy.cpp G__eve.cxx)
+  target_link_libraries(teveDisplay DD4hep::DDRec ROOT::Core ROOT::Eve ROOT::Gui ROOT::Graf3d ROOT::RGL )
+  LIST(APPEND OPTIONAL_EXECUTABLES teveDisplay)
+else()
+  MESSAGE(STATUS "ROOT::Eve not found: not building teveDisplay")
+endif()
 
 INSTALL(TARGETS geoDisplay
   geoConverter
@@ -92,7 +97,6 @@ INSTALL(TARGETS geoDisplay
   materialScan
   materialBudget
   graphicalScan
-  teveDisplay
   ${OPTIONAL_EXECUTABLES}
   EXPORT DD4hep
   RUNTIME DESTINATION bin

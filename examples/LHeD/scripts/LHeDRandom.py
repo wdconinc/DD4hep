@@ -5,10 +5,8 @@
    @version 1.0
 
 """
-from __future__ import absolute_import, unicode_literals
 from ROOT import gRandom
 import logging
-from ddsix.moves import range
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)

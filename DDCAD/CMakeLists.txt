@@ -37,10 +37,10 @@ elseif(DD4HEP_LOAD_ASSIMP)
 
     ExternalProject_Add(
         assimp_project
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/assimp
-        INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}
+        SOURCE_DIR     ${CMAKE_CURRENT_BINARY_DIR}/external/assimp
+        INSTALL_DIR    ${CMAKE_INSTALL_PREFIX}
         GIT_REPOSITORY https://github.com/assimp/assimp.git
-        GIT_TAG v5.0.1
+        GIT_TAG v6.0.5
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
                    -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
                    -DCMAKE_CXX_FLAGS=${ASSIMP_CXX_FLAGS}
@@ -105,6 +105,6 @@ dd4hep_add_plugin(DDCADPlugins
 set_target_properties(DDCAD DDCADPlugins PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
 
 install(DIRECTORY include/DDCAD DESTINATION include)
-install(TARGETS DDCAD DDCADPlugins EXPORT DD4hep
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib)
+install(TARGETS DDCAD EXPORT DD4hep
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

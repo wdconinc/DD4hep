@@ -12,26 +12,24 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Detector.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/IDDescriptor.h"
-#include "DD4hep/InstanceCount.h"
-#include "DD4hep/detail/ObjectsInterna.h"
+#include <DD4hep/Detector.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/IDDescriptor.h>
+#include <DD4hep/InstanceCount.h>
+#include <DD4hep/detail/ObjectsInterna.h>
 
-#include "TMap.h"
-#include "TROOT.h"
-#include "TColor.h"
-#include "TGeoMatrix.h"
-#include "TGeoManager.h"
-#include "TGeoElement.h"
-#include "TGeoMaterial.h"
+#include <TMap.h>
+#include <TROOT.h>
+#include <TColor.h>
+#include <TGeoMatrix.h>
+#include <TGeoManager.h>
+#include <TGeoElement.h>
+#include <TGeoMaterial.h>
 
 // C/C++ include files
 #include <cmath>
 #include <sstream>
-#include <iomanip>
 
-using namespace std;
 using namespace dd4hep;
 
 /// Constructor to be used when creating a new DOM tree
@@ -39,123 +37,123 @@ Author::Author(Detector& /* description */) {
   m_element = new NamedObject("", "author");
 }
 
-/// Access the auhor's name
-string Author::authorName() const {
+/// Access the author's name
+std::string Author::authorName() const {
   return m_element->GetName();
 }
 
 /// Set the author's name
-void Author::setAuthorName(const string& nam) {
+void Author::setAuthorName(const std::string& nam) {
   m_element->SetName(nam.c_str());
 }
 
-/// Access the auhor's email address
-string Author::authorEmail() const {
+/// Access the author's email address
+std::string Author::authorEmail() const {
   return m_element->GetTitle();
 }
 
 /// Set the author's email address
-void Author::setAuthorEmail(const string& addr) {
+void Author::setAuthorEmail(const std::string& addr) {
   m_element->SetTitle(addr.c_str());
 }
 
 /// Constructor to be used when creating a new DOM tree
-Header::Header(const string& author_name, const string& descr_url) {
+Header::Header(const std::string& author_name, const std::string& descr_url) {
   Object* obj_ptr = new Object();
   assign(obj_ptr, author_name, descr_url);
 }
 
 /// Accessor to object name
-const string Header::name() const {
+const std::string Header::name() const {
   return m_element->GetName();
 }
 
 /// Accessor: set object name
-void Header::setName(const string& new_name) {
+void Header::setName(const std::string& new_name) {
   m_element->SetName(new_name.c_str());
 }
 
 /// Accessor to object title
-const string Header::title() const {
+const std::string Header::title() const {
   return m_element->GetTitle();
 }
 
 /// Accessor: set object title
-void Header::setTitle(const string& new_title) {
+void Header::setTitle(const std::string& new_title) {
   m_element->SetTitle(new_title.c_str());
 }
 
 /// Accessor to object url
-const string& Header::url() const {
+const std::string& Header::url() const {
   return data<Object>()->url;
 }
 
 /// Accessor: set object url
-void Header::setUrl(const string& new_url) {
+void Header::setUrl(const std::string& new_url) {
   data<Object>()->url = new_url;
 }
 
 /// Accessor to object author
-const string& Header::author() const {
+const std::string& Header::author() const {
   return data<Object>()->author;
 }
 
 /// Accessor: set object author
-void Header::setAuthor(const string& new_author) {
+void Header::setAuthor(const std::string& new_author) {
   data<Object>()->author = new_author;
 }
 
 /// Accessor to object status
-const string& Header::status() const {
+const std::string& Header::status() const {
   return data<Object>()->status;
 }
 
 /// Accessor: set object status
-void Header::setStatus(const string& new_status) {
+void Header::setStatus(const std::string& new_status) {
   data<Object>()->status = new_status;
 }
 
 /// Accessor to object version
-const string& Header::version() const {
+const std::string& Header::version() const {
   return data<Object>()->version;
 }
 
 /// Accessor: set object version
-void Header::setVersion(const string& new_version) {
+void Header::setVersion(const std::string& new_version) {
   data<Object>()->version = new_version;
 }
 
 /// Accessor to object comment
-const string& Header::comment() const {
+const std::string& Header::comment() const {
   return data<Object>()->comment;
 }
 
 /// Accessor: set object comment
-void Header::setComment(const string& new_comment) {
+void Header::setComment(const std::string& new_comment) {
   data<Object>()->comment = new_comment;
 }
 
 /// Constructor to be used when creating a new DOM tree
-Constant::Constant(const string& nam, const string& val, const string& typ) {
+Constant::Constant(const std::string& nam, const std::string& val, const std::string& typ) {
   m_element = new Object(nam, val, typ);
 }
 
 /// Constructor to be used when creating a new DOM tree
-Constant::Constant(const string& nam) {
+Constant::Constant(const std::string& nam) {
   m_element = new Object(nam.c_str(), "", "number");
 }
 
 /// Access the constant
-string Constant::dataType() const   {
+std::string Constant::dataType() const   {
   if ( isValid() )  {
     return m_element->dataType;
   }
-  throw runtime_error("dd4hep: Attempt to access internals from invalid Constant handle!");
+  throw std::runtime_error("dd4hep: Attempt to access internals from invalid Constant handle!");
 }
 
 /// String representation of this object
-string Constant::toString() const {
-  stringstream os;
+std::string Constant::toString() const {
+  std::stringstream os;
   os << m_element->GetName() << "  \"" << m_element->GetTitle() << "\"  ";
   if ( m_element->dataType == "string" ) os << "Value:" << m_element->GetTitle();
   else os << "Value:" << _toDouble(m_element->GetTitle());
@@ -163,7 +161,7 @@ string Constant::toString() const {
 }
 
 /// Constructor to be used when creating a new DOM tree
-Atom::Atom(const string& nam, const string& formula, int Z, int N, double density) {
+Atom::Atom(const std::string& nam, const std::string& formula, int Z, int N, double density) {
   TGeoElementTable* t = TGeoElement::GetElementTable();
   TGeoElement*      e = t->FindElement(nam.c_str());
   if (!e) {
@@ -180,9 +178,9 @@ double  Material::Z() const {
     TGeoMaterial* mat = val->GetMaterial();
     if ( mat )
       return mat->GetZ();
-    throw runtime_error("dd4hep: The medium " + string(val->GetName()) + " has an invalid material reference!");
+    throw std::runtime_error("dd4hep: The medium " + std::string(val->GetName()) + " has an invalid material reference!");
   }
-  throw runtime_error("dd4hep: Attempt to access proton number from invalid material handle!");
+  throw std::runtime_error("dd4hep: Attempt to access proton number from invalid material handle!");
 }
 
 /// atomic number of the underlying material
@@ -191,9 +189,9 @@ double  Material::A() const {
     TGeoMaterial* mat = ptr()->GetMaterial();
     if ( mat )
       return mat->GetA();
-    throw runtime_error("dd4hep: The medium " + string(ptr()->GetName()) + " has an invalid material reference!");
+    throw std::runtime_error("dd4hep: The medium " + std::string(ptr()->GetName()) + " has an invalid material reference!");
   }
-  throw runtime_error("dd4hep: Attempt to access atomic number from invalid material handle!");
+  throw std::runtime_error("dd4hep: Attempt to access atomic number from invalid material handle!");
 }
 
 /// density of the underlying material
@@ -202,9 +200,9 @@ double  Material::density() const {
     TGeoMaterial* mat = ptr()->GetMaterial();
     if ( mat )
       return mat->GetDensity();
-    throw runtime_error("dd4hep: The medium " + string(ptr()->GetName()) + " has an invalid material reference!");
+    throw std::runtime_error("dd4hep: The medium " + std::string(ptr()->GetName()) + " has an invalid material reference!");
   }
-  throw runtime_error("dd4hep: Attempt to access density from invalid material handle!");
+  throw std::runtime_error("dd4hep: Attempt to access density from invalid material handle!");
 }
 
 /// Access the radiation length of the underlying material
@@ -213,9 +211,9 @@ double Material::radLength() const {
     TGeoMaterial* mat = ptr()->GetMaterial();
     if ( mat )
       return mat->GetRadLen();
-    throw runtime_error("dd4hep: The medium " + string(ptr()->GetName()) + " has an invalid material reference!");
+    throw std::runtime_error("dd4hep: The medium " + std::string(ptr()->GetName()) + " has an invalid material reference!");
   }
-  throw runtime_error("dd4hep: Attempt to access radiation length from invalid material handle!");
+  throw std::runtime_error("dd4hep: Attempt to access radiation length from invalid material handle!");
 }
 
 /// Access the radiation length of the underlying material
@@ -224,9 +222,9 @@ double Material::intLength() const {
     TGeoMaterial* mat = ptr()->GetMaterial();
     if ( mat )
       return mat->GetIntLen();
-    throw runtime_error("The medium " + string(ptr()->GetName()) + " has an invalid material reference!");
+    throw std::runtime_error("The medium " + std::string(ptr()->GetName()) + " has an invalid material reference!");
   }
-  throw runtime_error("Attempt to access interaction length from invalid material handle!");
+  throw std::runtime_error("Attempt to access interaction length from invalid material handle!");
 }
 
 /// Access the fraction of an element within the material
@@ -256,9 +254,18 @@ double Material::fraction(Atom atom) const    {
   return tot>1e-20 ? frac/tot : 0.0;
 }
 
-#if ROOT_VERSION_CODE >= ROOT_VERSION(6,17,0)
+/// Access the number of properties attached to the material (if any)
+std::size_t Material::numProperties()  const  {
+  return access()->GetMaterial()->GetNproperties();
+}
+
+/// Access to tabular properties of the material by index
+Material::Property Material::property(std::size_t index)  const  {
+  return access()->GetMaterial()->GetProperty(index);
+}
+
 /// Access to tabular properties of the optical surface
-Material::Property Material::property(const char* nam)  const    {
+Material::Property Material::property(const char* nam)  const  {
   return access()->GetMaterial()->GetProperty(nam);
 }
 
@@ -275,13 +282,27 @@ std::string Material::propertyRef(const std::string& name, const std::string& de
   return default_value;
 }
 
+/// Access the number of properties attached to the material (if any)
+std::size_t Material::numConstProperties()  const  {
+  return access()->GetMaterial()->GetNconstProperties();
+}
+
+/// Access to const properties of the material by index
+double Material::constProperty(std::size_t index)  const  {
+  Bool_t err = kFALSE;
+  const auto* mat  = access()->GetMaterial();
+  double value = mat->GetConstProperty(index, &err);
+  if ( err != kTRUE ) return value;
+  throw std::runtime_error("Attempt to access non existing material const property with index: "+std::to_string(index));
+}
+
 /// Access to tabular properties of the optical surface
 double Material::constProperty(const std::string& nam)  const   {
   Bool_t err = kFALSE;
-  auto* o = access()->GetMaterial();
-  double value = o->GetConstProperty(nam.c_str(), &err);
+  auto*  mat = access()->GetMaterial();
+  double value = mat->GetConstProperty(nam.c_str(), &err);
   if ( err != kTRUE ) return value;
-  throw runtime_error("Attempt to access non existing material const property: "+nam);
+  throw std::runtime_error("Attempt to access non existing material const property: "+nam);
 }
 
 /// Access string property value from the material table
@@ -291,23 +312,22 @@ std::string Material::constPropertyRef(const std::string& name, const std::strin
   if ( p ) return p;
   return default_value;
 }
-#endif
 
 /// String representation of this object
-string Material::toString() const {
+std::string Material::toString() const {
   if ( isValid() ) {
     TGeoMedium*  val = ptr();
-    stringstream out;
+    std::stringstream out;
     out << val->GetName() << " " << val->GetTitle()
-        << " id:" << hex << val->GetId()
+        << " id:" << std::hex << val->GetId()
         << " Pointer:" << val->GetPointerName();
     return out.str();
   }
-  throw runtime_error("Attempt to convert invalid material handle to string!");
+  throw std::runtime_error("Attempt to convert invalid material handle to string!");
 }
 
 /// Constructor to be used when creating a new entity
-VisAttr::VisAttr(const string& nam) {
+VisAttr::VisAttr(const std::string& nam) {
   Object* obj = new Object();
   assign(obj, nam, "vis");
   obj->color = gROOT->GetColor(kWhite);
@@ -383,20 +403,25 @@ int VisAttr::color() const {
 /// Set object color
 void VisAttr::setColor(float alpha, float red, float green, float blue) {
   Object& o  = object<Object>();
+  const auto num_before = gROOT->GetListOfColors()->GetLast();
+  // Set tolerance high enough to always lookup from existing palette. This
+  // helps to preserve colors when saving TGeo to .root files.
+  TColor::SetColorThreshold(1.0f/31.0f);
   Int_t col  = TColor::GetColor(red, green, blue);
+  const auto num_after = gROOT->GetListOfColors()->GetLast();
+  if (num_before != num_after) {
+    printout(INFO,"VisAttr","+++ %s Allocated a Color: r:%02X g:%02X b:%02X, this will not save to a ROOT file",
+             this->name(), int(red*255.), int(green*255.), int(blue*255));
+  }
   o.alpha    = alpha;
   o.color    = gROOT->GetColor(col);
   if ( !o.color )    {
     except("VisAttr","+++ %s Failed to allocate Color: r:%02X g:%02X b:%02X",
-	   this->name(), int(red*255.), int(green*255.), int(blue*255));
+           this->name(), int(red*255.), int(green*255.), int(blue*255));
   }
-#if ROOT_VERSION_CODE >= ROOT_VERSION(5,34,25)
   o.colortr = new TColor(gROOT->GetListOfColors()->GetLast()+1,
-			 o.color->GetRed(), o.color->GetGreen(), o.color->GetBlue());
+                         o.color->GetRed(), o.color->GetGreen(), o.color->GetBlue());
   o.colortr->SetAlpha(alpha);
-#else
-  o.colortr = o.color;
-#endif
 }
 
 /// Get RGB values of the color (if valid)
@@ -421,13 +446,13 @@ bool VisAttr::argb(float& alpha, float& red, float& green, float& blue) const {
 }
 
 /// String representation of this object
-string VisAttr::toString() const {
+std::string VisAttr::toString() const {
   const VisAttr::Object* obj = &object<Object>();
   TColor* c = obj->color;
   char text[256];
-  ::snprintf(text, sizeof(text), "%-20s RGB:%-8s [%d] %7.2f  Style:%d %d ShowDaughters:%3s Visible:%3s", ptr()->GetName(),
-             c->AsHexString(), c->GetNumber(), c->GetAlpha(), int(obj->drawingStyle), int(obj->lineStyle),
-             yes_no(obj->showDaughters), yes_no(obj->visible));
+  std::snprintf(text, sizeof(text), "%-20s RGB:%-8s [%d] %7.2f  Style:%d %d ShowDaughters:%3s Visible:%3s", ptr()->GetName(),
+                  c->AsHexString(), c->GetNumber(), c->GetAlpha(), int(obj->drawingStyle), int(obj->lineStyle),
+                  yes_no(obj->showDaughters), yes_no(obj->visible));
   return text;
 }
 
@@ -448,8 +473,8 @@ bool Limit::operator<(const Limit& c) const {
 }
 
 /// Conversion to a string representation
-string Limit::toString() const {
-  string res = name + " = " + content;
+std::string Limit::toString() const {
+  std::string res = name + " = " + content;
   if (!unit.empty())
     res += unit + " ";
   res += " (" + particles + ")";
@@ -457,25 +482,25 @@ string Limit::toString() const {
 }
 
 /// Constructor to be used when creating a new DOM tree
-LimitSet::LimitSet(const string& nam) {
+LimitSet::LimitSet(const std::string& nam) {
   assign(new Object(), nam, "limitset");
 }
 
 /// Add new limit. Returns true if the new limit was added, false if it already existed.
 bool LimitSet::addLimit(const Limit& limit) {
-  pair<Object::iterator, bool> ret = data<Object>()->limits.insert(limit);
+  std::pair<Object::iterator, bool> ret = data<Object>()->limits.insert(limit);
   return ret.second;
 }
 
 /// Accessor to limits container
-const set<Limit>& LimitSet::limits() const {
+const std::set<Limit>& LimitSet::limits() const {
   const Object* o = data<Object>();
   return o->limits;
 }
 
 /// Add new limit. Returns true if the new limit was added, false if it already existed.
 bool LimitSet::addCut(const Limit& cut_obj)   {
-  pair<Object::iterator, bool> ret = data<Object>()->cuts.insert(cut_obj);
+  std::pair<Object::iterator, bool> ret = data<Object>()->cuts.insert(cut_obj);
   return ret.second;
 }
 
@@ -485,7 +510,7 @@ const std::set<Limit>& LimitSet::cuts() const    {
 }
 
 /// Constructor to be used when creating a new DOM tree
-Region::Region(const string& nam) {
+Region::Region(const std::string& nam) {
   Object* p = new Object();
   assign(p, nam, "region");
   p->magic = magic_word();
@@ -514,7 +539,7 @@ Region& Region::setCut(double value) {
 }
 
 /// Access references to user limits
-vector<string>& Region::limits() const {
+std::vector<std::string>& Region::limits() const {
   return object<Object>().user_limits;
 }
 
@@ -555,28 +580,28 @@ struct IDSpec : public Ref_t {
   template <typename Q>
   IDSpec(const Handle<Q>& e) : Ref_t(e) {}
   /// Constructor to be used when creating a new DOM tree
-  IDSpec(Detector& doc, const string& name, const IDDescriptor& dsc);
-  void addField(const string& name, const pair<int,int>& field);
+  IDSpec(Detector& doc, const std::string& name, const IDDescriptor& dsc);
+  void addField(const std::string& name, const std::pair<int,int>& field);
 };
 
-IDSpec::IDSpec(Detector& description, const string& name, const IDDescriptor& dsc)
+IDSpec::IDSpec(Detector& description, const std::string& name, const IDDescriptor& dsc)
   : RefElement(doc,Tag_idspec,name)
 {
   const IDDescriptor::FieldIDs& f = dsc.ids();
   const IDDescriptor::FieldMap& m = dsc.fields();
   object<Object>().Attr_length = dsc.maxBit();
   for(const auto& i : f )  {
-    const string& nam = i.second;
+    const std::string& nam = i.second;
     const pair<int,int>& fld = m.find(nam)->second;
     addField(nam,fld);
   }
 }
 
-void IDSpec::addField(const string& name, const pair<int,int>& field) {
+void IDSpec::addField(const std::string& name, const pair<int,int>& field) {
   addField(Strng_t(name),field);
 }
 
-void IDSpec::addField(const string& name, const pair<int,int>& field) {
+void IDSpec::addField(const std::string& name, const pair<int,int>& field) {
   Element e(document(),Tag_idfield);
   e.object<Object>().Attr_signed = field.second<0;
   e.object<Object>().Attr_label = name;

@@ -14,12 +14,10 @@
 #define DD4HEP_HANDLE_H
 
 // Framework include files
-#include "DD4hep/Primitives.h"
+#include <DD4hep/Primitives.h>
 
 #include <string>
 #include <typeinfo>
-#include <stdexcept>
-#include <type_traits>
 
 // Conversion factor from radians to degree: 360/(2*PI)
 #ifndef RAD_2_DEGREE
@@ -183,6 +181,15 @@ namespace dd4hep {
   namespace detail  {
     /// Helper to delete objects from heap and reset the handle  \ingroup DD4HEP_CORE
     template <typename T> inline void destroyHandle(T& handle) {
+      // make sure we get a compiler error if this is used in a context where T::Object
+      // is not complete, as this is undefined behavior.
+      // If you see this, you are probably missing an include in the file where you
+      // call destroyHandle. You need the internal object behind the handle to be
+      // fully defined. E.g. you need to include DD4hep/detail/DetectorInterna.h
+      // (despite the name) to be able to destroy a DetElement.
+      // Not doing this leads to undefined behavior and practically with gcc lack
+      // of destruction of the internal object and thus memory leak
+      static_assert( sizeof(typename T::Object) > 0, "destroyHandle called on incomplete type. Missing include ?");
       deletePtr(handle.m_element);
     }
     /// Functor to destroy handles and delete the cached object  \ingroup DD4HEP_CORE
@@ -239,10 +246,12 @@ namespace dd4hep {
 
   /// String conversions: boolean value to string  \ingroup DD4HEP_CORE
   std::string _toString(bool value);
-  /// String conversions: integer value to string  \ingroup DD4HEP_CORE
+  /// String conversions: short integer value to string  \ingroup DD4HEP_CORE
   std::string _toString(short value, const char* fmt = "%d");
   /// String conversions: integer value to string  \ingroup DD4HEP_CORE
   std::string _toString(int value, const char* fmt = "%d");
+  /// String conversions: unsigned long integer value to string  \ingroup DD4HEP_CORE
+  std::string _toString(unsigned long value, const char* fmt = "%ld");
   /// String conversions: float value to string  \ingroup DD4HEP_CORE
   std::string _toString(float value, const char* fmt = "%.17e");
   /// String conversions: double value to string  \ingroup DD4HEP_CORE

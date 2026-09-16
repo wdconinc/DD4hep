@@ -8,40 +8,130 @@
 # For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
 #
 # ==========================================================================
-from __future__ import absolute_import, unicode_literals
 import cppyy
-import imp
+import importlib
+import types
 import logging
-
 
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+def dd4hep_directories(g4=True):
+  """
+  Return tuple of relevant dd4hep directories: (dd4hep, rootsys, geant4)
+  """
+  import os
+  dd4hep = os.getenv("DD4hepINSTALL", "/usr")
+  rootsys = os.getenv("ROOTSYS", "/usr")
+  g4_dir = None
+  if g4:
+    g4_dir = os.getenv('G4INSTALL', "/usr")
+  return (rootsys, g4_dir, dd4hep, )
+
+
+# ---------------------------------------------------------------------------
+def root_add_compile_option(option):
+  from ROOT import gSystem
+  known = gSystem.GetIncludePath()
+  idx = known.find(option + ' ')
+  if idx > 0 and idx + len(option) >= len(known):
+    return known
+  gSystem.AddIncludePath(' ' + option)
+
+
+# ---------------------------------------------------------------------------
+def root_add_include_path(path):
+  from ROOT import gSystem
+  known = gSystem.GetIncludePath()
+  path = '"' + path + '"'
+  idx = known.find(path)
+  if idx > 0 and idx + len(path) == len(known):
+    return known
+  gSystem.AddIncludePath(' -I' + path)
+
+
+# ---------------------------------------------------------------------------
+def setup_root_include_path(g4=True, opt=None):
+  """
+  Setup the ROOT compile options and include directories
+  """
+  from ROOT import gSystem
+  rootsys, geant4, dd4hep = dd4hep_directories(g4)
+  known = gSystem.GetIncludePath()
+
+  root_add_include_path(rootsys + '/include')
+  root_add_include_path(dd4hep + '/include')
+  if geant4:
+    root_add_include_path(geant4 + '/include/Geant4')
+    root_add_compile_option(' -Wno-shadow -g -O0')
+  if opt and known.find(opt) < 0:
+    gSystem.AddIncludePath(' ' + opt)
+  return gSystem.GetIncludePath()
+
+
+# ---------------------------------------------------------------------------
+def root_compile_opts():
+  """
+  Return the ROOT compile options and include directories
+  """
+  from ROOT import gSystem
+  return gSystem.GetIncludePath()
+
+
+# ---------------------------------------------------------------------------
+def setup_root_library_path(g4=True, opt=None):
+  """
+  Setup the ROOT link libraries and link options for A-Click processing of dd4hep in ROOT
+  """
+  from ROOT import gSystem
+  rootsys, geant4, dd4hep = dd4hep_directories(g4)
+  known = gSystem.GetLinkedLibs()
+
+  lib = ' -L' + dd4hep + '/lib64 ' + ' -L' + dd4hep + '/lib -lDDCore -lDDG4 -lDDSegmentation '
+  if known.find(lib) >= 0:
+    lib = ''
+  if geant4:
+    g4_lib = ' -L' + geant4 + '/lib64  -L' + geant4 + '/lib -lG4event -lG4tracking -lG4particles '
+    if known.find(g4_lib) < 0:
+      lib = lib + g4_lib
+  if opt and known.find(opt) < 0:
+    lib = lib + ' ' + opt
+
+  if len(lib):
+    gSystem.AddLinkedLibs(lib)
+  return gSystem.GetLinkedLibs()
+
+
+# ---------------------------------------------------------------------------
+def root_linked_libs():
+  """
+  Access the ROOT link libraries and link options for A-Click processing of dd4hep in ROOT
+  """
+  from ROOT import gSystem
+  return gSystem.GetLinkedLibs()
+
+
+# ---------------------------------------------------------------------------
 def compileAClick(dictionary, g4=True):
   """
   We compile the DDG4 plugin on the fly if it does not exist using the AClick mechanism.
 
   """
-  from ROOT import gInterpreter, gSystem
+  from ROOT import gInterpreter
   import os.path
-  dd4hep = os.environ['DD4hepINSTALL']
-  inc = ' -I' + os.environ['ROOTSYS'] + '/include -I' + dd4hep + '/include '
-  lib = ' -L' + dd4hep + '/lib -lDDCore -lDDG4 -lDDSegmentation '
-  if g4:
-    geant4 = os.environ['G4INSTALL']
-    inc = inc + ' -I' + geant4 + '/include/Geant4 -Wno-shadow -g -O0 '
-    lib = lib + ' -L' + geant4 + '/lib  -L' + geant4 + '/lib64 -lG4event -lG4tracking -lG4particles '
 
-  gSystem.AddIncludePath(inc)
-  gSystem.AddLinkedLibs(lib)
+  setup_root_include_path(g4)
+  setup_root_library_path(g4)
   logger.info('Loading AClick %s', dictionary)
-  package = imp.find_module('DDG4')
-  dic = os.path.dirname(package[1]) + os.sep + dictionary
+  package_spec = importlib.util.find_spec('DDG4')
+  dic = os.path.dirname(package_spec.origin) + os.sep + dictionary
   gInterpreter.ProcessLine('.L ' + dic + '+')
   from ROOT import dd4hep as module
   return module
 
 
+# ---------------------------------------------------------------------------
 def loaddd4hep():
   """
   Import DD4hep module from ROOT using ROOT reflection
@@ -49,7 +139,11 @@ def loaddd4hep():
   import os
   import sys
   # Add ROOT to the python path in case it is not yet there....
-  sys.path.append(os.environ['ROOTSYS'] + os.sep + 'lib')
+  rootsys = os.getenv("ROOTSYS", "/usr")
+  sys.path.append(os.path.join(rootsys, 'lib'))
+  sys.path.append(os.path.join(rootsys, 'lib64'))
+  sys.path.append(os.path.join(rootsys, 'lib', 'root'))
+  sys.path.append(os.path.join(rootsys, 'lib64', 'root'))
   from ROOT import gSystem
 
   import platform
@@ -68,6 +162,7 @@ def loaddd4hep():
 name_space = __import__(__name__)
 
 
+# ---------------------------------------------------------------------------
 def import_namespace_item(ns, nam):
   scope = getattr(name_space, ns)
   attr = getattr(scope, nam)
@@ -75,6 +170,7 @@ def import_namespace_item(ns, nam):
   return attr
 
 
+# ---------------------------------------------------------------------------
 def import_root(nam):
   setattr(name_space, nam, getattr(ROOT, nam))
 
@@ -93,6 +189,7 @@ except Exception as X:
   sys.exit(1)
 
 
+# ---------------------------------------------------------------------------
 class _Levels:
   def __init__(self):
     self.VERBOSE = 1
@@ -112,11 +209,12 @@ def unicode_2_string(value):
 
   :return: always a str
   """
-  import ddsix as six
-  if isinstance(value, (bool, float, six.integer_types)):
+  if isinstance(value, (bool, float, int)):
     value = value
-  elif isinstance(value, six.string_types):
+  elif isinstance(value, str):
     value = str(value)
+  elif isinstance(value, bytes):
+    value = value.decode()
   elif isinstance(value, (list, set, tuple)):
     value = [unicode_2_string(x) for x in value]
   elif isinstance(value, dict):
@@ -155,7 +253,7 @@ cond = dd4hep.cond
 tools = dd4hep.tools
 align = dd4hep.align
 detail = dd4hep.detail
-units = imp.new_module('units')
+units = types.ModuleType('units')
 # ---------------------------------------------------------------------------
 import_namespace_item('tools', 'Evaluator')
 # ---------------------------------------------------------------------------
@@ -212,6 +310,20 @@ def import_geometry():
   import_namespace_item('core', 'Region')
   import_namespace_item('core', 'RegionObject')
   import_namespace_item('core', 'HitCollection')
+  # // Typedefs from Objects.h
+  import_namespace_item('core', 'Position')
+  import_namespace_item('core', 'PositionRhoZPhi')
+  import_namespace_item('core', 'PositionPolar')
+  import_namespace_item('core', 'Direction')
+  import_namespace_item('core', 'XYZAngles')
+  import_namespace_item('core', 'RotationZYX')
+  import_namespace_item('core', 'RotationX')
+  import_namespace_item('core', 'RotationY')
+  import_namespace_item('core', 'RotationZ')
+  import_namespace_item('core', 'Rotation3D')
+  import_namespace_item('core', 'EulerAngles')
+  import_namespace_item('core', 'Transform3D')
+  import_namespace_item('core', 'Translation3D')
 
   # // Readout.h
   import_namespace_item('core', 'Segmentation')
@@ -334,6 +446,21 @@ class Logger:
 
   def setPrintLevel(self, level):
     "Adjust printout level of dd4hep"
+    if isinstance(level, str):
+      if level == 'VERBOSE':
+        level = OutputLevel.VERBOSE
+      elif level == 'DEBUG':
+        level = OutputLevel.DEBUG
+      elif level == 'INFO':
+        level = OutputLevel.INFO
+      elif level == 'WARNING':
+        level = OutputLevel.WARNING
+      elif level == 'ERROR':
+        level = OutputLevel.ERROR
+      elif level == 'FATAL':
+        level = OutputLevel.FATAL
+      else:
+        level = int(level)
     dd4hep.setPrintLevel(level)
 
   def always(self, msg):
@@ -405,6 +532,9 @@ class CommandLine:
          have_help = True
     if have_help and help_call:
       help_call()
+    if self.data.get('print_level'):
+      log = Logger('CommandLine')
+      log.setPrintLevel(self.data.get('print_level'))
 
   def __getattr__(self, attr):
     if self.data.get(attr):

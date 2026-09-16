@@ -25,7 +25,7 @@
 #define DDG4_GEANT4GENERATORWRAPPER_H
 
 // Framework include files
-#include "DDG4/Geant4GeneratorAction.h"
+#include <DDG4/Geant4GeneratorAction.h>
 
 // Forward declarations
 class G4VPrimaryGenerator;
@@ -49,10 +49,10 @@ namespace dd4hep {
       /// Property: Type name of the implementation instance. name: "Uses"
       std::string m_generatorType;
       /// Property: interaction identifier mask. name: "Mask"
-      int m_mask;
+      int m_mask { 1 };
 
       /// Reference to the implementation instance
-      G4VPrimaryGenerator* m_generator;
+      G4VPrimaryGenerator* m_generator { nullptr };
       
     public:
       /// Standard constructor
@@ -62,7 +62,7 @@ namespace dd4hep {
       /// Access the G4VPrimaryGenerator instance
       G4VPrimaryGenerator* generator();
       /// Event generation action callback
-      virtual void operator()(G4Event* event);
+      virtual void operator()(G4Event* event)  override;
     };
   }    // End namespace sim
 }      // End namespace dd4hep

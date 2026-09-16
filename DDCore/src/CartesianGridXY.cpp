@@ -12,12 +12,9 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/CartesianGridXY.h"
-#include "DDSegmentation/CartesianGridXY.h"
+#include <DD4hep/CartesianGridXY.h>
+#include <DDSegmentation/CartesianGridXY.h>
 
-// C/C++ include files
-
-using namespace std;
 using namespace dd4hep;
 
 /// determine the position based on the cell ID
@@ -74,24 +71,16 @@ void CartesianGridXY::setOffsetY(double offset) const   {
 }
 
 /// access the field name used for X
-const string& CartesianGridXY::fieldNameX() const {
+const std::string& CartesianGridXY::fieldNameX() const {
   return access()->implementation->fieldNameX();
 }
 
 /// access the field name used for Y
-const string& CartesianGridXY::fieldNameY() const {
+const std::string& CartesianGridXY::fieldNameY() const {
   return access()->implementation->fieldNameY();
 }
 
-/** \brief Returns a vector<double> of the cellDimensions of the given cell ID
-    in natural order of dimensions, e.g., dx/dy/dz, or dr/r*dPhi
-
-    Returns a vector of the cellDimensions of the given cell ID
-    \param cellID is ignored as all cells have the same dimension
-    \return vector<double> size 2:
-    -# size in x
-    -# size in y
-*/
-vector<double> CartesianGridXY::cellDimensions(const CellID& id) const  {
+// Returns a vector<double> of the cellDimensions of the given cell ID
+std::vector<double> CartesianGridXY::cellDimensions(const CellID& id) const  {
   return access()->implementation->cellDimensions(id);
 }

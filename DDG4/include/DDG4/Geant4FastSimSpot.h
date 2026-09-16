@@ -17,11 +17,11 @@
 #include <DDG4/Defs.h>
 
 // Geant4 include files
-#include "G4Version.hh"
+#include <G4Version.hh>
 
 #if G4VERSION_NUMBER < 1070
 
-#include "G4ThreeVector.hh"
+#include <G4ThreeVector.hh>
 
 class G4FastHit
 {
@@ -123,15 +123,15 @@ namespace dd4hep {
 
     /// Initializing constructor
     inline Geant4FastSimSpot::Geant4FastSimSpot(const G4FastHit* h,
-						const G4FastTrack* trk,
-						G4VTouchable* t)
+                                                const G4FastTrack* trk,
+                                                G4VTouchable* t)
       : hit(h), track(trk), primary(trk->GetPrimaryTrack()), touchable(t)
     {
     }
 
     /// Initializing constructor
     inline Geant4FastSimSpot::Geant4FastSimSpot(const G4FastHit* h,
-						const G4FastTrack* trk)
+                                                const G4FastTrack* trk)
       : hit(h), track(trk), primary(trk->GetPrimaryTrack())
     {
     }

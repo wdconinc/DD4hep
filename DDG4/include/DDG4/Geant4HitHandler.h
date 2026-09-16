@@ -14,11 +14,11 @@
 #define DDG4_GEANT4HITHANDLER_H
 
 // Framework include files
-#include "DDG4/Defs.h"
+#include <DDG4/Defs.h>
 
 // Geant4 include files
-#include "G4EmSaturation.hh"
-#include "G4Version.hh"
+#include <G4EmSaturation.hh>
+#include <G4Version.hh>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -48,7 +48,7 @@ namespace dd4hep {
       Geant4HitHandler() = delete;
       /// Initializing constructor
       Geant4HitHandler(const G4Track* t, const G4VTouchable* h)
-	: track(t), touchable_ptr(h)
+        : track(t), touchable_ptr(h)
       {
       }
       /// No copy constructor

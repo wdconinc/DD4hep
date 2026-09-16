@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 import os
 import sys
 import time
@@ -6,7 +5,6 @@ import DDG4
 from DDG4 import OutputLevel as Output
 from g4units import GeV, MeV
 import logging
-from ddsix.moves import range
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)

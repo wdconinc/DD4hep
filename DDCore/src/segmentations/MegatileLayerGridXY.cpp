@@ -1,3 +1,13 @@
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//==========================================================================
 /*
  * MegatileLayerGridXY.cpp
  *
@@ -12,7 +22,6 @@
 #undef NDEBUG
 #include <cmath>
 #include <cassert>
-#include <algorithm>
 
 namespace dd4hep {
   namespace DDSegmentation {
@@ -78,7 +87,7 @@ namespace dd4hep {
       if ( fabs( cellPosition.X )>10000e0 || fabs( cellPosition.Y )>10000e0 ) {
         printout(WARNING,"MegatileLayerGridXY", "crazy cell position: x: %f y: %f ", cellPosition.X, cellPosition.Y);
         printout(WARNING,"MegatileLayerGridXY", "layer, wafer, cellx,y indices: %d %d %d %d",
-		 layerIndex, waferIndex, cellIndexX, cellIndexY);
+                 layerIndex, waferIndex, cellIndexX, cellIndexY);
         assert(0 && "crazy cell position?");
       }
 
@@ -151,14 +160,14 @@ namespace dd4hep {
         _currentSegInfo.megaTileOffsetX = _megaTileOffsetX;
         _currentSegInfo.megaTileOffsetY = _megaTileOffsetY;
 
-	if ( _unif_nCellsX>0 && _unif_nCellsY>0 ) {
-	  _currentSegInfo.nCellsX         = _unif_nCellsX;
-	  _currentSegInfo.nCellsY         = _unif_nCellsY;
-	} else {
-	  assert ( layerIndex<_nCellsX.size() && "MegatileLayerGridXY ERROR: too high layer index?" );
-	  _currentSegInfo.nCellsX         = _nCellsX[layerIndex];
-	  _currentSegInfo.nCellsY         = _nCellsY[layerIndex];
-	}
+        if ( _unif_nCellsX>0 && _unif_nCellsY>0 ) {
+          _currentSegInfo.nCellsX         = _unif_nCellsX;
+          _currentSegInfo.nCellsY         = _unif_nCellsY;
+        } else {
+          assert ( layerIndex<_nCellsX.size() && "MegatileLayerGridXY ERROR: too high layer index?" );
+          _currentSegInfo.nCellsX         = _nCellsX[layerIndex];
+          _currentSegInfo.nCellsY         = _nCellsY[layerIndex];
+        }
 
       } else { // special megatile
         _currentSegInfo = specialMegaTiles_layerWafer.find( tileid )->second;
@@ -173,20 +182,9 @@ namespace dd4hep {
       double xsize = _currentSegInfo.megaTileSizeX/_currentSegInfo.nCellsX;
       double ysize = _currentSegInfo.megaTileSizeY/_currentSegInfo.nCellsY;
 
-#if __cplusplus >= 201103L
       return {xsize, ysize};
-#else
-      std::vector<double> cellDims(2,0.0);
-      cellDims[0] = xsize;
-      cellDims[1] = ysize;
-      return cellDims;
-#endif
     }
 
 
   } /* namespace DDSegmentation */
 } /* namespace dd4hep */
-
-// This is done DDCore/src/plugins/ReadoutSegmentations.cpp so the plugin is not part of libDDCore
-// needs also #include "DD4hep/Factories.h"
-// DECLARE_SEGMENTATION(MegatileLayerGridXY,create_segmentation<dd4hep::DDSegmentation::MegatileLayerGridXY>)

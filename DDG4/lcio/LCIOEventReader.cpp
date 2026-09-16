@@ -14,16 +14,16 @@
 
 // Framework include files
 #include "LCIOEventReader.h"
-#include "DD4hep/Printout.h"
-#include "DDG4/Geant4Primary.h"
-#include "DDG4/Geant4Context.h"
-#include "DDG4/Factories.h"
+#include <DD4hep/Printout.h>
+#include <DDG4/Geant4Primary.h>
+#include <DDG4/Geant4Context.h>
+#include <DDG4/Factories.h>
 
-#include "G4ParticleTable.hh"
-#include "EVENT/MCParticle.h"
-#include "EVENT/LCCollection.h"
+#include <G4ParticleTable.hh>
+#include <EVENT/MCParticle.h>
+#include <EVENT/LCCollection.h>
 
-#include "G4Event.hh"
+#include <G4Event.hh>
 
 using namespace std;
 using namespace dd4hep;
@@ -63,13 +63,14 @@ LCIOEventReader::readParticles(int event_number,
                                Vertices& vertices,
                                vector<Particle*>& particles)
 {
-  EVENT::LCCollection*        primaries = 0;
+  CollectionOwner primaries(nullptr, [](EVENT::LCCollection*){});
   map<EVENT::MCParticle*,int> mcparts;
   vector<EVENT::MCParticle*>  mcpcoll;
-  EventReaderStatus ret = readParticleCollection(event_number,&primaries);
+  EventReaderStatus ret = readParticleCollection(event_number, primaries);
 
-  if ( ret != EVENT_READER_OK ) return ret;
-
+  if (ret != EVENT_READER_OK) {
+    return ret;
+  }
   int NHEP = primaries->getNumberOfElements();
   // check if there is at least one particle
   if ( NHEP == 0 ) return EVENT_READER_NO_PRIMARIES;
@@ -91,7 +92,6 @@ LCIOEventReader::readParticles(int event_number,
     const float  *spin  = mcp->getSpin();
     const int    *color = mcp->getColorFlow();
     const int     pdg   = mcp->getPDG();
-    PropertyMask status(p->status);
     p->pdgID        = pdg;
     p->charge       = int(mcp->getCharge()*3.0);
     p->psx          = mom[0]*CLHEP::GeV;
@@ -118,16 +118,14 @@ LCIOEventReader::readParticles(int event_number,
     for(int num=par.size(),k=0; k<num; ++k)
       p->parents.insert(GET_ENTRY(mcparts,par[k]));
 
+    PropertyMask status(p->status);
     int genStatus = mcp->getGeneratorStatus();
-    if ( genStatus == 0 ) status.set(G4PARTICLE_GEN_EMPTY);
-    else if ( genStatus == 1 ) status.set(G4PARTICLE_GEN_STABLE);
-    else if ( genStatus == 2 ) status.set(G4PARTICLE_GEN_DECAYED);
-    else if ( genStatus == 3 ) status.set(G4PARTICLE_GEN_DOCUMENTATION);
-    else if ( genStatus == 4 ) status.set(G4PARTICLE_GEN_BEAM);
-    else
-      status.set(G4PARTICLE_GEN_OTHER);
     // Copy raw generator status
     p->genStatus = genStatus&G4PARTICLE_GEN_STATUS_MASK;
+    if(m_inputAction) {
+      // in some tests we do not set up the inputAction
+      m_inputAction->setGeneratorStatus(genStatus, status);
+    }
 
     //fg: we simply add all particles without parents as with their own vertex.
     //    This might include the incoming beam particles, e.g. in

@@ -8,7 +8,6 @@
 # For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
 #
 # ==========================================================================
-from __future__ import absolute_import, unicode_literals
 import os
 import time
 import DDG4TestSetup
@@ -41,8 +40,12 @@ class Setup(DDG4TestSetup.Setup):
           act.OutputLevel = output_level
     return self
 
-  def defineOutput(self, output='MiniTel_' + time.strftime('%Y-%m-%d_%H-%M')):
+  def defineOutput(self, output=None):
+    if output is None:
+      output = 'MiniTel_' + time.strftime('%Y-%m-%d_%H-%M')
     return DDG4TestSetup.Setup.defineOutput(self, output)
 
-  def defineEdm4hepOutput(self, output='MiniTel_' + time.strftime('%Y-%m-%d_%H-%M')):
+  def defineEdm4hepOutput(self, output=None):
+    if output is None:
+      output = 'MiniTel_' + time.strftime('%Y-%m-%d_%H-%M')
     return DDG4TestSetup.Setup.defineEdm4hepOutput(self, output)

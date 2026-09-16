@@ -1,19 +1,27 @@
 name: python
 
-on: [push, pull_request]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - dependabot/**
 
 jobs:
   python-lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        LCG: ["dev4/x86_64-centos7-gcc11-opt"]
+        LCG: ["dev4/x86_64-el9-gcc13-opt"]
     steps:
-    - uses: actions/checkout@v3
-    - uses: cvmfs-contrib/github-action-cvmfs@v3
-    - uses: aidasoft/run-lcg-view@v3
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - uses: cvmfs-contrib/github-action-cvmfs@10197e000cc0add8e54ac4fb73d3ed44e2de72b4
+    - uses: aidasoft/run-lcg-view@d8db17c61216548c9192889942d46ff2d7c3a3b6
       with:
         release-platform: ${{ matrix.LCG }}
         run: |
           echo "RUNNING FLAKE8 CHECK"
-          find . -name "*.py" -and -not -name 'ddsix.py' -exec flake8 {} +
+          find . -name "*.py" -exec flake8 {} +

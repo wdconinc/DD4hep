@@ -14,8 +14,8 @@
 #define DD4HEP_FIELDS_H
 
 // Framework include files
-#include "DD4hep/NamedObject.h"
-#include "DD4hep/Objects.h"
+#include <DD4hep/NamedObject.h>
+#include <DD4hep/Objects.h>
 
 // C/C++ include files
 #include <vector>
@@ -244,10 +244,8 @@ namespace dd4hep {
     /// Returns the 3  magnetic field components (x, y, z).
     void magneticField(const Position& pos, double* field) const;
 
-    /// Returns the 3  magnetic field components (x, y, z).
-    void magneticField(const double* pos, double* field) const   {
-      magneticField(Position(pos[0], pos[1], pos[2]), field);
-    }
+    /// Returns the 3 magnetic field components (x, y, z).
+    void magneticField(const double* pos, double* field) const;
 
     /// Returns the 3 magnetic field components (x, y, z).
     void magneticField(const double* pos, Direction& field) const {

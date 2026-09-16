@@ -14,8 +14,10 @@
 #define DD4HEP_FIELDTYPES_H
 
 // Framework include files
-#include "DD4hep/Fields.h"
-#include "DD4hep/Shapes.h"
+#include <DD4hep/Fields.h>
+#include <DD4hep/Shapes.h>
+
+// C/C++ include files
 #include <vector>
 
 /// Namespace for the AIDA detector description toolkit
@@ -31,8 +33,15 @@ namespace dd4hep {
    */
   class ConstantField : public CartesianField::Object {
   public:
+    enum { FIELD_LOCAL = 1, FIELD_TRANSLATED = 2, FIELD_ROTATED = 4 };
     /// Field direction
-    Direction direction;
+    Direction     direction;
+    /// Boundary volume (optional)
+    Solid         volume      { };
+    /// If solid is set: allow for movement of the solid
+    Transform3D   inverse_pos { };
+    /// The access to the field will be optimized. Remember properties.
+    unsigned char flag       { 0 };
   public:
     /// Initializing constructor
     ConstantField() = default;
@@ -132,7 +141,7 @@ namespace dd4hep {
    *  \f{eqnarray*}{
    *  B_y + i B_x &=& (1/6) * (b_4 +ia_4) (x^3 + 3ix^2y - 3xy^2 -iy^3)  \\
    *  B_y &=& (1/6) * (b_4 x^3 - 3 b_4 x y^2 - 3 a_4 x^2 y + a_4 y^3)     \\
-   *  B_x &=& (1/6) * (3 b_4 x^2 y - b_4 y^3 + a_4 x^3 - 3 a_4 x y^2)     \	\
+   *  B_x &=& (1/6) * (3 b_4 x^2 y - b_4 y^3 + a_4 x^3 - 3 a_4 x y^2)     \        \
    *  \f}
    *
    *  The defined field components only apply within the shape 'volume'.
@@ -169,6 +178,9 @@ namespace dd4hep {
     unsigned char flag       { 0 };
     /// Translation of the transformation
     Transform3D::Point translation { };
+    /// Axis-aligned bounding box in world coordinates
+    double aabb_min[3]       { 0, 0, 0 };
+    double aabb_max[3]       { 0, 0, 0 };
   public:
     /// Initializing constructor
     MultipoleField();

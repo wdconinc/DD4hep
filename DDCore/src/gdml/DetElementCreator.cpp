@@ -18,8 +18,8 @@
 #define DD4HEP_DETELEMENTCREATOR_H
 
 // Framework include files
-#include "DD4hep/VolumeProcessor.h"
-#include "DD4hep/Printout.h"
+#include <DD4hep/VolumeProcessor.h>
+#include <DD4hep/Printout.h>
 
 namespace dd4hep {
   
@@ -106,10 +106,10 @@ namespace dd4hep {
 #endif   /* DD4HEP_DETELEMENTCREATOR_H  */
 
 // Framework include files
-#include "DD4hep/detail/DetectorInterna.h"
-#include "DD4hep/DetFactoryHelper.h"
-#include "DD4hep/DetectorHelper.h"
-#include "DD4hep/Printout.h"
+#include <DD4hep/detail/DetectorInterna.h>
+#include <DD4hep/DetFactoryHelper.h>
+#include <DD4hep/DetectorHelper.h>
+#include <DD4hep/Printout.h>
 
 // C/C++ include files
 #include <sstream>
@@ -166,8 +166,9 @@ DetElementCreator::~DetElementCreator() noexcept(false)  {
     total_depth += l.second.second;
     ++total_cnt;
   }
-  printout(INFO,pref,"DetElementCreator: ++ Summary:     %-24s  %d.","Total DetElements:",total_cnt);
-  printout(INFO,pref,"DetElementCreator: +++++++++++++++ Readout structure generation  ++++++++++++++++++++++++");
+  if ( 0 == total_depth )  { }
+  printout(INFO, pref, "DetElementCreator: ++ Summary:     %-24s  %d.","Total DetElements:", total_cnt);
+  printout(INFO, pref, "DetElementCreator: +++++++++++++++ Readout structure generation  ++++++++++++++++++++++++");
   str << endl;
   for( const auto& f : fields )   {
     string ro_name = f.first.name() + string("Hits");
@@ -231,8 +232,8 @@ DetElementCreator::~DetElementCreator() noexcept(false)  {
       Volume vol = place.volume();
       ::snprintf(volid,sizeof(volid),"Lv%d", p.second.first);
       printout(DEBUG,pref, "DetElementCreator: ++ Set volid (%-24s): %-6s = %3d  -> %s  (%p)",
-	       vol.isSensitive() ? vol.sensitiveDetector().name() : "Not Sensitive",
-	       volid, p.second.second, place.name(), place.ptr());
+               vol.isSensitive() ? vol.sensitiveDetector().name() : "Not Sensitive",
+               volid, p.second.second, place.name(), place.ptr());
       place.addPhysVolID(volid, p.second.second);
     }
     catch(const exception& e)   {
@@ -378,7 +379,7 @@ int DetElementCreator::process(PlacedVolume pv, int lvl, bool recursive)   {
           }
         }
 
-        for(size_t i=1; i<stack.size(); ++i)   {
+        for( size_t i=1; i<stack.size(); ++i )   {
           auto& d = stack[i];
           auto& p = stack[i-1];
           if ( !d.element.isValid() )    {

@@ -15,8 +15,8 @@
 #define DDG4_GEANT4DETECTORCONSTRUCTION_H
 
 // Framework include files
-#include "DD4hep/DetElement.h"
-#include "DDG4/Geant4Action.h"
+#include <DD4hep/DetElement.h>
+#include <DDG4/Geant4Action.h>
 
 // Forward declarations
 class G4VUserDetectorConstruction;
@@ -67,13 +67,13 @@ namespace dd4hep {
       Detector&     description;
 #endif
       /// Reference to the world after construction
-      G4VPhysicalVolume*  world;
+      G4VPhysicalVolume*  world  { nullptr };
       /// The cached geometry information
-      Geant4GeometryInfo* geometry;
+      Geant4GeometryInfo* geometry  { nullptr };
       /// G4 User detector initializer
-      G4VUserDetectorConstruction* detector;
+      G4VUserDetectorConstruction* detector  { nullptr };
       /// Initializing Constructor
-      Geant4DetectorConstructionContext(Detector& l,G4VUserDetectorConstruction* d)
+      Geant4DetectorConstructionContext(Detector& l, G4VUserDetectorConstruction* d)
         : description(l), world(0), geometry(0), detector(d)  { }
       /// Default destructor
       ~Geant4DetectorConstructionContext()             { }
@@ -111,6 +111,9 @@ namespace dd4hep {
       virtual void constructField(Geant4DetectorConstructionContext* ctxt);
       /// Sensitive detector construction callback. Called at "ConstructSDandField()"
       virtual void constructSensitives(Geant4DetectorConstructionContext* ctxt);
+      /// Create Geant4 sensitive detector object using the factory mechanism
+      virtual G4VSensitiveDetector* createSensitiveDetector(const std::string& type,
+                                                            const std::string& name);
     };
 
     /// Concrete basic implementation of the Geant4 detector construction sequencer.
@@ -140,7 +143,7 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4DetectorConstructionSequence();
       /// Set or update client context
-      virtual void updateContext(Geant4Context* ctxt);
+      virtual void updateContext(Geant4Context* ctxt)  override;
       /// Add an actor responding to all callbacks. Sequence takes ownership.
       void adopt(Geant4DetectorConstruction* action);
       /// Access an actor by name

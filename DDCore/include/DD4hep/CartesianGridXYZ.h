@@ -16,7 +16,7 @@
 #define DD4HEP_CARTESIANGRIDXYZ_H 1
 
 // Framework include files
-#include "DD4hep/Segmentations.h"
+#include <DD4hep/Segmentations.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -41,7 +41,7 @@ namespace dd4hep {
    *  fiddled with the handled object directly.....
    *
    *  Note:
-   *  The handle base corrsponding to this object in for
+   *  The handle base corresponding to this object in for
    *  conveniance reasons instantiated in dd4hep/src/Segmentations.cpp.
    *
    *  \author  M.Frank
@@ -105,7 +105,7 @@ namespace dd4hep {
 
         Returns a vector of the cellDimensions of the given cell ID
         \param cellID is ignored as all cells have the same dimension
-        \return std::vector<double> size 2:
+        \return std::vector<double> size 3:
         -# size in x
         -# size in y
         -# size in z

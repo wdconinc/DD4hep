@@ -12,16 +12,17 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Primitives.h"
-#include "DD4hep/Exceptions.h"
-#include "DD4hep/Printout.h"
+#include <DD4hep/Primitives.h>
+#include <DD4hep/Exceptions.h>
+#include <DD4hep/Printout.h>
 
 // C/C++ include files
+#include <cstddef>
 #include <cstring>
 
 #if defined(__linux) || defined(__APPLE__) || defined(__powerpc64__)
 #include <cxxabi.h>
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__EMSCRIPTEN__)
 typedef abi::__class_type_info class_t;
 using   abi::__dynamic_cast;
 #endif
@@ -101,7 +102,7 @@ namespace {
       k *= m; 
       k ^= k >> r; 
       k *= m; 
-		
+                
       h ^= k;
       h *= m; 
     }
@@ -208,9 +209,7 @@ unsigned long long int dd4hep::detail::update_hash64(unsigned long long int hash
 /// 64 bit hash update function
 unsigned long long int dd4hep::detail::update_hash64(unsigned long long int hash, const void* key, std::size_t len)  {
   const unsigned char* str = (const unsigned char*)key;
-  if ( len > 0 )  {
-    for ( ; --len; ++str) hash = FNV1a_64::doByte(hash, *str);
-  }
+  for (std::size_t i = 0; i < len; ++i) hash = FNV1a_64::doByte(hash, str[i]);
   return hash;
 }
 
@@ -232,8 +231,8 @@ unsigned char dd4hep::detail::hash8(const char* key)   {
 
 /// Replace all occurrencies of a string
 std::string dd4hep::detail::str_replace(const std::string& str,
-					const std::string& pattern,
-					const std::string& replacement)   {
+                                        const std::string& pattern,
+                                        const std::string& replacement)   {
   std::string res = str;
   for(size_t id=res.find(pattern); id != std::string::npos; id = res.find(pattern) )
     res.replace(id, pattern.length(), replacement);
@@ -242,8 +241,8 @@ std::string dd4hep::detail::str_replace(const std::string& str,
 
 /// Replace all occurrencies of a string
 std::string dd4hep::detail::str_replace(const std::string& str,
-					char  pattern,
-					const std::string& replacement)   {
+                                        char  pattern,
+                                        const std::string& replacement)   {
   std::string res = str;
   for(size_t id=res.find(pattern); id != std::string::npos; id = res.find(pattern) )
     res.replace(id, 1, replacement);
@@ -252,8 +251,8 @@ std::string dd4hep::detail::str_replace(const std::string& str,
 
 /// Replace all occurrencies of a string
 std::string dd4hep::detail::str_replace(const std::string& str,
-					char  pattern,
-				        char  replacement)   {
+                                        char  pattern,
+                                        char  replacement)   {
   std::string res = str;
   for(size_t id=res.find(pattern); id != std::string::npos; id = res.find(pattern) )
     res.replace(id, 1, 1, replacement);
@@ -519,7 +518,7 @@ namespace dd4hep   {
   }
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
 /// Initializing Constructor
 dd4hep::Cast::Cast(const std::type_info& t, cast_t c) : type(t), cast(c)  {
 }
@@ -533,7 +532,7 @@ dd4hep::Cast::Cast(const std::type_info& t) : type(t)   {
 }
 #endif
 
-/// Defautl destructor
+/// Default destructor
 dd4hep::Cast::~Cast() {
 }
 
@@ -543,7 +542,7 @@ void* dd4hep::Cast::apply_dynCast(const Cast& to, const void* ptr) const
   if (&to == this) {
     return (void*) ptr;
   }
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
   // First try down cast
   void *r = (*to.cast)(ptr);
   if (r)
@@ -592,7 +591,7 @@ void* dd4hep::Cast::apply_downCast(const Cast& to, const void* ptr) const
   if (&to == this) {
     return (void*) ptr;
   }
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
   void *r = (*to.cast)(ptr);
   if (r) return r;
   throw unrelated_type_error(type, to.type, "Failed to apply abi dynamic cast operation!");

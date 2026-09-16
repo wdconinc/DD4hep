@@ -8,9 +8,8 @@
 // For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
 //
 //==========================================================================
-
 /*
- * CartesianGridXY.h
+ * CartesianGridXZ.h
  *
  *  Created on: Jun 28, 2013
  *      Author: Christian Grefe, CERN
@@ -19,7 +18,7 @@
 #ifndef DDSEGMENTATION_CARTESIANGRIDXZ_H
 #define DDSEGMENTATION_CARTESIANGRIDXZ_H
 
-#include "DDSegmentation/CartesianGrid.h"
+#include <DDSegmentation/CartesianGrid.h>
 
 namespace dd4hep {
   namespace DDSegmentation {

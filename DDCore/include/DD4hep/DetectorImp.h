@@ -28,9 +28,9 @@
 #endif
 
 // Framework include files
-#include "DD4hep/DetectorData.h"
-#include "DD4hep/DetectorLoad.h"
-#include "TNamed.h"
+#include <DD4hep/DetectorData.h>
+#include <DD4hep/DetectorLoad.h>
+#include <TNamed.h>
 
 // Forward declarations
 class TGeoManager;
@@ -108,9 +108,7 @@ namespace dd4hep {
     }
 
     /// Access flag to steer the detail of building of the geometry/detector description
-    virtual DetectorBuildType buildType() const   override {
-      return m_buildType;
-    }
+    virtual DetectorBuildType buildType() const   override;
 
     /// Read compact geometry description or alignment file
     virtual void fromCompact(const std::string& fname, DetectorBuildType type = BUILD_DEFAULT)   override {
@@ -135,6 +133,8 @@ namespace dd4hep {
 
     /// Close the geometry
     virtual void endDocument(bool close_geometry)  override;
+    /// Finalize the geometry
+    virtual void endDocument(const char* option)  override;
 
     /// Add an extension object to the Detector instance
     virtual void* addUserExtension(unsigned long long int key, ExtensionEntry* entry)  override;
@@ -320,7 +320,7 @@ namespace dd4hep {
        - If throw_exc is set to true, an exception is thrown if the type
        is not present. Otherwise an empty detector container is returned.
     */
-    virtual const std::vector<DetElement>& detectors(const std::string& type, bool throw_exc)  override;
+    virtual const std::vector<DetElement>& detectors(const std::string& type, bool throw_exc) const override;
 
     /// Access a set of subdetectors according to several sensitive types.
     virtual std::vector<DetElement> detectors(const std::string& type1,
@@ -329,7 +329,7 @@ namespace dd4hep {
                                               const std::string& type4="",
                                               const std::string& type5="" )  override;
 
-    /// Access the availible detector types
+    /// Access the available detector types
     virtual std::vector<std::string> detectorTypes() const  override;
 
     /** return a vector with all detectors that have all the type properties in

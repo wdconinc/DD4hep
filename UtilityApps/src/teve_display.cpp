@@ -12,48 +12,48 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Factories.h"
-#include "DD4hep/Detector.h"
-#include "DDRec/SurfaceHelper.h"
+#include <DD4hep/Factories.h>
+#include <DD4hep/Detector.h>
+#include <DDRec/SurfaceHelper.h>
 
 #include "EvNavHandler.h"
 #include "MultiView.h"
 
 #include "run_plugin.h"
-#include "TRint.h"
+#include <TRint.h>
 
-#include "TEveGeoNode.h"
-#include "TEveBrowser.h"
-#include "TGNumberEntry.h"
-#include "TGButton.h"
-#include "TGLabel.h"
-#include "TStyle.h"
-#include "TGComboBox.h"
-#include "TEveManager.h"
-#include "TSystem.h"
-#include "TGLViewer.h"
-#include "TEveViewer.h"
-#include "TGLPerspectiveCamera.h"
-#include "TGLCamera.h"
-#include "TEveStraightLineSet.h"
-#include "TSysEvtHandler.h"
+#include <TROOT.h>
+#include <TEveGeoNode.h>
+#include <TEveBrowser.h>
+#include <TGNumberEntry.h>
+#include <TGButton.h>
+#include <TGLabel.h>
+#include <TStyle.h>
+#include <TGComboBox.h>
+#include <TEveManager.h>
+#include <TSystem.h>
+#include <TGLViewer.h>
+#include <TEveViewer.h>
+#include <TGLPerspectiveCamera.h>
+#include <TGLCamera.h>
+#include <TEveStraightLineSet.h>
+#include <TSysEvtHandler.h>
 #include <TEveScene.h>
 #include <TEveProjectionManager.h>
 #include <TEveProjectionAxes.h>
 #include <TEveWindow.h>
 
-#include "TGeoManager.h"
-#include "TGLClip.h"
-#include "TMap.h"
-#include "TObjString.h"
-#include "TGeoShape.h"
-#include "TGLScenePad.h"
+#include <TGeoManager.h>
+#include <TGLClip.h>
+#include <TMap.h>
+#include <TObjString.h>
+#include <TGeoShape.h>
+#include <TGLScenePad.h>
 
 
 using namespace dd4hep ;
 using namespace rec ;
 using namespace detail ;
-
 
 //=====================================================================================
 // function declarations: 
@@ -64,22 +64,39 @@ TEveStraightLineSet* getSurfaces(int col=kRed, const SurfaceType& type=SurfaceTy
 TEveStraightLineSet* getSurfaceVectors(bool addO=true, bool addU= true, bool addV=true, bool addN=true,TString name="SurfaceVectors",int color=kGreen) ;
 
 //=====================================================================================
+static void print_teve_help()   {
+    std::cout <<
+      "Usage: teveDisplay -arg [-arg]                                                    \n\n"
+      "     Invoke TEve display using the factory mechanism.                             \n\n"
+      "        -input  <file>  [OPTIONAL]  Specify geometry input file.                  \n";
+    print_default_args() << std::endl <<
+      "     -level    <number> Visualization level  [TGeoManager::SetVisLevel]  Default: 4 \n"
+      "     -visopt   <number> Visualization option [TGeoManager::SetVisOption] Default: 0 \n"
+      "     -help              Print this help output" << std::endl << std::flush;
+    ::exit(EINVAL);
+}
 
-static long teve_display(Detector& description, int /* argc */, char** /* argv */) {
+//=====================================================================================
 
+static long teve_display(Detector& description, int argc, char** argv)  {
+  int level = 4, visopt = 0, help = 0;
+  for( int i=0; i<argc; ++i )  {
+    if ( strncmp(argv[i],"-visopt",4)    == 0 ) visopt = ::atol(argv[++i]);
+    else if ( strncmp(argv[i],"-level", 4)    == 0 ) level  = ::atol(argv[++i]);
+    else help = 1;
+  }
+  if ( help )   {
+    print_teve_help();
+  }
+  
   TGeoManager* mgr = &description.manager();
   mgr->SetNsegments(100); // Increase the visualization resolution.
   TEveManager::Create();
 
-  // mgr->SetVisOption(1) ;
-  // mgr->SetVisLevel(4) ;
-  
-  //  gEve->fGeometries->Add(new TObjString("DefaultGeometry"),mgr);
-
   TEveGeoTopNode* tn = new TEveGeoTopNode(mgr, mgr->GetTopNode());
   // option 0 in TEve seems to correspond to option 1 in TGeo ( used in geoDisplay ...)
-  tn->SetVisOption(0) ;
-  tn->SetVisLevel(4);
+  tn->SetVisOption(visopt) ;
+  tn->SetVisLevel(level);
 
   // // ---- try to set transparency - does not seem to work ...
   // TGeoNode* node1 = gGeoManager->GetTopNode();
@@ -130,42 +147,58 @@ static long teve_display(Detector& description, int /* argc */, char** /* argv *
   MultiView::instance()->ImportGeomRPhi( helperSurfaces );
   MultiView::instance()->ImportGeomRhoZ( helperSurfaces ) ;
 
-
   make_gui();
-
   next_event();
-
   gEve->FullRedraw3D(kTRUE);
-
   return 1;
 }
 DECLARE_APPLY(DD4hepTEveDisplay,teve_display)
 
-
 //=====================================================================================================================
-
 int main(int argc,char** argv)  {
-  return dd4hep::execute::main_default("DD4hepTEveDisplay",argc,argv);
+  std::vector<const char*> av;
+  std::string level, visopt, opt;
+  bool help = (argc == 1);
+  
+  for( int i=0; i < argc; ++i )   {
+    if ( i == 1 && argv[i][0] != '-' ) av.emplace_back("-input");
+    else if ( strncmp(argv[i],"-help",   4) == 0 ) help   = true;
+    else if ( strncmp(argv[i],"--help",  5) == 0 ) help   = true;
+    else if ( strncmp(argv[i],"-visopt", 4) == 0 ) visopt = argv[++i];
+    else if ( strncmp(argv[i],"--visopt",5) == 0 ) visopt = argv[++i];
+    else if ( strncmp(argv[i],"-level",  4) == 0 ) level  = argv[++i];
+    else if ( strncmp(argv[i],"--level", 5) == 0 ) level  = argv[++i];
+    else if ( strncmp(argv[i],"-option", 4) == 0 ) opt    = argv[++i];
+    else if ( strncmp(argv[i],"--option",5) == 0 ) opt    = argv[++i];
+    else if ( argc > 2 ) av.emplace_back(argv[i]);
+  }
+  if ( !help && argc == 2 )   { // Single argument given --> geometry file
+    av.emplace_back("-input");
+    av.emplace_back(argv[1]);
+  }
+  av.emplace_back("-interactive");
+  av.emplace_back("-plugin");
+  av.emplace_back("DD4hepTEveDisplay");
+  if ( help              ) av.emplace_back("-help");
+  if ( !opt.empty()      ) av.emplace_back("-opt"),      av.emplace_back(opt.c_str());
+  if ( !level.empty()    ) av.emplace_back("-level"),    av.emplace_back(level.c_str());
+  if ( !visopt.empty()   ) av.emplace_back("-visopt"),   av.emplace_back(visopt.c_str());
+  if ( help )   {
+    print_teve_help();
+  }
+  return dd4hep::execute::main_plugins("DD4hepTEveDisplay", av.size(), (char**)&av[0]);
 }
 
 //=====================================================================================================================
-
-
-TEveStraightLineSet* getSurfaceVectors(bool addO, bool addU, bool addV, bool addN, TString name,int color) {
-
+TEveStraightLineSet* getSurfaceVectors(bool addO, bool addU, bool addV, bool addN, TString name,int color)  {
   TEveStraightLineSet* ls = new TEveStraightLineSet(name);
-
   Detector& description = Detector::getInstance();
-
-  DetElement world = description.world() ;
+  DetElement world = description.world();
 
   // create a list of all surfaces in the detector:
-  SurfaceHelper surfMan(  world ) ;
-
+  SurfaceHelper surfMan( world );
   const SurfaceList& sL = surfMan.surfaceList() ;
-
   for( SurfaceList::const_iterator it = sL.begin() ; it != sL.end() ; ++it ){
-
     ISurface* surf = *it ;
     const Vector3D& u = surf->u() ;
     const Vector3D& v = surf->v() ;
@@ -261,8 +294,7 @@ void make_gui() {
 
   TGHorizontalFrame* hf = new TGHorizontalFrame(frmMain);
   {
-      
-    TString icondir( Form("%s/icons/", gSystem->Getenv("ROOTSYS")) );
+    TString icondir( Form("%s/", TROOT::GetIconPath().Data()) );
     TGPictureButton* b = 0;
     EvNavHandler    *fh = new EvNavHandler;
 

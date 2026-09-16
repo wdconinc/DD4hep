@@ -36,7 +36,7 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
   // MSF: unused! double      rb        = x_det.r();     // ellipse short radius - x   
   //Volume      assembly    (det_name,Box(10000,10000,10000),vacuum);
   Volume      motherVol = description.pickMotherVolume(sdet);
-  int         m_id=0, c_id=0, n_sensor=0;
+  int         c_id=0, n_sensor=0;
   map<string,Volume> modules;
   map<string, Placements>  sensitives;
   PlacedVolume pv;
@@ -45,7 +45,7 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
   sens.setType("tracker");
   double   total_thickness_max=0.;
 
-  for(xml_coll_t mi(x_det,_U(module)); mi; ++mi, ++m_id)  {
+  for(xml_coll_t mi(x_det,_U(module)); mi; ++mi)  {
     xml_comp_t x_mod   = mi;
     string     m_nam   = x_mod.nameStr();
     xml_comp_t trd     = x_mod.trd();
@@ -113,7 +113,7 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
         m_vol.setVisAttributes(description.visAttributes(x_ring.visStr()));
 */      
       
-	if ( zstart >= 0 ) {
+        if ( zstart >= 0 ) {
         DetElement module(sdet,m_base+"_pos",det_id);
         pv = assembly.placeVolume(m_vol,Transform3D(RotationZYX(0,-M_PI/2-phi,-M_PI/2),Position(x,y,zstart+dz)));
         pv.addPhysVolID("barrel",1).addPhysVolID("layer", l_id).addPhysVolID("module",mod_num);
@@ -138,14 +138,14 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
     } else
     {
        pv = assembly.placeVolume(m_vol,Transform3D(RotationZYX(0,-M_PI/2-phi,-M_PI/2),Position(x,y,zstart-dz)));
-	   pv.addPhysVolID("barrel",3).addPhysVolID("layer", l_id).addPhysVolID("module",mod_num);
-	   DetElement r_module(sdet,m_base+"_neg-z",det_id);
-	   r_module.setPlacement(pv);
-	   for(size_t ic=0; ic<sensVols.size(); ++ic)  {
-	    PlacedVolume sens_pv = sensVols[ic];
-	    DetElement comp_elt(r_module,sens_pv.volume().name(),mod_num);
-	    comp_elt.setPlacement(sens_pv);
-	  }
+           pv.addPhysVolID("barrel",3).addPhysVolID("layer", l_id).addPhysVolID("module",mod_num);
+           DetElement r_module(sdet,m_base+"_neg-z",det_id);
+           r_module.setPlacement(pv);
+           for(size_t ic=0; ic<sensVols.size(); ++ic)  {
+            PlacedVolume sens_pv = sensVols[ic];
+            DetElement comp_elt(r_module,sens_pv.volume().name(),mod_num);
+            comp_elt.setPlacement(sens_pv);
+          }
         }
         dz   = -dz;
         phi += iphi;

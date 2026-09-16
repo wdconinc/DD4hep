@@ -25,9 +25,9 @@
 #define DDG4_GEANT4PARTICLEHANDLER_H
 
 // Framework include files
-#include "DDG4/Geant4Primary.h"
-#include "DDG4/Geant4GeneratorAction.h"
-#include "DDG4/Geant4MonteCarloTruth.h"
+#include <DDG4/Geant4Primary.h>
+#include <DDG4/Geant4GeneratorAction.h>
+#include <DDG4/Geant4MonteCarloTruth.h>
 
 // Forward declarations
 class G4Step;
@@ -92,29 +92,29 @@ namespace dd4hep {
 
       /** Property variables used to configure the object */
       /// Property: Steer printout at tracking action begin
-      bool m_printStartTracking;
+      bool m_printStartTracking  { false };
       /// Property: Steer printout at tracking action end
-      bool m_printEndTracking;
+      bool m_printEndTracking    { false };
       /// Property: Flag to keep all particles generated
-      bool m_keepAll;
+      bool m_keepAll             { false };
       /// Property: Flag if the handler is executed in standalone mode and hence must manage particles
-      bool m_ownsParticles;
+      // Looks to be unused: bool m_ownsParticles       { false };
       /// Property: Energy cut below which particles are not collected, but assigned to the parent
-      double m_kinEnergyCut;
+      double m_kinEnergyCut      { 0e0   };
       /// Property: Minimal distance after which the vertexIsNotEndpointOfParent flag is set
-      double m_minDistToParentVertex;
+      double m_minDistToParentVertex  {  };
       /// Property: All the processes of which the decay products will be explicitly stored
-      Processes                  m_processNames;
+      Processes m_processNames        {  };
 
       /** Object variables, which are constant after initialization */
       /// User action pointer
-      Geant4UserParticleHandler* m_userHandler;
+      std::vector<Geant4UserParticleHandler*> m_userHandlers  {  };
 
       /** EVENT DEPENDENT: variables containing data depending on the current event. */
       /// Global particle identifier. Obtained at the begin of the event.
       int               m_globalParticleID;
       /// Primary map
-      Geant4PrimaryMap* m_primaryMap;
+      Geant4PrimaryMap* m_primaryMap            { nullptr };
       /// Local buffer about the 'current' G4Track
       Particle          m_currTrack;
       /// Map with stored MC Particles
@@ -148,7 +148,7 @@ namespace dd4hep {
       /// Adopt the user particle handler
       bool adopt(Geant4Action* action);
       /// Event generation action callback
-      virtual void operator()(G4Event* event);
+      virtual void operator()(G4Event* event)  override;
       /// User stepping callback
       virtual void step(const G4Step* step, G4SteppingManager* mgr);
       /// Pre-event action callback
@@ -161,17 +161,21 @@ namespace dd4hep {
       virtual void end(const G4Track* track);
 
       /// Mark a Geant4 track to be kept for later MC truth analysis. Default flag: CREATED_HIT
-      virtual void mark(const G4Track* track);
+      virtual void mark(const G4Track* track)  override;
       /// Store a track
-      virtual void mark(const G4Track* track, int reason);
+      virtual void mark(const G4Track* track, int reason)  override;
       /// Mark a Geant4 track of the step to be kept for later MC truth analysis. Default flag: CREATED_HIT
-      virtual void mark(const G4Step* step);
+      virtual void mark(const G4Step* step)  override;
       /// Store a track produced in a step to be kept for later MC truth analysis
-      virtual void mark(const G4Step* step, int reason);
+      virtual void mark(const G4Step* step, int reason)  override;
 
-      /// Default callback to be answered if the particle should be kept if NO user handler is installed
-      static bool defaultKeepParticle(Particle& particle);
+      /// Default callback to be answered if the particle should be dropped if NO user handler is installed
+      static bool defaultDropParticle(const Particle& particle);
 
+      [[deprecated("Use more appropriately named defaultDropParticle instead")]]
+      static bool defaultKeepParticle(Particle& particle) {
+        return defaultDropParticle(particle);
+      }
     };
   }    // End namespace sim
 }      // End namespace dd4hep

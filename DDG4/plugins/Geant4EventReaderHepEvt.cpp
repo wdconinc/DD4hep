@@ -88,26 +88,25 @@ namespace dd4hep {
 // C/C++ include files
 #include <cerrno>
 
-using namespace std;
 using namespace dd4hep::sim;
-typedef dd4hep::detail::ReferenceBitMask<int> PropertyMask;
+using PropertyMask = dd4hep::detail::ReferenceBitMask<int>;
 
 #define HEPEvtShort 1
 #define HEPEvtLong  2
 
-// Local declarations in anaonymous namespace
+// Local declarations in anonymous namespace
 namespace {
   class Geant4EventReaderHepEvtShort : public Geant4EventReaderHepEvt  {
   public:
     /// Initializing constructor
-    explicit Geant4EventReaderHepEvtShort(const string& nam) : Geant4EventReaderHepEvt(nam,HEPEvtShort) {}
+    explicit Geant4EventReaderHepEvtShort(const std::string& nam) : Geant4EventReaderHepEvt(nam,HEPEvtShort) {}
     /// Default destructor
     virtual ~Geant4EventReaderHepEvtShort() {}
   };
   class Geant4EventReaderHepEvtLong : public Geant4EventReaderHepEvt  {
   public:
     /// Initializing constructor
-    explicit Geant4EventReaderHepEvtLong(const string& nam) : Geant4EventReaderHepEvt(nam,HEPEvtLong) {}
+    explicit Geant4EventReaderHepEvtLong(const std::string& nam) : Geant4EventReaderHepEvt(nam,HEPEvtLong) {}
     /// Default destructor
     virtual ~Geant4EventReaderHepEvtLong() {}
   };
@@ -120,15 +119,14 @@ DECLARE_GEANT4_EVENT_READER(Geant4EventReaderHepEvtLong)
 
 
 /// Initializing constructor
-Geant4EventReaderHepEvt::Geant4EventReaderHepEvt(const string& nam, int format)
+Geant4EventReaderHepEvt::Geant4EventReaderHepEvt(const std::string& nam, int format)
 : Geant4EventReader(nam), m_input(), m_format(format)
 {
   // Now open the input file:
-  m_input.open(nam.c_str(),ifstream::in);
+  m_input.open(nam.c_str(), std::ifstream::in);
   if ( !m_input.good() )   {
-    string err = "+++ Geant4EventReaderHepEvt: Failed to open input stream:"+nam+
-      " Error:"+string(strerror(errno));
-    throw runtime_error(err);
+    except("Geant4EventReaderHepEvt","+++ Failed to open input stream: %s Error:%s",
+           nam.c_str(), ::strerror(errno));
   }
 }
 
@@ -147,8 +145,8 @@ Geant4EventReaderHepEvt::moveToEvent(int event_number) {
       std::vector<Particle*> particles;
       Vertices vertices ;
       EventReaderStatus sc = readParticles(m_currEvent,vertices,particles);
-      for_each(vertices.begin(),vertices.end(),detail::deleteObject<Vertex>);
-      for_each(particles.begin(),particles.end(),detail::deleteObject<Particle>);
+      for_each(vertices.begin(), vertices.end(), detail::deleteObject<Vertex>);
+      for_each(particles.begin(), particles.end(), detail::deleteObject<Particle>);
       if ( sc != EVENT_READER_OK ) return sc;
       //Current event is increased in readParticles already!
       // ++m_currEvent;
@@ -162,7 +160,7 @@ Geant4EventReaderHepEvt::moveToEvent(int event_number) {
 Geant4EventReader::EventReaderStatus
 Geant4EventReaderHepEvt::readParticles(int /* event_number */, 
                                        Vertices& vertices,
-                                       vector<Particle*>& particles)   {
+                                       std::vector<Particle*>& particles)   {
 
 
   // First check the input file status
@@ -185,8 +183,8 @@ Geant4EventReaderHepEvt::readParticles(int /* event_number */,
   //check loop variable read from input file and chack that is reasonable
   // should fix coverity issue: "Using tainted variable NHEP as a loop boundary."
 
-  if( NHEP > 1e6 ){ 
-    printout(ERROR,"EventReaderHepEvt::readParticles","Cannot read in more than million particles, but  %d requested", NHEP );
+  if( NHEP > 5e7 ){
+    printout(ERROR,"EventReaderHepEvt::readParticles","Cannot read in too many particles, %d requested but an arbitrary limit has been set to 50 M", NHEP );
     return EVENT_READER_EOF; 
   }
 
@@ -208,8 +206,8 @@ Geant4EventReaderHepEvt::readParticles(int /* event_number */,
   double VHEP3(0); // z vertex position in mm
   double VHEP4(0); // production time in mm/c
 
-  vector<int> daughter1;
-  vector<int> daughter2;
+  std::vector<int> daughter1;
+  std::vector<int> daughter2;
 
   for( unsigned IHEP=0; IHEP<NHEP; IHEP++ )    {
     if ( m_format == HEPEvtShort )
@@ -319,7 +317,7 @@ Geant4EventReaderHepEvt::readParticles(int /* event_number */,
     //
     //  As with the parents, look for range, 2 discreet or 1 discreet
     //  daughter.
-    if( (fd > -1) && (ld > -1) )  {
+    if( (fd > -1) && (fd < int(particles.size())) && (ld > -1) && (ld < int(particles.size())) )  {
       if(ld >= fd)   {
         for(int id=fd;id<ld+1;id++)   {
           //
@@ -341,11 +339,11 @@ Geant4EventReaderHepEvt::readParticles(int /* event_number */,
         theParticle.addDaughter(particles[ld]);
       }
     }
-    else if(fd > -1)      {
+    else if(fd > -1 && fd < int(particles.size()))  {
       ParticleHandler part(particles[fd]);
       if ( !part.findParent(mcp) ) part.addParent(mcp);
     }
-    else if(ld > -1)      {
+    else if(ld > -1 && ld < int(particles.size()))  {
       ParticleHandler part(particles[ld]);
       if ( !part.findParent(mcp) ) part.addParent(mcp);
     }
@@ -360,7 +358,7 @@ Geant4EventReaderHepEvt::readParticles(int /* event_number */,
   //    based on the generator status, as this varies widely with different
   //    generators.
 
-  for(size_t i=0; i<particles.size(); ++i )   {
+  for( std::size_t i=0; i < particles.size(); ++i )   {
     Geant4ParticleHandle p(particles[i]);
     if ( p->parents.size() == 0 )  {
       Geant4Vertex* vtx = new Geant4Vertex ;

@@ -7,7 +7,6 @@ Based on M. Frank and F. Gaede runSim.py
    @version 0.1
 
 """
-from __future__ import absolute_import, unicode_literals
 import logging
 import sys
 
@@ -22,7 +21,7 @@ if __name__ == "__main__":
   RUNNER.parseOptions()
 
   try:
-    RUNNER.run()
+    sys.exit(RUNNER.run())
   except NameError as e:
     if "global name" in str(e):
       globalToSet = str(e).split("'")[1]

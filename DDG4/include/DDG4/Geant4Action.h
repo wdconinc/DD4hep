@@ -15,10 +15,10 @@
 #define DDG4_GEANT4ACTION_H
 
 // Framework include files
-#include "DD4hep/Printout.h"
-#include "DD4hep/ComponentProperties.h"
-#include "DDG4/Geant4Context.h"
-#include "DDG4/Geant4Callback.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/ComponentProperties.h>
+#include <DDG4/Geant4Context.h>
+#include <DDG4/Geant4Callback.h>
 
 // Geant4 forward declarations
 class G4Run;
@@ -79,18 +79,20 @@ namespace dd4hep {
      *  \version 1.0
      *  \ingroup DD4HEP_SIMULATION
      */
-    class TypeName : public std::pair<std::string, std::string> {
+    class TypeName {
     public:
+      std::string first;
+      std::string second;
       /// Default constructor
       TypeName() = default;
       /// Copy constructor
       TypeName(const TypeName& copy) = default;
       /// Copy constructor from pair
       TypeName(const std::pair<std::string, std::string>& c)
-        : std::pair<std::string, std::string>(c) {      }
+        : first(c.first), second(c.second) { }
       /// Initializing constructor
       TypeName(const std::string& typ, const std::string& nam)
-        : std::pair<std::string, std::string>(typ, nam) {      }
+        : first(typ), second(nam) { }
       /// Assignment operator
       TypeName& operator=(const TypeName& copy) = default;
       /// Split string pair according to default delimiter ('/')
@@ -111,20 +113,20 @@ namespace dd4hep {
     class Geant4Action {
     protected:
       /// Reference to the Geant4 context
-      Geant4Context*     m_context  {nullptr};
+      Geant4Context*     m_context      { nullptr };
       /// Control directory of this action
-      Geant4UIMessenger* m_control  {nullptr};
+      Geant4UIMessenger* m_control      { nullptr };
 
       /// Default property: Output level
-      int                m_outputLevel  {3};
+      int                m_outputLevel  { 3 };
       /// Default property: Flag to create control instance
-      bool               m_needsControl {false};
+      bool               m_needsControl { false };
       /// Action name
-      std::string        m_name;
+      std::string        m_name         {   };
       /// Property pool
-      PropertyManager    m_properties;
+      PropertyManager    m_properties   {   };
       /// Reference count. Initial value: 1
-      long               m_refCount     {1};
+      long               m_refCount     { 1 };
 
     public:
       /// Functor to update the context of a Geant4Action object
@@ -135,8 +137,8 @@ namespace dd4hep {
        */
       class ContextSwap   {
         /// reference to the context;
-        Geant4Context* context {nullptr};
-        Geant4Action*  action  {nullptr};
+        Geant4Context* context { nullptr };
+        Geant4Action*  action  { nullptr };
       public:
         /// Constructor
         ContextSwap(Geant4Action* a,Geant4Context* c) : action(a)  {
@@ -196,55 +198,55 @@ namespace dd4hep {
         /// NON-CONST actions
         template <typename R, typename Q> void operator()(R (Q::*pmf)()) {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      (o->*pmf)();
+            for (const auto& o : m_v)
+              (o->*pmf)();
         }
         template <typename R, typename Q, typename A0> void operator()(R (Q::*pmf)(A0), A0 a0) {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      (o->*pmf)(a0);
+            for (const auto& o : m_v)
+              (o->*pmf)(a0);
         }
         template <typename R, typename Q, typename A0, typename A1> void operator()(R (Q::*pmf)(A0, A1), A0 a0, A1 a1) {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      (o->*pmf)(a0, a1);
+            for (const auto& o : m_v)
+              (o->*pmf)(a0, a1);
         }
         /// CONST actions
         template <typename R, typename Q> void operator()(R (Q::*pmf)() const) const {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      (o->*pmf)();
+            for (const auto& o : m_v)
+              (o->*pmf)();
         }
         template <typename R, typename Q, typename A0> void operator()(R (Q::*pmf)(A0) const, A0 a0) const {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      (o->*pmf)(a0);
+            for (const auto& o : m_v)
+              (o->*pmf)(a0);
         }
         template <typename R, typename Q, typename A0, typename A1> void operator()(R (Q::*pmf)(A0, A1) const, A0 a0, A1 a1) const {
-	  if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      (o->*pmf)(a0, a1);
+          if ( !m_v.empty() )
+            for (const auto& o : m_v)
+              (o->*pmf)(a0, a1);
         }
         /// CONST filters
         template <typename Q> bool filter(bool (Q::*pmf)() const) const {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      if ( !(o->*pmf)() )
-		return false;
+            for (const auto& o : m_v)
+              if ( !(o->*pmf)() )
+                return false;
           return true;
         }
         template <typename Q, typename A0> bool filter(bool (Q::*pmf)(A0) const, A0 a0) const {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      if ( !(o->*pmf)(a0) )
-		return false;
+            for (const auto& o : m_v)
+              if ( !(o->*pmf)(a0) )
+                return false;
           return true;
         }
         template <typename Q, typename A0, typename A1> bool filter(bool (Q::*pmf)(A0, A1) const, A0 a0, A1 a1) const {
           if ( !m_v.empty() )
-	    for (const auto& o : m_v)
-	      if ( !(o->*pmf)(a0,a1) )
-		return false;
+            for (const auto& o : m_v)
+              if ( !(o->*pmf)(a0,a1) )
+                return false;
           return true;
         }
       };

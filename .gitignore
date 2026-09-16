@@ -1,3 +1,5 @@
+install/
+
 # Compiled Object files
 *.slo
 *.lo
@@ -31,6 +33,7 @@
 
 # Build and install directories
 bin/
+!DD**/bin/
 lib/
 /include
 /python/
@@ -48,3 +51,9 @@ Version.h
 
 # XML files for DDUpgrade that are downloaded with cmake
 /examples/DDUpgrade/data
+
+# clangd files
+.cache
+
+# CMake commands database
+compile_commands.json

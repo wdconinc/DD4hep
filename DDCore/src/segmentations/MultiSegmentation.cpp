@@ -1,41 +1,48 @@
-/*
- * MultiSegmentation.cpp
- *
- *  Created on: Jun 28, 2013
- *      Author: Christian Grefe, CERN
- */
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//  Created: Jun 28, 2013
+//  Author:  Christian Grefe, CERN
+//
+//==========================================================================
 
+/// Framework include files
 #include <DDSegmentation/MultiSegmentation.h>
 #include <DD4hep/Printout.h>
 
-#include <iomanip>
-#include <stdexcept>
-
-using namespace std;
+/// C/C++ include files
+#include <string>
 
 namespace dd4hep {
+
   namespace DDSegmentation {
 
     /// default constructor using an encoding string
-    MultiSegmentation::MultiSegmentation(const string& cellEncoding)
-      :	Segmentation(cellEncoding), m_discriminator(0), m_debug(0)
+    MultiSegmentation::MultiSegmentation(const std::string& cellEncoding)
+      :        Segmentation(cellEncoding), m_discriminator(0), m_debug(0)
     {
       // define type and description
       _type        = "MultiSegmentation";
       _description = "Multi-segmenation wrapper segmentation";
       //registerParameter<int>("debug", "Debug flag", m_debug, 0);
-      registerParameter<string>("key",   "Diskriminating field", m_discriminatorId, "");
+      registerParameter<std::string>("key", "Diskriminating field", m_discriminatorId, "");
     }
 
     /// Default constructor used by derived classes passing an existing decoder
     MultiSegmentation::MultiSegmentation(const BitFieldCoder* decode)
-      :	Segmentation(decode), m_discriminator(0), m_debug(0)
+      :        Segmentation(decode), m_discriminator(0), m_debug(0)
     {
       // define type and description
       _type        = "MultiSegmentation";
       _description = "Multi-segmenation wrapper segmentation";
       //registerParameter<int>("debug", "Debug flag", m_debug, 0);
-      registerParameter<string>("key",   "Diskriminating field", m_discriminatorId, "");
+      registerParameter<std::string>("key", "Diskriminating field", m_discriminatorId, "");
     }
 
     /// destructor
@@ -46,7 +53,7 @@ namespace dd4hep {
     }
 
     /// Add subsegmentation. Call only valid for Multi-segmentations. Default implementation throws an exception
-    void MultiSegmentation::addSubsegmentation(long key_min, long key_max, Segmentation* entry)    {
+    void MultiSegmentation::addSubsegmentation(long key_min, long key_max, Segmentation* entry)  {
       Entry e;
       e.key_min = key_min;
       e.key_max = key_max;
@@ -68,21 +75,22 @@ namespace dd4hep {
         long seg_id = m_discriminator->value(cID);
         for(Segmentations::const_iterator i=m_segmentations.begin(); i != m_segmentations.end(); ++i)  {
           const Entry& e = *i; 
-          if ( e.key_min<= seg_id && e.key_max >= seg_id )   {
+          if ( e.key_min<= seg_id && e.key_max >= seg_id )  {
             Segmentation* s = e.segmentation;
-            if ( m_debug > 0 )   {
+            if ( m_debug > 0 )  {
               printout(ALWAYS,"MultiSegmentation","Id: %04X %s", seg_id, s->name().c_str());
               const Parameters& pars = s->parameters();
-              for( const auto* p : pars )   {
+              for( const auto* p : pars )  {
                 printout(ALWAYS,"MultiSegmentation"," Param  %s = %s",
-			 p->name().c_str(), p->value().c_str());
+                         p->name().c_str(), p->value().c_str());
               }
             }
             return *s;
           }
         }
       }
-      throw runtime_error("MultiSegmentation: Invalid sub-segmentation identifier!");;
+      except("MultiSegmentation", "Invalid sub-segmentation identifier!");
+      throw std::string("Invalid sub-segmentation identifier!");
     }
      
     /// determine the position based on the cell ID
@@ -95,13 +103,9 @@ namespace dd4hep {
       return subsegmentation(vID).cellID(localPosition, globalPosition, vID);
     }
 
-    vector<double> MultiSegmentation::cellDimensions(const CellID& cID) const {
+    std::vector<double> MultiSegmentation::cellDimensions(const CellID& cID) const {
       return subsegmentation(cID).cellDimensions(cID);
     }
 
   } /* namespace DDSegmentation */
 } /* namespace dd4hep */
-
-// This is done DDCore/src/plugins/ReadoutSegmentations.cpp so the plugin is not part of libDDCore
-// needs also #include "DD4hep/Factories.h"
-// DECLARE_SEGMENTATION(MultiSegmentation,create_segmentation<dd4hep::DDSegmentation::MultiSegmentation>)

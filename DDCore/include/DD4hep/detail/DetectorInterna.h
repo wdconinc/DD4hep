@@ -22,18 +22,18 @@
 #define DD4HEP_DETAIL_DETECTORINTERNA_H
 
 // Framework include files
-#include "DD4hep/Callback.h"
-#include "DD4hep/NamedObject.h"
-#include "DD4hep/World.h"
-#include "DD4hep/Objects.h"
-#include "DD4hep/DetElement.h"
-#include "DD4hep/Alignments.h"
-#include "DD4hep/Conditions.h"
-#include "DD4hep/Segmentations.h"
-#include "DD4hep/ObjectExtensions.h"
+#include <DD4hep/Callback.h>
+#include <DD4hep/NamedObject.h>
+#include <DD4hep/World.h>
+#include <DD4hep/Objects.h>
+#include <DD4hep/DetElement.h>
+#include <DD4hep/Alignments.h>
+#include <DD4hep/Conditions.h>
+#include <DD4hep/Segmentations.h>
+#include <DD4hep/ObjectExtensions.h>
 
 // ROOT include files
-#include "TGeoMatrix.h"
+#include <TGeoMatrix.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -169,7 +169,9 @@ namespace dd4hep {
     /// Trigger update callbacks
     void update(unsigned int tags, void* param);
     /// Revalidate the caches
-    void revalidate();
+    void revalidate(bool recurse_down=true);
+    /// Revalidate the parent caches
+    void revalidate_parents();
     /// Reflect all volumes in a DetElement sub-tree and re-attach the placements
     std::pair<DetElement,Volume> reflect(const std::string& new_name, int new_id, SensitiveDetector sd);
   };

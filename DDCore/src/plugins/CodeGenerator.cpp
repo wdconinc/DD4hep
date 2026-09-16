@@ -10,34 +10,36 @@
 // Author     : M.Frank
 //
 //==========================================================================
-#include "DD4hep/Factories.h"
-#include "DD4hep/Shapes.h"
-#include "DD4hep/Volumes.h"
-#include "DD4hep/Detector.h"
-#include "DD4hep/DetElement.h"
-#include "DD4hep/MatrixHelpers.h"
-#include "DD4hep/DD4hepUnits.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/Path.h"
-#include "DD4hep/detail/ObjectsInterna.h"
-#include "DD4hep/detail/DetectorInterna.h"
+#include <DD4hep/Factories.h>
+#include <DD4hep/Shapes.h>
+#include <DD4hep/Volumes.h>
+#include <DD4hep/Detector.h>
+#include <DD4hep/DetElement.h>
+#include <DD4hep/MatrixHelpers.h>
+#include <DD4hep/DD4hepUnits.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/Path.h>
+#include <DD4hep/detail/ObjectsInterna.h>
+#include <DD4hep/detail/DetectorInterna.h>
 
 // C/C++ include files
-#include <stdexcept>
 #include <iostream>
-#include <iomanip>
 #include <fstream>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
 
 // ROOT includes
-#include "TClass.h"
-#include "TGeoMatrix.h"
-#include "TGeoBoolNode.h"
-#include "TGeoCompositeShape.h"
+#include <TClass.h>
+#include <TGeoMatrix.h>
+#include <TGeoBoolNode.h>
+#include <TGeoCompositeShape.h>
 
-using namespace std;
 using namespace dd4hep;
 
 namespace {
+  
   std::string prefix = "\t";
   std::string sep(",");
 
@@ -55,18 +57,18 @@ namespace {
     Detector& detector;
     Actor(Detector& d) : detector(d) {}
     ~Actor() = default;
-    ostream& handleHeader   (ostream& log);
-    ostream& handleTrailer  (ostream& log);
-    ostream& handleSolid    (ostream& log, const TGeoShape*  sh);
-    ostream& handleMatrix   (ostream& log, TGeoMatrix* mat);
-    ostream& handleMaterial (ostream& log, TGeoMedium* mat);
-    ostream& handlePlacement(ostream& log, TGeoNode*   parent, TGeoNode* node);
-    ostream& handleStructure(ostream& log, DetElement parent, DetElement de);
+    std::ostream& handleHeader   (std::ostream& log);
+    std::ostream& handleTrailer  (std::ostream& log);
+    std::ostream& handleSolid    (std::ostream& log, const TGeoShape*  sh);
+    std::ostream& handleMatrix   (std::ostream& log, TGeoMatrix* mat);
+    std::ostream& handleMaterial (std::ostream& log, TGeoMedium* mat);
+    std::ostream& handlePlacement(std::ostream& log, TGeoNode*   parent, TGeoNode* node);
+    std::ostream& handleStructure(std::ostream& log, DetElement parent, DetElement de);
   };
   typedef void* pvoid_t;
 
-  ostream& newline(ostream& log)    {
-    return log << endl << prefix;
+  std::ostream& newline(std::ostream& log)    {
+    return log << std::endl << prefix;
   }
   template <typename T> const void* pointer(const Handle<T>& h)   {
     return h.ptr();
@@ -74,59 +76,59 @@ namespace {
   template <typename T> const void* pointer(const T* h)   {
     return h;
   }
-  template <typename T> inline string obj_name(const string& pref, const T* ptr)  {
-    stringstream name;
+  template <typename T> inline std::string obj_name(const std::string& pref, const T* ptr)  {
+    std::stringstream name;
     name << pref << "_" << pointer(ptr);
     return name.str();
   }
 
 
-  ostream& Actor::handleHeader   (ostream& log)    {
-    log << "#include \"TClass.h\"" << endl
-        << "#include \"TGeoNode.h\"" << endl
-        << "#include \"TGeoExtension.h\"" << endl
-        << "#include \"TGeoShapeAssembly.h\"" << endl
-        << "#include \"TGeoMedium.h\"" << endl
-        << "#include \"TGeoVolume.h\"" << endl
-        << "#include \"TGeoShape.h\"" << endl
-        << "#include \"TGeoPhysicalNode.h\"" << endl
-        << "#include \"TGeoCone.h\"" << endl
-        << "#include \"TGeoParaboloid.h\"" << endl
-        << "#include \"TGeoPgon.h\"" << endl
-        << "#include \"TGeoPcon.h\"" << endl
-        << "#include \"TGeoSphere.h\"" << endl
-        << "#include \"TGeoArb8.h\"" << endl
-        << "#include \"TGeoTrd1.h\"" << endl
-        << "#include \"TGeoTrd2.h\"" << endl
-        << "#include \"TGeoTube.h\"" << endl
-        << "#include \"TGeoEltu.h\"" << endl
-        << "#include \"TGeoXtru.h\"" << endl
-        << "#include \"TGeoHype.h\"" << endl
-        << "#include \"TGeoTorus.h\"" << endl
-        << "#include \"TGeoHalfSpace.h\"" << endl
-        << "#include \"TGeoCompositeShape.h\"" << endl
-        << "#include \"TGeoShapeAssembly.h\"" << endl
-        << "#include \"TGeoMatrix.h\"" << endl
-        << "#include \"TGeoBoolNode.h\"" << endl
-        << "#include \"TGeoCompositeShape.h\"" << endl
-        << "#include \"TGeoManager.h\"" << endl << endl
-        << "#include \"DD4hep/Factories.h\"" << endl
-        << "#include \"DD4hep/Shapes.h\"" << endl
-        << "#include \"DD4hep/Volumes.h\"" << endl
-        << "#include \"DD4hep/Detector.h\"" << endl
-        << "#include \"DD4hep/DetElement.h\"" << endl
-        << "#include \"DD4hep/MatrixHelpers.h\"" << endl
-        << "#include \"DD4hep/DD4hepUnits.h\"" << endl
-        << "#include \"DD4hep/Printout.h\"" << endl
-        << "#include \"DD4hep/Path.h\"" << endl
-        << "#include \"DD4hep/detail/ObjectsInterna.h\"" << endl
-        << "#include \"DD4hep/detail/DetectorInterna.h\"" << endl
-        << "#include <vector>" << endl
-        << "#include <map>" << endl
-        << "#include <set>" << endl << endl << endl;
-    log << "using namespace std;" << endl;
-    log << "using namespace dd4hep;" << endl;
-    log << "extern PlacedVolume _addNode(TGeoVolume* par, TGeoVolume* daughter, int id, TGeoMatrix* transform);" << endl;
+  std::ostream& Actor::handleHeader   (std::ostream& log)    {
+    log << "#include \"TClass.h\"" << std::endl
+        << "#include \"TGeoNode.h\"" << std::endl
+        << "#include \"TGeoExtension.h\"" << std::endl
+        << "#include \"TGeoShapeAssembly.h\"" << std::endl
+        << "#include \"TGeoMedium.h\"" << std::endl
+        << "#include \"TGeoVolume.h\"" << std::endl
+        << "#include \"TGeoShape.h\"" << std::endl
+        << "#include \"TGeoPhysicalNode.h\"" << std::endl
+        << "#include \"TGeoCone.h\"" << std::endl
+        << "#include \"TGeoParaboloid.h\"" << std::endl
+        << "#include \"TGeoPgon.h\"" << std::endl
+        << "#include \"TGeoPcon.h\"" << std::endl
+        << "#include \"TGeoSphere.h\"" << std::endl
+        << "#include \"TGeoArb8.h\"" << std::endl
+        << "#include \"TGeoTrd1.h\"" << std::endl
+        << "#include \"TGeoTrd2.h\"" << std::endl
+        << "#include \"TGeoTube.h\"" << std::endl
+        << "#include \"TGeoEltu.h\"" << std::endl
+        << "#include \"TGeoXtru.h\"" << std::endl
+        << "#include \"TGeoHype.h\"" << std::endl
+        << "#include \"TGeoTorus.h\"" << std::endl
+        << "#include \"TGeoHalfSpace.h\"" << std::endl
+        << "#include \"TGeoCompositeShape.h\"" << std::endl
+        << "#include \"TGeoShapeAssembly.h\"" << std::endl
+        << "#include \"TGeoMatrix.h\"" << std::endl
+        << "#include \"TGeoBoolNode.h\"" << std::endl
+        << "#include \"TGeoCompositeShape.h\"" << std::endl
+        << "#include \"TGeoManager.h\"" << std::endl << std::endl
+        << "#include \"DD4hep/Factories.h\"" << std::endl
+        << "#include \"DD4hep/Shapes.h\"" << std::endl
+        << "#include \"DD4hep/Volumes.h\"" << std::endl
+        << "#include \"DD4hep/Detector.h\"" << std::endl
+        << "#include \"DD4hep/DetElement.h\"" << std::endl
+        << "#include \"DD4hep/MatrixHelpers.h\"" << std::endl
+        << "#include \"DD4hep/DD4hepUnits.h\"" << std::endl
+        << "#include \"DD4hep/Printout.h\"" << std::endl
+        << "#include \"DD4hep/Path.h\"" << std::endl
+        << "#include \"DD4hep/detail/ObjectsInterna.h\"" << std::endl
+        << "#include \"DD4hep/detail/DetectorInterna.h\"" << std::endl
+        << "#include <vector>" << std::endl
+        << "#include <map>" << std::endl
+        << "#include <set>" << std::endl << std::endl << std::endl;
+    log << "using namespace std;" << std::endl;
+    log << "using namespace dd4hep;" << std::endl;
+    log << "extern PlacedVolume _addNode(TGeoVolume* par, TGeoVolume* daughter, int id, TGeoMatrix* transform);" << std::endl;
 
     log << "namespace  {" << newline
         << "\t struct CodeGeo  {" << newline
@@ -143,8 +145,8 @@ namespace {
         << "\t\t void add_vis(Detector& d, VisAttr& v)  {" << newline
         << "\t\t  try { d.add(v); } catch(...) {}" << newline
         << "\t\t }" << newline
-        << "\t };" << endl
-        << "}" << endl << endl << endl;
+        << "\t };" << std::endl
+        << "}" << std::endl << std::endl << std::endl;
     log << "TGeoVolume* CodeGeo::load_geometry()   {" << newline;
 
     const auto& constants = detector.constants();
@@ -177,8 +179,8 @@ namespace {
     for(const auto& o : limits)    {
       LimitSet ls = o.second;
       log << "{ LimitSet ls(string(\"" << ls.name() << "\")); " << newline;
-      const set<Limit>& lims = ls.limits();
-      const set<Limit>& cuts = ls.cuts();
+      const std::set<Limit>& lims = ls.limits();
+      const std::set<Limit>& cuts = ls.cuts();
       for(const auto& l : lims)   {
         log << "  { Limit l; l.particles = \"" << l.particles << "\";"
             << " l.name = \""    << l.name << "\";"
@@ -257,7 +259,7 @@ namespace {
     return log;
   }
 
-  ostream& Actor::handleTrailer   (ostream& log)    {
+  std::ostream& Actor::handleTrailer   (std::ostream& log)    {
     log << "static long generate_dd4hep(Detector& detector, int, char**)   {" << newline
         << "CodeGeo gen(detector);"                     << newline
         << "TGeoVolume* vol_top = gen.load_geometry();" << newline
@@ -271,19 +273,19 @@ namespace {
           << "gen.load_structure();" << newline;
     }
     log << "return 1;"
-        << endl << "}"  << endl     << endl
+        << std::endl << "}"  << std::endl     << std::endl
         << "DECLARE_APPLY(DD4hep_Run_" << function << ", generate_dd4hep)"
-        << endl;
+        << std::endl;
     return log;
   }
   
-  ostream& Actor::handleStructure(ostream& log, DetElement parent, DetElement de)   {
+  std::ostream& Actor::handleStructure(std::ostream& log, DetElement parent, DetElement de)   {
     if ( de.isValid() && detelements.find(de) == detelements.end() )  {
-      string name = obj_name("de", de.ptr());
+      std::string name = obj_name("de", de.ptr());
       detelements.emplace(de,name);
       if ( !parent.isValid() )   {
-        cout << "No parent: " << de.path() << " " << pointer(de) << " " << pointer(detector.world()) << endl;
-        log << endl
+        std::cout << "No parent: " << de.path() << " " << pointer(de) << " " << pointer(detector.world()) << std::endl;
+        log << std::endl
             << "DetElement  CodeGeo::load_structure()   {" << newline;
       }
       else  {
@@ -297,29 +299,29 @@ namespace {
           log << "\t de.setPlacement(placements[" << pointer(de.placement()) << "]);" << newline;
         }
         else  {
-          cout << "Placement od DetElement " << de.path() << " Is not valid! [Ignored]" << endl;
+          std::cout << "Placement od DetElement " << de.path() << " Is not valid! [Ignored]" << std::endl;
         }
         log << "\t structure[" << pointer(de) << "] = de; " << newline
             << "}"   << newline;
       }
-      for(auto d : de.children() )  {
+      for(const auto& d : de.children() )  {
         handleStructure(log, de, d.second);
       }
       if ( !parent.isValid() )   {
-        log << "return structure[" << pointer(de) << "];" << endl
-            << "}" << endl << endl;
+        log << "return structure[" << pointer(de) << "];" << std::endl
+            << "}" << std::endl << std::endl;
       }
     }
     return log;
   }
 
-  ostream& Actor::handlePlacement(ostream& log, TGeoNode* parent, TGeoNode* node)  {
+  std::ostream& Actor::handlePlacement(std::ostream& log, TGeoNode* parent, TGeoNode* node)  {
     if ( node && placements.find(node) == placements.end() )  {
       PlacedVolume pv(node);
       TGeoVolume* vol = node->GetVolume();
       TGeoMatrix* mat = node->GetMatrix();
 
-      string name = obj_name("vol", vol);
+      std::string name = obj_name("vol", vol);
       placements.emplace(node,name);
 
       handleMatrix(log, mat);
@@ -374,16 +376,16 @@ namespace {
         handlePlacement(log, node, daughter);
       }
       if ( !parent )  {
-        log << "return volumes[" << pointer(vol) << "];" << endl
-            << "}" << endl << endl << endl;
+        log << "return volumes[" << pointer(vol) << "];" << std::endl
+            << "}" << std::endl << std::endl << std::endl;
       }
     }
     return log;
   }
 
-  ostream& Actor::handleMaterial(ostream& log, TGeoMedium* medium)   {
+  std::ostream& Actor::handleMaterial(std::ostream& log, TGeoMedium* medium)   {
     if ( medium && materials.find(medium) == materials.end() )  {
-      string name = obj_name("material",medium);
+      std::string name = obj_name("material",medium);
       materials.emplace(medium,name);
       TGeoMaterial* material = medium->GetMaterial();
       log << "{" << newline
@@ -404,14 +406,14 @@ namespace {
     return log;
   }
   
-  ostream& Actor::handleMatrix(ostream& log, TGeoMatrix* mat)   {
+  std::ostream& Actor::handleMatrix(std::ostream& log, TGeoMatrix* mat)   {
     if ( mat && matrices.find(mat) == matrices.end() )  {
-      string name = obj_name("matrix",mat);
+      std::string name = obj_name("matrix",mat);
       log << "{" << newline
           << "\t TGeoHMatrix* mat = new TGeoHMatrix(\"" << mat->GetName() << "\");" << newline
           << "\t matrices[" << pointer(mat) << "] = mat;" << newline;
       if ( mat->IsTranslation() )   {
-        const Double_t*	tra = mat->GetTranslation();
+        const Double_t*        tra = mat->GetTranslation();
         log << "\t Double_t trans[] = {";
         for(size_t i=0; tra && i<3; ++i)  {
           log << tra[i];
@@ -420,7 +422,7 @@ namespace {
         log << newline << "\t mat->SetTranslation(trans);" << newline;
       }
       if ( mat->IsRotation() )   {
-        const Double_t*	rot = mat->GetRotationMatrix();
+        const Double_t*        rot = mat->GetRotationMatrix();
         if ( rot && (rot[0] != 1e0 || rot[4] != 1e0 || rot[8] != 1e0) )  {
           log << "\t Double_t rot[] = {";
           for(size_t i=0; rot && i<9; ++i)  {
@@ -431,7 +433,7 @@ namespace {
         }
       }
       if ( mat->IsScale() )   {
-        const Double_t*	sca = mat->GetScale();
+        const Double_t*        sca = mat->GetScale();
         log << "\t Double_t scale[] = {";
         for(size_t i=0; sca && i<3; ++i)  {
           log << sca[i];
@@ -445,8 +447,8 @@ namespace {
   }
   
   /// Pretty print of solid attributes
-  ostream& Actor::handleSolid(ostream& log,  const TGeoShape* shape)    {
-    string name = obj_name("solid", shape);
+  std::ostream& Actor::handleSolid(std::ostream& log,  const TGeoShape* shape)    {
+    std::string name = obj_name("solid", shape);
 
     if ( shapes.find(shape) != shapes.end() )  {
       return log;
@@ -496,8 +498,8 @@ namespace {
     }
     else if (cl == TGeoCtub::Class()) {
       const TGeoCtub* sh = (const TGeoCtub*) shape;
-      const Double_t*	hi = sh->GetNhigh();
-      const Double_t*	lo = sh->GetNlow();
+      const Double_t*        hi = sh->GetNhigh();
+      const Double_t*        lo = sh->GetNlow();
       log << "\t Solid " << name << "(new " << cl->GetName() << "(\"" << sh->GetName() << '"'
           << sep << sh->GetRmin()
           << sep << sh->GetRmax()
@@ -623,7 +625,7 @@ namespace {
     else if (cl == TGeoXtru::Class()) {
       Solid sol(shape);
       const TGeoXtru* sh = (const TGeoXtru*) shape;
-      vector<double> pars = sol.dimensions();
+      std::vector<double> pars = sol.dimensions();
       log << "double param[] = {" << newline;
       for( size_t i=0; i < pars.size(); ++i )
         log << pars[i] << ((i+1<pars.size()) ? ',' : ' ');
@@ -662,14 +664,13 @@ namespace {
 }
 
 static long generate_cxx(Detector& description, int argc, char** argv) {
-  string output;
+  std::string output;
   Actor actor(description);
 
   for(int i=0; i<argc; ++i)  {
     char c = ::tolower(argv[i][0]);
-    char* p = argv[i];
-    if ( c == '-' ) { ++p; c = ::tolower(argv[i][1]); }
-    if ( c == '-' ) { ++p; c = ::tolower(argv[i][1]); }
+    if ( c == '-' ) { c = ::tolower(argv[i][1]); }
+    if ( c == '-' ) { c = ::tolower(argv[i][1]); }
     if ( c == 'o' && i+1<argc )
       output = argv[++i];
     else if ( c == 'f' && i+1<argc )
@@ -679,19 +680,19 @@ static long generate_cxx(Detector& description, int argc, char** argv) {
     else if ( c == 's' )
       actor.dump_structure = true;
     else   {
-      cout <<
+      std::cout <<
         "Usage: -plugin DD4hep_CxxRootGenerator -arg [-arg]                                  \n"
         "     -output   <string> Set output file for generated code. Default: stdout         \n"
         "     -help              Show thi help message                                       \n"
-        "\tArguments given: " << arguments(argc,argv) << endl << flush;
+        "\tArguments given: " << arguments(argc,argv) << std::endl << std::flush;
       ::exit(EINVAL);
     }
   }
-  unique_ptr<ofstream> out;
-  ostream* os = &cout;
+  std::unique_ptr<std::ofstream> out;
+  std::ostream* os = &std::cout;
   if ( !output.empty() )   {
     Path path(output);
-    out.reset(new ofstream(path.c_str()));
+    out.reset(new std::ofstream(path.c_str()));
     if ( !out->good() )   {
       out.reset();
       except("CxxRootGenerator",
@@ -700,7 +701,7 @@ static long generate_cxx(Detector& description, int argc, char** argv) {
     }
     os = out.get();
     actor.function = path.filename();
-    if ( actor.function.rfind('.') != string::npos )
+    if ( actor.function.rfind('.') != std::string::npos )
       actor.function = actor.function.substr(0, actor.function.rfind('.'));
     printout(INFO, "CxxRootGenerator",
              "++ Dump generated code to output files: %s [function: %s()]",

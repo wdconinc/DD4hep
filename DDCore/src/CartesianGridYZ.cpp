@@ -12,12 +12,9 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/CartesianGridYZ.h"
-#include "DDSegmentation/CartesianGridYZ.h"
+#include <DD4hep/CartesianGridYZ.h>
+#include <DDSegmentation/CartesianGridYZ.h>
 
-// C/C++ include files
-
-using namespace std;
 using namespace dd4hep;
 
 /// determine the position based on the cell ID
@@ -74,24 +71,16 @@ void CartesianGridYZ::setOffsetZ(double offset) const   {
 }
 
 /// access the field name used for Y
-const string& CartesianGridYZ::fieldNameY() const {
+const std::string& CartesianGridYZ::fieldNameY() const {
   return access()->implementation->fieldNameY();
 }
 
 /// access the field name used for Z
-const string& CartesianGridYZ::fieldNameZ() const {
+const std::string& CartesianGridYZ::fieldNameZ() const {
   return access()->implementation->fieldNameZ();
 }
 
-/** \brief Returns a vector<double> of the cellDimensions of the given cell ID
-    in natural order of dimensions, e.g., dx/dy/dz, or dr/r*dPhi
-
-    Returns a vector of the cellDimensions of the given cell ID
-    \param cellID is ignored as all cells have the same dimension
-    \return vector<double> size 2:
-    -# size in y
-    -# size in z
-*/
-vector<double> CartesianGridYZ::cellDimensions(const CellID& id) const  {
+// Returns a vector<double> of the cellDimensions of the given cell ID
+std::vector<double> CartesianGridYZ::cellDimensions(const CellID& id) const  {
   return access()->implementation->cellDimensions(id);
 }

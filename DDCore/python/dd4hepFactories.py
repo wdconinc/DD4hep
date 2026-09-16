@@ -10,14 +10,12 @@
 #
 # ==========================================================================
 
-from __future__ import absolute_import, unicode_literals
 import os
 import sys
 import optparse
 import logging
 import errno
-from ddsix.moves import input
-from io import open
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,8 @@ class ComponentDumper:
     self.all_components = []
 
   def scanPath(self):
-    ldp = os.environ['LD_LIBRARY_PATH'].split(':')
+    ldp = os.getenv("LD_LIBRARY_PATH",
+                    "/usr/lib64:/usr/lib/:/usr/local/lib:/usr/lib64/root:/usr/lib/root:/usr/local/lib/root").split(':')
     for p in ldp:
       if len(p):
         logger.info('+== Search component directory: ' + p)
@@ -43,7 +42,7 @@ class ComponentDumper:
 
   def readComponents(self, fname):
     logger.info('+== Search component file:  ' + fname)
-    file = open(fname, "r")
+    file = io.open(fname, "r")
     lines = file.readlines()
     dirname = os.path.dirname(fname)
     for line in lines:

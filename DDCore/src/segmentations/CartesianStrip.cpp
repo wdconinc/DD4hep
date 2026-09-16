@@ -1,12 +1,20 @@
-/*
- * CartesianStrip.cpp
- *
- *  Created on: Jun 28, 2013
- *      Author: Christian Grefe, CERN
- *              David Blyth, ANL
- */
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//  Created: Jun 28, 2013
+//  Author:  Christian Grefe, CERN
+//           David Blyth, ANL
+//
+//==========================================================================
 
-#include "DDSegmentation/CartesianStrip.h"
+/// Framework include files
+#include <DDSegmentation/CartesianStrip.h>
 
 namespace dd4hep {
 namespace DDSegmentation {

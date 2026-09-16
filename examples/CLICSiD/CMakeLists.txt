@@ -50,7 +50,7 @@ include(CTest)
 ##                          -input file:${DD4hep_ROOT}/DDDetectors/compact/SiD.xml
 ##                          -output file:CLICSiD.gdml
 ##  REGEX_PASS " Successfully extracted GDML to" )
-foreach ( typ description vis )
+foreach ( typ vis )
   dd4hep_add_test_reg ( "CLICSiD_converter_${typ}_LONGTEST" 
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
     EXEC_ARGS  geoConverter -compact2${typ} 
@@ -133,7 +133,7 @@ endif()
 dd4hep_add_test_reg( CLICSiD_check_checksum_EcalBarrel
   COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
   EXEC_ARGS  geoPluginRun -input ${DD4hep_ROOT}/DDDetectors/compact/SiD.xml -plugin DD4hepDetectorChecksum -readout -detector EcalBarrel
-  REGEX_PASS "Combined hash code                      4af999c3b33c5a53  \\(10375 sub-codes\\)"
+  REGEX_PASS "Combined hash code                      6ad14133ce43a48f  \\(10375 sub-codes\\)"
   REGEX_FAIL "Exception;EXCEPTION;ERROR"
 )
 #
@@ -141,7 +141,7 @@ dd4hep_add_test_reg( CLICSiD_check_checksum_EcalBarrel
 dd4hep_add_test_reg( CLICSiD_check_checksum_full
   COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
   EXEC_ARGS  geoPluginRun -input ${DD4hep_ROOT}/DDDetectors/compact/SiD.xml -plugin DD4hepDetectorChecksum -readout 
-  REGEX_PASS "Combined hash code                      2aa2f0fe61a8331f  \\(3395674 sub-codes\\)"
+  REGEX_PASS "Combined hash code                      2147984ea0779b88  \\(3395674 sub-codes\\)"
   REGEX_FAIL "Exception;EXCEPTION;ERROR"
 )
 #
@@ -151,12 +151,18 @@ if (DD4HEP_USE_GEANT4)
   #
   # Basic DDG4 component/unit tests
   foreach(script testDDPython CLICMagField CLICPhysics CLICRandom CLICSiDScan)
-    dd4hep_add_test_reg( CLICSiD_DDG4_${script}_LONGTEST
+    dd4hep_add_test_reg( CLICSiD_sim_DDG4_${script}_LONGTEST
       COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
       EXEC_ARGS  ${Python_EXECUTABLE} ${CLICSiDEx_INSTALL}/scripts/${script}.py
       REGEX_PASS "TEST_PASSED"
       REGEX_FAIL "Exception;EXCEPTION;ERROR" )
   endforeach(script)
+  #
+  dd4hep_add_test_reg( CLICSiD_sim_DDG4_print_volids_LONGTEST
+    COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
+    EXEC_ARGS  ${Python_EXECUTABLE} ${CLICSiDEx_INSTALL}/scripts/CLIC_G4Gun.py -batch -events 3 -debug_volid True
+    REGEX_PASS "MuonBarrelHandler (.*) ID:(.*) .. system:000b barrel:00.. module:00.. layer:00.. slice:00.. x:0000 y:0000"
+    REGEX_FAIL "Exception;EXCEPTION;ERROR" )
   #
   # Write GDML from Geant4 using UI
   #dd4hep_add_test_reg( CLICSiD_DDG4_GDML_LONGTEST
@@ -166,14 +172,14 @@ if (DD4HEP_USE_GEANT4)
   #    REGEX_FAIL "Exception;EXCEPTION;ERROR" )
   #
   # Material scan
-  dd4hep_add_test_reg( CLICSiD_DDG4_g4material_scan_LONGTEST
+  dd4hep_add_test_reg( CLICSiD_sim_DDG4_g4material_scan_LONGTEST
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DD4hep_ROOT}/bin/g4MaterialScan --compact=${DD4hep_ROOT}/DDDetectors/compact/SiD.xml
                       "--position=0,0,0" "--direction=0,1,0"
     REGEX_PASS " Terminate Geant4 and delete associated actions." )
   #
   # Geometry scan
-  dd4hep_add_test_reg( CLICSiD_DDG4_g4geometry_scan_LONGTEST
+  dd4hep_add_test_reg( CLICSiD_sim_DDG4_g4geometry_scan_LONGTEST
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DD4hep_ROOT}/bin/g4GeometryScan --compact=${DD4hep_ROOT}/DDDetectors/compact/SiD.xml
                       "--position=0,0,0" "--direction=0,1,0"
@@ -183,14 +189,15 @@ if (DD4HEP_USE_GEANT4)
   foreach(script CLICSiDXML CLICSiDAClick)
     #
     # Build AClick from the source file
-    dd4hep_add_test_reg( CLICSiD_DDG4_${script}_as_AClick_LONGTEST
+    dd4hep_add_test_reg( CLICSiD_sim_DDG4_${script}_as_AClick_LONGTEST
       COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
       EXEC_ARGS  root.exe -b -x -n -q -l "${DD4hep_ROOT}/examples/DDG4/examples/run.C(\"${CLICSiDEx_INSTALL}/scripts/${script}\")"
       REGEX_PASS "UserEvent_1      INFO  Geant4TestEventAction> calling end.event_id=2"
       REGEX_FAIL "EXCEPTION;ERROR;Error" )
+    set_property(TEST t_CLICSiD_sim_DDG4_${script}_as_AClick_LONGTEST PROPERTY RESOURCE_LOCK "INIT_SID_ACLICK")
     #
     # Execute identical source linked executable 
-    dd4hep_add_test_reg( CLICSiD_DDG4_${script}_as_exe_LONGTEST
+    dd4hep_add_test_reg( CLICSiD_sim_DDG4_${script}_as_exe_LONGTEST
       COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_CLICSiD.sh"
       EXEC_ARGS  ${script}
       REGEX_PASS "UserEvent_1      INFO  Geant4TestEventAction> calling end.event_id=2"

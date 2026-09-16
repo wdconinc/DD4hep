@@ -20,8 +20,9 @@
 #include <DD4hep/BitField64.h>
 
 // C/C++ include files
-#include <map>
-#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 // ROOT include file (includes TGeoVolume + TGeoShape)
 #include <TGeoNode.h>
@@ -136,19 +137,9 @@ namespace dd4hep {
     /// Default destructor
     virtual ~PlacedVolumeExtension();
     /// Move assignment
-    PlacedVolumeExtension& operator=(PlacedVolumeExtension&& copy)  {
-      magic  = std::move(copy.magic);
-      params = std::move(copy.params);
-      volIDs = std::move(copy.volIDs);
-      return *this;
-    }
+    PlacedVolumeExtension& operator=(PlacedVolumeExtension&& copy);
     /// Assignment operator
-    PlacedVolumeExtension& operator=(const PlacedVolumeExtension& copy) {
-      magic  = copy.magic;
-      params = copy.params;
-      volIDs = copy.volIDs;
-      return *this;
-    }
+    PlacedVolumeExtension& operator=(const PlacedVolumeExtension& copy);
     /// TGeoExtension overload: Method called whenever requiring a pointer to the extension
     virtual TGeoExtension *Grab()  override;
     /// TGeoExtension overload: Method called always when the pointer to the extension is not needed anymore
@@ -329,6 +320,8 @@ namespace dd4hep {
     Handle<TGeoVolume>  reflected;
     /// Reference to properties
     TList* properties  { nullptr };
+    /// Geant4 optimization flag: Smartless
+    double              smartLess  = 0xFF;  // MUST match Volume::NO_SMARTLESS_OPTIMIZATION
 
     /// Default destructor
     virtual ~VolumeExtension();
@@ -393,9 +386,11 @@ namespace dd4hep {
       Y_axis        = 1UL << 9,
       Z_axis        = 1UL << 10,
       Rho_axis      = 1UL << 11,
-      Phi_axis      = 1UL << 12
+      Phi_axis      = 1UL << 12,
     };
-  
+    enum g4_optimizations  {
+      NO_SMARTLESS_OPTIMIZATION = 0xFF,
+    };
   public:
     /// Default constructor
     Volume() = default;
@@ -453,7 +448,7 @@ namespace dd4hep {
     /// If we import volumes from external sources, we have to attach the extensions to the tree
     Volume& import();
 
-    /// Divide volume into subsections (See the ROOT manuloa for details)
+    /// Divide volume into subsections (See the ROOT manual for details)
     Volume divide(const std::string& divname, int iaxis, int ndiv, double start, double step, int numed = 0, const char* option = "");
     /** Daughter placements with auto-generated copy number for the daughter volume  */
     /// Place daughter volume. The position and rotation are the identity
@@ -530,8 +525,8 @@ namespace dd4hep {
      *  @param inc_2    Transformation increment for each iteration in dimension 2
      */
     PlacedVolume paramVolume2D(Volume entity, 
-			       size_t count_1, const Transform3D& inc_1,
-			       size_t count_2, const Transform3D& inc_2);
+                               size_t count_1, const Transform3D& inc_1,
+                               size_t count_2, const Transform3D& inc_2);
 
     /// Constructor to be used when creating a new parameterised volume object
     /** Embedding parameterised daughter placements in a mother volume
@@ -543,11 +538,11 @@ namespace dd4hep {
      *  @param inc_2    Transformation increment for each iteration in dimension 2
      */
     PlacedVolume paramVolume2D(const Transform3D& start,
-			       Volume entity,
-			       size_t count_1,
-			       const Position& inc_1,
-			       size_t count_2,
-			       const Position& inc_2);
+                               Volume entity,
+                               size_t count_1,
+                               const Position& inc_1,
+                               size_t count_2,
+                               const Position& inc_2);
 
     /// Constructor to be used when creating a new parameterised volume object
     /** Embedding parameterised daughter placements in a mother volume
@@ -559,10 +554,10 @@ namespace dd4hep {
      *  @param inc_2    Transformation increment for each iteration in dimension 2
      */
     PlacedVolume paramVolume2D(Volume entity,
-			       size_t count_1,
-			       const Position& inc_1,
-			       size_t count_2,
-			       const Position& inc_2);
+                               size_t count_1,
+                               const Position& inc_1,
+                               size_t count_2,
+                               const Position& inc_2);
 
     /// 2D Parameterised volume implementation
     /** Embedding parameterised daughter placements in a mother volume
@@ -574,8 +569,8 @@ namespace dd4hep {
      *  @param inc_2    Transformation increment for each iteration in dimension 2
      */
     PlacedVolume paramVolume2D(const Transform3D& start, Volume entity, 
-			       size_t count_1, const Transform3D& inc_1,
-			       size_t count_2, const Transform3D& inc_2);
+                               size_t count_1, const Transform3D& inc_1,
+                               size_t count_2, const Transform3D& inc_2);
 
     /// 3D Parameterised volume implementation
     /** Embedding parameterised daughter placements in a mother volume
@@ -588,9 +583,9 @@ namespace dd4hep {
      *  @param inc_3    Transformation increment for each iteration in dimension 3
      */
     PlacedVolume paramVolume3D(Volume entity, 
-			       size_t count_1, const Transform3D& inc_1,
-			       size_t count_2, const Transform3D& inc_2,
-			       size_t count_3, const Transform3D& inc_3);
+                               size_t count_1, const Transform3D& inc_1,
+                               size_t count_2, const Transform3D& inc_2,
+                               size_t count_3, const Transform3D& inc_3);
 
     /// 3D Parameterised volume implementation
     /** Embedding parameterised daughter placements in a mother volume
@@ -604,9 +599,9 @@ namespace dd4hep {
      *  @param inc_3    Transformation increment for each iteration in dimension 3
      */
     PlacedVolume paramVolume3D(const Transform3D& start, Volume entity, 
-			       size_t count_1, const Transform3D& inc_1,
-			       size_t count_2, const Transform3D& inc_2,
-			       size_t count_3, const Transform3D& inc_3);
+                               size_t count_1, const Transform3D& inc_1,
+                               size_t count_2, const Transform3D& inc_2,
+                               size_t count_3, const Transform3D& inc_3);
 
     /// 3D Parameterised volume implementation
     /** Embedding parameterised daughter placements in a mother volume
@@ -619,9 +614,9 @@ namespace dd4hep {
      *  @param inc_3    Transformation increment for each iteration in dimension 3
      */
     PlacedVolume paramVolume3D(Volume entity, 
-			       size_t count_1, const Position& inc_1,
-			       size_t count_2, const Position& inc_2,
-			       size_t count_3, const Position& inc_3);
+                               size_t count_1, const Position& inc_1,
+                               size_t count_2, const Position& inc_2,
+                               size_t count_3, const Position& inc_3);
 
     /// 3D Parameterised volume implementation
     /** Embedding parameterised daughter placements in a mother volume
@@ -635,9 +630,9 @@ namespace dd4hep {
      *  @param inc_3    Transformation increment for each iteration in dimension 3
      */
     PlacedVolume paramVolume3D(const Transform3D& start, Volume entity, 
-			       size_t count_1, const Position& inc_1,
-			       size_t count_2, const Position& inc_2,
-			       size_t count_3, const Position& inc_3);
+                               size_t count_1, const Position& inc_1,
+                               size_t count_2, const Position& inc_2,
+                               size_t count_3, const Position& inc_3);
 
     /// Set user flags in bit-field
     void setFlagBit(unsigned int bit);
@@ -650,6 +645,11 @@ namespace dd4hep {
     /// Test if this volume is an assembly structure
     bool isAssembly()   const;
 
+    /// Set the smartless option for G4 voxelization. Returns previous value
+    double setSmartlessValue(double value);
+    /// access the smartless option for G4 voxelization
+    double smartlessValue()  const;
+    
     /// Set the volume's option value
     const Volume& setOption(const std::string& opt) const;
     /// Access the volume's option value

@@ -15,14 +15,12 @@
    \version 1.0
 
 """
-from __future__ import absolute_import, unicode_literals
 import logging
 import math
 import time
 import sys
 import os
 from g4units import rad, GeV, MeV, mm, m
-from ddsix.moves import range
 
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)

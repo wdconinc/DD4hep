@@ -87,7 +87,6 @@ namespace dd4hep  {
 // Geant4 include files
 #include <G4FastSimulationPhysics.hh>
 
-using namespace dd4hep;
 using namespace dd4hep::sim;
 
 /// Standard constructor
@@ -118,5 +117,5 @@ void Geant4FastPhysics::constructPhysics(G4VModularPhysicsList* physics)    {
   this->info("Constructed and initialized Geant4 Fast Physics [G4FastSimulationPhysics].");
 }
 
-#include "DDG4/Factories.h"
+#include <DDG4/Factories.h>
 DECLARE_GEANT4ACTION(Geant4FastPhysics)

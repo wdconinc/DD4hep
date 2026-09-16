@@ -14,18 +14,12 @@
 #define DDG4_PLUGINS_GEANT4EVENTSEED_H
 
 // Framework include files
-#include "DDG4/Geant4RunAction.h"
+#include <DDG4/Geant4RunAction.h>
+#include <DDG4/Geant4GeneratorAction.h>
 
-// fallthrough only exists from c++17
-#if defined __has_cpp_attribute
-    #if __has_cpp_attribute(fallthrough)
-        #define ATTR_FALLTHROUGH [[fallthrough]]
-    #else
-        #define ATTR_FALLTHROUGH
-    #endif
-#else
-    #define ATTR_FALLTHROUGH
-#endif
+// Forward declarations
+class G4StackManager;
+
 
 
 /// Namespace for the AIDA detector description toolkit
@@ -64,8 +58,14 @@ namespace dd4hep {
       virtual ~Geant4EventSeed();
       /// begin-of-run callback
       void begin(const G4Run*);
-      /// begin-of-event callback
+      /// begin-of-event callback: seeds based on pre-assigned Geant4 event ID
       void beginEvent(const G4Event*);
+      /// prepare-stacking callback: re-seeds after GeneratePrimaries using the final event ID
+      void prepareEvent(G4StackManager*);
+      /// generatePrimaries callback
+      void setSeedForPrimaries(const G4Event*);
+      /// set the seed function, called from other callbacks)
+      void setSeed(const G4Event*, bool checkForParameters = true);
     };
 
     /*
@@ -178,17 +178,17 @@ namespace dd4hep {
       c += length;
 
       switch ( len ) {
-      case 11: c += ( (unsigned)k[10] << 24 ); ATTR_FALLTHROUGH;
-      case 10: c += ( (unsigned)k[9] << 16 ); ATTR_FALLTHROUGH;
-      case 9 : c += ( (unsigned)k[8] << 8 ); ATTR_FALLTHROUGH;
+      case 11: c += ( (unsigned)k[10] << 24 ); [[fallthrough]];
+      case 10: c += ( (unsigned)k[9] << 16 ); [[fallthrough]];
+      case 9 : c += ( (unsigned)k[8] << 8 ); [[fallthrough]];
         /* First byte of c reserved for length */
-      case 8 : b += ( (unsigned)k[7] << 24 ); ATTR_FALLTHROUGH;
-      case 7 : b += ( (unsigned)k[6] << 16 ); ATTR_FALLTHROUGH;
-      case 6 : b += ( (unsigned)k[5] << 8 ); ATTR_FALLTHROUGH;
-      case 5 : b += k[4]; ATTR_FALLTHROUGH;
-      case 4 : a += ( (unsigned)k[3] << 24 ); ATTR_FALLTHROUGH;
-      case 3 : a += ( (unsigned)k[2] << 16 ); ATTR_FALLTHROUGH;
-      case 2 : a += ( (unsigned)k[1] << 8 ); ATTR_FALLTHROUGH;
+      case 8 : b += ( (unsigned)k[7] << 24 ); [[fallthrough]];
+      case 7 : b += ( (unsigned)k[6] << 16 ); [[fallthrough]];
+      case 6 : b += ( (unsigned)k[5] << 8 ); [[fallthrough]];
+      case 5 : b += k[4]; [[fallthrough]];
+      case 4 : a += ( (unsigned)k[3] << 24 ); [[fallthrough]];
+      case 3 : a += ( (unsigned)k[2] << 16 ); [[fallthrough]];
+      case 2 : a += ( (unsigned)k[1] << 8 ); [[fallthrough]];
       case 1 : a += k[0];
       }
 

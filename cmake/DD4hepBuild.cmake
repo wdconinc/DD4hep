@@ -204,7 +204,7 @@ endfunction ( dd4hep_fatal )
 function ( dd4hep_set_version packageName )
   cmake_parse_arguments ( ARG "" "MAJOR;MINOR;PATCH" "" ${ARGN} )
   if ( NOT "${packageName}" STREQUAL "" )
-    project ( ${packageName} )
+    project ( ${packageName} LANGUAGES CXX )
   else()
     dd4hep_fatal ( "${packageName}: !!! Attempt to define a DD4hep project without a name !!!" )
   endif()
@@ -326,7 +326,7 @@ macro ( dd4hep_configure_output )
     set ( CMAKE_INSTALL_PREFIX ${ARG_INSTALL} CACHE PATH "Set install prefix path." FORCE )
     dd4hep_print( "DD4hep_configure_output: set CMAKE_INSTALL_PREFIX to ${ARG_INSTALL}" )
   elseif ( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-    set( CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR} CACHE PATH  
+    set( CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE PATH  
       "install prefix path  - overwrite with -D CMAKE_INSTALL_PREFIX = ..."  FORCE )
     dd4hep_print ( "|++> dd4hep_configure_output: CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX} - overwrite with -D CMAKE_INSTALL_PREFIX" )
   elseif ( CMAKE_INSTALL_PREFIX )
@@ -409,10 +409,15 @@ macro ( dd4hep_configure_scripts _pkg )
   dd4hep_list_to_string( _dir_entries PREFIX "DIRS:" ENTRIES ${MACRO_ARG_UNPARSED_ARGUMENTS} )
   dd4hep_print ( "|++> Setting up test environment for ${PackageName}: Testing:${BUILD_TESTING} Setup:${MACRO_ARG_DEFAULT_SETUP} With Tests(${MACRO_ARG_WITH_TESTS}): ${_dir_entries}" )
   if ( (NOT "${MACRO_ARG_DEFAULT_SETUP}" STREQUAL "") OR (NOT "${_pkg}" STREQUAL "") )
-    configure_file( ${DD4hep_DIR}/cmake/run_test_package.sh ${EXECUTABLE_OUTPUT_PATH}/run_test_${_pkg}.sh @ONLY)
+    configure_file( ${DD4hep_SOURCE_DIR}/cmake/run_test_package.sh ${EXECUTABLE_OUTPUT_PATH}/run_test_${_pkg}.sh @ONLY)
     INSTALL(PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/run_test_${_pkg}.sh DESTINATION bin )
     #---- configure run environment ---------------
-    configure_file( ${DD4hep_DIR}/cmake/thisdd4hep_package.sh.in  ${EXECUTABLE_OUTPUT_PATH}/this${_pkg}.sh @ONLY)
+    set(DD4HEP_INSTALL_LIBDIR lib)
+    if(CMAKE_INSTALL_LIBDIR)
+      set(DD4HEP_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
+    endif()
+    configure_file( ${DD4hep_SOURCE_DIR}/cmake/thisdd4hep_package.sh.in  ${EXECUTABLE_OUTPUT_PATH}/this${_pkg}.sh @ONLY)
+    unset(DD4HEP_INSTALL_LIBDIR)
     install(PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/this${_pkg}.sh DESTINATION bin )
     #--- install target-------------------------------------
     if ( IS_DIRECTORY scripts )
@@ -540,12 +545,14 @@ endfunction()
 #  DEFINITIONS    -> Additional compiler definitions to compile the sources
 #  OUTPUT         -> 
 #
+#  USE_COMMAND_TO_GENERATE -> Go back to previous way of generating dictionary without creating temporary files
+#
 #  \author  A.Sailer
 #  \version 1.0
 #
 #---------------------------------------------------------------------------------------------------
 function(dd4hep_add_dictionary dictionary )
-  cmake_parse_arguments(ARG "" "" "SOURCES;EXCLUDE;LINKDEF;OPTIONS;USES;DEFINITIONS;INCLUDES;OUTPUT" ${ARGN} )
+  cmake_parse_arguments(ARG "USE_COMMAND_TO_GENERATE" "" "SOURCES;EXCLUDE;LINKDEF;OPTIONS;USES;DEFINITIONS;INCLUDES;OUTPUT" ${ARGN} )
   dd4hep_print ( "|++++> Building dictionary ... ${dictionary}" )
 
   file(GLOB headers ${ARG_SOURCES})
@@ -593,21 +600,34 @@ function(dd4hep_add_dictionary dictionary )
   endif()
   EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E make_directory ${output_dir})
 
-  add_custom_command(OUTPUT ${dictionary}.cxx ${output_dir}/${dictionary}_rdict.pcm
-    COMMAND ${ROOT_rootcling_CMD}
-    ARGS -f ${dictionary}.cxx -s ${output_dir}/${dictionary} -inlineInputHeader
-    ${ARG_OPTIONS}
-   "$<$<BOOL:$<JOIN:${comp_defs},>>:-D$<JOIN:${comp_defs},;-D>>"
-   "$<$<BOOL:$<JOIN:${inc_dirs},>>:-I$<JOIN:${inc_dirs},;-I>>"
-   "$<JOIN:${headers},;>" "$<JOIN:${linkdefs},;>"
-
-   DEPENDS ${headers} ${linkdefs}
-   COMMAND_EXPAND_LISTS
-    )
   add_custom_target(${dictionary}
-    DEPENDS ${dictionary}.cxx ${output_dir}/${dictionary}_rdict.pcm
+    DEPENDS ${dictionary}.cxx ${output_dir}/${dictionary}_rdict.pcm ${headers} ${linkdefs}
+  )
+  if(NOT ARG_USE_COMMAND_TO_GENERATE)
+    file(GENERATE OUTPUT create_${dictionary}_$<CONFIG>$<COMPILE_LANGUAGE>.sh
+      CONTENT "${ROOT_rootcling_CMD} -f ${dictionary}.cxx -s ${output_dir}/${dictionary} -inlineInputHeader ${ARG_OPTIONS} $<$<BOOL:$<JOIN:${comp_defs},>>:-D$<JOIN:$<REMOVE_DUPLICATES:${comp_defs}>,;-D>> $<$<BOOL:$<JOIN:${inc_dirs},>>:-I$<JOIN:$<REMOVE_DUPLICATES:${inc_dirs}>,;-I>> $<JOIN:${headers},;> $<JOIN:${linkdefs},;>"
     )
+    add_custom_command(OUTPUT fixed_create_${dictionary}_$<CONFIG>CXX.sh
+      COMMAND sed "s/\;/ /g" create_${dictionary}_$<CONFIG>CXX.sh > fixed_create_${dictionary}_$<CONFIG>CXX.sh
+      DEPENDS create_${dictionary}_$<CONFIG>CXX.sh
+    )
+    add_custom_command(OUTPUT ${dictionary}.cxx ${output_dir}/${dictionary}_rdict.pcm
+      COMMAND /bin/sh fixed_create_${dictionary}_$<CONFIG>CXX.sh
+      DEPENDS fixed_create_${dictionary}_$<CONFIG>CXX.sh ${headers} ${linkdefs}
+    )
+  else()
+    add_custom_command(OUTPUT ${dictionary}.cxx ${output_dir}/${dictionary}_rdict.pcm
+      COMMAND ${ROOT_rootcling_CMD}
+      ARGS -f ${dictionary}.cxx -s ${output_dir}/${dictionary} -inlineInputHeader
+      ${ARG_OPTIONS}
+      "$<$<BOOL:$<JOIN:${comp_defs},>>:-D$<JOIN:$<REMOVE_DUPLICATES:${comp_defs}>,;-D>>"
+      "$<$<BOOL:$<JOIN:${inc_dirs},>>:-I$<JOIN:$<REMOVE_DUPLICATES:${inc_dirs}>,;-I>>"
+      "$<JOIN:${headers},;>" "$<JOIN:${linkdefs},;>"
 
+      DEPENDS ${headers} ${linkdefs}
+      COMMAND_EXPAND_LISTS
+    )
+  endif()
   set_source_files_properties(${dictionary}.cxx ${output_dir}/${dictionary}_rdict.pcm
     PROPERTIES
     GENERATED TRUE
@@ -615,7 +635,12 @@ function(dd4hep_add_dictionary dictionary )
     )
 
   #  Install the binary to the destination directory
-  install(FILES ${output_dir}/${dictionary}_rdict.pcm DESTINATION lib)
+  set(DD4HEP_INSTALL_LIBDIR lib)
+  if(CMAKE_INSTALL_LIBDIR)
+    set(DD4HEP_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
+  endif()
+  install(FILES ${output_dir}/${dictionary}_rdict.pcm DESTINATION ${DD4HEP_INSTALL_LIBDIR})
+  unset(DD4HEP_INSTALL_LIBDIR)
 
 endfunction()
 
@@ -679,8 +704,11 @@ endfunction(dd4hep_add_plugin)
 macro(DD4HEP_SETUP_ROOT_TARGETS)
 
   #Check if Python version detected matches the version used to build ROOT
+  IF(NOT DEFINED ROOT_VERSION OR ROOT_VERSION STREQUAL "")
+    SET(ROOT_VERSION "6.32.0")
+  ENDIF()
   SET(Python_FIND_FRAMEWORK LAST)
-  IF((TARGET ROOT::PyROOT OR TARGET ROOT::ROOTTPython) AND ${ROOT_VERSION} VERSION_GREATER_EQUAL 6.19)
+  IF((TARGET ROOT::PyROOT OR TARGET ROOT::ROOTTPython) AND "${ROOT_VERSION}" VERSION_GREATER_EQUAL "6.19")
     # some cmake versions don't include python patch level in PYTHON_VERSION
     IF(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16.0 AND CMAKE_VERSION VERSION_LESS_EQUAL 3.17.2)
       string(REGEX MATCH [23]\\.[0-9]+ REQUIRE_PYTHON_VERSION ${ROOT_PYTHON_VERSION})
@@ -713,17 +741,22 @@ macro(DD4HEP_SETUP_ROOT_TARGETS)
   ENDIF()
   dd4hep_print("|++> Using python executable:  ${Python_EXECUTABLE}")
 
-  SET(DD4HEP_PYTHON_INSTALL_DIR lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages)
+  # For Python 3.13+ with free-threading (PEP 703), the site-packages directory
+  # includes a 't' suffix (e.g., python3.14t/site-packages). We use Python's
+  # own SITEARCH to get the correct path including any ABI suffixes.
+  string(REGEX MATCH "python[0-9]+\\.[0-9]+[a-z]*/site-packages" _python_site_subdir "${Python_SITEARCH}")
+  if(NOT _python_site_subdir)
+    # Fallback to manual construction if regex fails
+    set(_python_site_subdir "python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
+    MESSAGE(WARNING "Could not extract site-packages path from Python_SITEARCH")
+    MESSAGE(WARNING "Python_SITEARCH=${Python_SITEARCH}")
+    MESSAGE(WARNING "Using fallback: ${_python_site_subdir}")
+  endif()
+  SET(DD4HEP_PYTHON_INSTALL_DIR lib/${_python_site_subdir})
+  unset(_python_site_subdir)
 
-  # root python changes target name in 6.22
-  IF(TARGET ROOT::PyROOT)
-    SET(DD4HEP_ROOT_PYTHON ROOT::PyROOT)
-  ELSEIF(TARGET ROOT::ROOTTPython)
-    # New "pyroot" in 6.22
-    SET(DD4HEP_ROOT_PYTHON ROOT::ROOTTPython)
-  ENDIF()
   #ROOT CXX Flags are a string with quotes, not a list, so we need to convert to a list...
-  string(REPLACE " " ";" DD4HEP_ROOT_CXX_FLAGS ${ROOT_CXX_FLAGS})
+  string(REPLACE " " ";" DD4HEP_ROOT_CXX_FLAGS "${ROOT_CXX_FLAGS}")
 
   IF(NOT TARGET ROOT::Core)
     #in ROOT before 6.10 there is no ROOT namespace, so we create ROOT::Core ourselves
@@ -743,7 +776,7 @@ macro(DD4HEP_SETUP_ROOT_TARGETS)
         TARGET_LINK_LIBRARIES(ROOT::${LIB} INTERFACE ${LIB} ROOT::Core)
       ENDIF()
     endforeach()
-  ELSEIF(${ROOT_VERSION} VERSION_GREATER_EQUAL 6.12 AND ${ROOT_VERSION} VERSION_LESS 6.14)
+  ELSEIF("${ROOT_VERSION}" VERSION_GREATER_EQUAL "6.12" AND "${ROOT_VERSION}" VERSION_LESS "6.14")
     # Root 6.12 exports ROOT::Core, but does not assign include directories to the target
     SET_TARGET_PROPERTIES(ROOT::Core
       PROPERTIES
@@ -780,7 +813,7 @@ MACRO(DD4HEP_SETUP_BOOST_TARGETS)
   # stdc++fs needed in gcc8, no lib for gcc9.1, c++fs for llvm
   FOREACH(FS_LIB_NAME stdc++fs "" c++fs )
     dd4hep_debug("|++++> linking against ${FS_LIB_NAME}")
-    try_compile(HAVE_FILESYSTEM ${CMAKE_BINARY_DIR}/try ${DD4hep_DIR}/cmake/TryFileSystem.cpp
+    try_compile(HAVE_FILESYSTEM ${CMAKE_BINARY_DIR}/try ${DD4hep_SOURCE_DIR}/cmake/TryFileSystem.cpp
       CXX_STANDARD ${CMAKE_CXX_STANDARD}
       CXX_EXTENSIONS False
       OUTPUT_VARIABLE HAVE_FS_OUTPUT
@@ -826,12 +859,20 @@ MACRO(DD4HEP_SETUP_GEANT4_TARGETS)
 
     if(Geant4_builtin_clhep_FOUND)
       dd4hep_debug("Using Geant4 internal CLHEP")
-      ADD_LIBRARY(CLHEP::CLHEP INTERFACE IMPORTED GLOBAL)
+      if(TARGET CLHEP::CLHEP)
+        message(WARNING "CLHEP::CLHEP already exists, this may cause problems if there are two different installations of CLHEP, one from Geant4 and one external")
+      else()
+        ADD_LIBRARY(CLHEP::CLHEP INTERFACE IMPORTED GLOBAL)
+      endif()
       SET_TARGET_PROPERTIES(CLHEP::CLHEP
         PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${Geant4_INCLUDE_DIRS}"
       )
-      TARGET_LINK_LIBRARIES(CLHEP::CLHEP INTERFACE G4clhep)
+      if(TARGET Geant4::G4clhep)
+        TARGET_LINK_LIBRARIES(CLHEP::CLHEP INTERFACE Geant4::G4clhep)
+      else()
+        TARGET_LINK_LIBRARIES(CLHEP::CLHEP INTERFACE G4clhep)
+      endif()
 
     else()
       IF(NOT TARGET CLHEP::CLHEP)
@@ -897,9 +938,9 @@ ENDMACRO()
 # Create Interface library for LCIO
 #
 MACRO(DD4HEP_SETUP_LCIO_TARGETS)
-  IF(NOT TARGET LCIO::LCIO)
-    ADD_LIBRARY(LCIO::LCIO INTERFACE IMPORTED GLOBAL)
-    SET_TARGET_PROPERTIES(LCIO::LCIO
+  IF(NOT TARGET LCIO::lcio)
+    ADD_LIBRARY(LCIO::lcio INTERFACE IMPORTED GLOBAL)
+    SET_TARGET_PROPERTIES(LCIO::lcio
       PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${LCIO_INCLUDE_DIRS}"
       INTERFACE_LINK_LIBRARIES "${LCIO_LIBRARIES}"

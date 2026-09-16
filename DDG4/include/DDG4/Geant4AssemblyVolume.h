@@ -14,10 +14,10 @@
 #define DDG4_GEANT4ASSEMBLYVOLUME_H
 
 /// ROOT includes
-#include "TGeoNode.h"
+#include <TGeoNode.h>
 
 /// Geant4 include files
-#include "G4AssemblyVolume.hh"
+#include <G4AssemblyVolume.hh>
 
 /// C/C++ include files
 #include <vector>
@@ -43,9 +43,9 @@ namespace dd4hep {
     public:
 
       typedef std::vector<const TGeoNode*> Chain;
-      std::vector<const TGeoNode*> m_entries;
+      std::vector<const TGeoNode*>       m_entries;
       std::vector<Geant4AssemblyVolume*> m_places;
-      G4AssemblyVolume*            m_assembly;
+      G4AssemblyVolume*                  m_assembly { nullptr };
 
     public:
       /// Default constructor with initialization
@@ -71,7 +71,6 @@ namespace dd4hep {
                    Geant4AssemblyVolume*  pAssembly,
                    G4LogicalVolume*       pMotherLV,
                    G4Transform3D&         transformation,
-                   G4int                  copyNumBase,
                    G4bool                 surfCheck );
     };
   }

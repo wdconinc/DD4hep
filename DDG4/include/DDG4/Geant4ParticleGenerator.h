@@ -14,8 +14,8 @@
 #define DDG4_GEANT4PARTICLEGENERATOR_H
 
 // Framework include files
-#include "DDG4/Geant4GeneratorAction.h"
-#include "Math/Vector3D.h"
+#include <DDG4/Geant4GeneratorAction.h>
+#include <Math/Vector3D.h>
 
 // Forward declarations
 class G4ParticleDefinition;
@@ -83,7 +83,7 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4ParticleGenerator();
       /// Callback to generate primary particles
-      virtual void operator()(G4Event* event);
+      virtual void operator()(G4Event* event)  override;
     };
   }    // End namespace sim
 }      // End namespace dd4hep

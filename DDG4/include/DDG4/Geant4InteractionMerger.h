@@ -23,7 +23,7 @@
 #define DDG4_GEANT4INTERACTIONMERGER_H
 
 // Framework include files
-#include "DDG4/Geant4GeneratorAction.h"
+#include <DDG4/Geant4GeneratorAction.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -53,7 +53,7 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4InteractionMerger();
       /// Event generation action callback
-      virtual void operator()(G4Event* event);
+      virtual void operator()(G4Event* event)  override;
     };
   }    // End namespace sim
 }      // End namespace dd4hep

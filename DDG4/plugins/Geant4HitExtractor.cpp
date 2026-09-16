@@ -12,9 +12,8 @@
 //==========================================================================
 
 // Framework include files
-#include "DDG4/Geant4Data.h"
+#include <DDG4/Geant4Data.h>
 
-using namespace dd4hep;
 using namespace dd4hep::sim;
 
 /// Namespace for the AIDA detector description toolkit
@@ -76,6 +75,6 @@ static void* _convertHitCollection(const char* source)  {
   return pv;
 }
 
-#include "DD4hep/Factories.h"
+#include <DD4hep/Factories.h>
 using namespace dd4hep::detail;
 DECLARE_CONSTRUCTOR(DDEve_DDG4CollectionAccess,_convertHitCollection)

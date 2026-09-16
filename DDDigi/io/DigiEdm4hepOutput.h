@@ -17,10 +17,17 @@
 #include <DDDigi/DigiOutputAction.h>
 
 /// C/C++ include files
+#if __has_include("edm4hep/TrackerHitCollection.h")
+#include <edm4hep/TrackerHitCollection.h>
+namespace edm4hep {
+  using TrackerHit3DCollection = edm4hep::TrackerHitCollection;
+}
+#else
+#include <edm4hep/TrackerHit3DCollection.h>
+#endif
 
 /// Forward declarations from edm4hep
 namespace edm4hep  {
-  class TrackerHitCollection;
   class CalorimeterHitCollection;
 }
 
@@ -35,7 +42,7 @@ namespace dd4hep {
      *  Supported output containers types are:
      *  - edm4hep::MCParticles aka "MCParticles"
      *  - edm4hep::CalorimeterHitCollection  aka "CalorimeterHits"
-     *  - edm4hep::TrackerHitCollection aka "TracketHits"
+     *  - edm4hep::TrackerHit3DCollection aka "TracketHits"
      *
      *  This entity actually is only the work dispatcher:
      *  It opens files and dumps data into
@@ -61,7 +68,7 @@ namespace dd4hep {
       /// Standard constructor
       DigiEdm4hepOutput(const kernel_t& kernel, const std::string& nam);
       /// Initialization callback
-      virtual void initialize();
+      virtual void initialize() override;
       /// Check for valid output stream
       virtual bool have_output()  const  override final;
       /// Open new output stream
@@ -103,7 +110,7 @@ namespace dd4hep {
 
       /// Convert tracker hits to edm4hep
       template <typename T> void
-      convert_depos(const T& cont, const predicate_t& predicate, edm4hep::TrackerHitCollection* collection)  const;
+      convert_depos(const T& cont, const predicate_t& predicate, edm4hep::TrackerHit3DCollection* collection)  const;
 
       /// Convert calorimeter hits to edm4hep
       template <typename T> void

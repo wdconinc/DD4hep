@@ -15,7 +15,7 @@
 #define DDG4_GEANT4INPUTHANDLING_H
 
 // Framework include files
-#include "DDG4/Geant4Primary.h"
+#include <DDG4/Geant4Primary.h>
 
 // Forward declarations
 class G4Event;
@@ -42,7 +42,7 @@ namespace dd4hep {
     Geant4Particle* createPrimary(int particle_id, const Geant4Vertex* v, const G4PrimaryParticle* g4p);
 
     /// Create a DDG4 interaction record from a Geant4 interaction defined by a primary vertex
-    Geant4PrimaryInteraction* createPrimary(int mask, Geant4PrimaryMap* pm, const G4PrimaryVertex* gv);
+    Geant4PrimaryInteraction* createPrimary(int mask, Geant4PrimaryMap* pm, std::set<G4PrimaryVertex*>const& primaries);
 
     /// Initialize the generation of one event
     int generationInitialization(const Geant4Action* caller,const Geant4Context* context);

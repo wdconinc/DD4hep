@@ -17,10 +17,10 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include <stdexcept>
+#include <exception>
 
 // Framework include files
-#include "XML/config.h"
+#include <XML/config.h>
 
 #ifndef RAD_2_DEGREE
 #define RAD_2_DEGREE 57.295779513082320876798154814105
@@ -469,7 +469,7 @@ namespace dd4hep {
       Attribute setAttr(const XmlChar* t, const Attribute v) const;
       /// Generic attribute setter with integer value
       Attribute setAttr(const XmlChar* t, int val) const;
-      /// Generic attribute setter with boolen value
+      /// Generic attribute setter with boolean value
       Attribute setAttr(const XmlChar* t, bool val) const;
       /// Generic attribute setter with floating point value
       Attribute setAttr(const XmlChar* t, float val) const;
@@ -567,7 +567,7 @@ namespace dd4hep {
 
     template <> INLINE Attribute Handle_t::attr<Attribute>(const XmlChar* tag_value, Attribute default_value) const {
       Attribute a = attr_nothrow(tag_value);
-      return a ? a : default_value;
+      return a ? a : std::move(default_value);
     }
 
     template <> INLINE bool Handle_t::attr<bool>(const XmlChar* tag_value, bool default_value) const {
@@ -607,7 +607,7 @@ namespace dd4hep {
 
     template <> INLINE std::string Handle_t::attr<std::string>(const XmlChar* tag_value, std::string default_value) const {
       Attribute a = attr_nothrow(tag_value);
-      return a ? _toString(attr_value(a)) : default_value;
+      return a ? _toString(attr_value(a)) : std::move(default_value);
     }
 
 #if 0

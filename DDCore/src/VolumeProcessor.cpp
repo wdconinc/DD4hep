@@ -12,8 +12,8 @@
 //==========================================================================
 
 // Framework includes
-#include "DD4hep/Printout.h"
-#include "DD4hep/VolumeProcessor.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/VolumeProcessor.h>
 
 using namespace dd4hep;
 
@@ -31,7 +31,7 @@ int PlacedVolumeProcessor::process(PlacedVolume pv, int level, bool recursive)  
         PlacedVolume placement(node->GetDaughter(idau));
         //if ( placement.data() ) {
           ret += process(placement,level+1,recursive);
-	  //}
+          //}
       }
     }
     return ret;

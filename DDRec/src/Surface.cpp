@@ -18,12 +18,11 @@
 
 #include <cmath>
 #include <memory>
-#include <exception>
 
 #include "TGeoMatrix.h"
 #include "TGeoShape.h"
 #include "TRotation.h"
-//TGeoTrd1 is apparently not included by defautl
+//TGeoTrd1 is apparently not included by default
 #include "TGeoTrd1.h"
 
 namespace dd4hep {
@@ -70,8 +69,8 @@ namespace dd4hep {
       return g ;
     }
 
-    const IMaterial&  VolSurfaceBase::innerMaterial() const{  return  _innerMat ;  }
-    const IMaterial&  VolSurfaceBase::outerMaterial() const { return  _outerMat  ; }
+    const IMaterial&  VolSurfaceBase::innerMaterial() const { return  _innerMat ; }
+    const IMaterial&  VolSurfaceBase::outerMaterial() const { return  _outerMat ; }
     double VolSurfaceBase::innerThickness() const { return _th_i ; }
     double VolSurfaceBase::outerThickness() const { return _th_o ; }
     
@@ -507,15 +506,6 @@ namespace dd4hep {
     
     //================================================================================================================
     
-
-    VolSurfaceList::~VolSurfaceList(){
-      // // delete all surfaces attached to this volume
-      // for( VolSurfaceList::iterator i=begin(), n=end() ; i !=n ; ++i ) {
-      //   i->clear() ;
-      // }
-    }
-    //=======================================================
-
     SurfaceList::~SurfaceList(){
       if( _isOwner ) {
         // delete all surfaces attached to this volume
@@ -525,7 +515,7 @@ namespace dd4hep {
 
     //================================================================================================================
 
-    VolSurfaceList* volSurfaceList( DetElement& det ) {
+    VolSurfaceList* volSurfaceList( const DetElement& det ) {
       VolSurfaceList* list = det.extension< VolSurfaceList >(false);
       if ( !list )  {
         list = det.addExtension<VolSurfaceList >(new VolSurfaceList);
@@ -627,7 +617,7 @@ namespace dd4hep {
       
       const IMaterial& mat = _volSurf.innerMaterial() ;
       
-      if( ! ( mat.Z() > 0 ) ) {
+      if( mat.Z() <= 0 ) {
 	
         MaterialManager matMgr( _det.placement().volume() )  ;
         
@@ -646,7 +636,7 @@ namespace dd4hep {
       
       const IMaterial& mat = _volSurf.outerMaterial() ;
       
-      if( ! ( mat.Z() > 0 ) ) {
+      if( mat.Z() <= 0 ) {
 	
         MaterialManager matMgr( _det.placement().volume() ) ;
         
@@ -721,7 +711,7 @@ namespace dd4hep {
       // first we need to find the right volume for the local surface in the DetElement's volumes
       std::list< PlacedVolume > pVList ;
       PlacedVolume pv = _det.placement() ;
-      Volume theVol = _volSurf.volume() ;
+      Volume   theVol = _volSurf.volume() ;
       
       if( ! findVolume(  pv, theVol , pVList ) ){
         theVol = _volSurf.volume() ;
@@ -730,8 +720,8 @@ namespace dd4hep {
       } 
 
       //=========== compute and cache world transform for surface ==========
-      
-      const TGeoHMatrix& wm = _det.nominal().worldTransformation() ;
+      Alignment nominal = _det.nominal();
+      const TGeoHMatrix& wm = nominal.worldTransformation() ;
       
 #if 0 // debug
       wm.Print() ;
@@ -750,7 +740,7 @@ namespace dd4hep {
 
       //---- if the volSurface is not in the DetElement's volume, we need to mutliply the path to the volume to the
       // DetElements world transform
-      for( std::list<PlacedVolume>::iterator it = ++( pVList.begin() ) , n = pVList.end() ; it != n ; ++it ){
+      for( auto it = std::next(pVList.begin()) ; it != pVList.end() ; ++it ) {
 
       	PlacedVolume pvol = *it ;
       	TGeoMatrix* m = pvol->GetMatrix();
@@ -1050,30 +1040,57 @@ namespace dd4hep {
           //all lengths are half length
           double dx1 = trapezoid->GetDx1();
           double dx2 = trapezoid->GetDx2();
-          //double dy = trapezoid->GetDy();
+          double dy = trapezoid->GetDy();
           double dz = trapezoid->GetDz();
 
-          //the normal vector is parallel to e_y for all geometry cases in CLIC
-          //if that is at some point not the case anymore, then local plane vectors ubl, vbl
-          //must be initialized like it is done for the boxes (line 674 following)
-          Vector3D ubl(  1., 0., 0. ) ; 
-          Vector3D vbl(  0., 0., 1. ) ; 
+          bool isYZ = std::fabs(  ln.x() - 1.0 ) < epsilon  ; // normal parallel to x
+          bool isXZ = std::fabs(  ln.y() - 1.0 ) < epsilon  ; // normal parallel to y
+          bool isXY = std::fabs(  ln.z() - 1.0 ) < epsilon  ; // normal parallel to z
+	  
+          if(not (isYZ || isXZ || isXY)) {
+            std::stringstream sst ; 
+            sst << " ***** ERROR: Trapezoid surface cannot be defined, normal not parallel to x, y, or z axis";
+            throw std::runtime_error( sst.str() ) ;
+          }
           
-          //the local span vectors are transformed into the main coordinate system (in LocalToMasterVect())
+          Vector3D ubl, vbl;
+
+          if(isYZ) {
+            ubl.fill( 0., 1., 0. ) ;
+            vbl.fill( 0., 0., 1. ) ;
+          } else if( isXZ ) {
+            ubl.fill( 1., 0., 0. ) ;
+            vbl.fill( 0., 0., 1. ) ;        
+          } else if( isXY ) {
+            ubl.fill( 1., 0., 0. ) ;
+            vbl.fill( 0., 1., 0. ) ;
+          } 
+          
           Vector3D ub ;
           Vector3D vb ;
           _wtM->LocalToMasterVect( ubl , ub.array() ) ;
           _wtM->LocalToMasterVect( vbl , vb.array() ) ;
-
           //the trapezoid is drawn as a set of four lines connecting its four corners
           lines.reserve(4) ;
           //_o is vector to the origin
-          lines.emplace_back( _o + dx1 * ub  - dz * vb ,  _o + dx2 * ub  + dz * vb);
-          lines.emplace_back( _o + dx2 * ub  + dz * vb ,  _o - dx2 * ub  + dz * vb);
-          lines.emplace_back( _o - dx2 * ub  + dz * vb ,  _o - dx1 * ub  - dz * vb);
-          lines.emplace_back( _o - dx1 * ub  - dz * vb ,  _o + dx1 * ub  - dz * vb);
-
-          return lines;
+          
+          if( isYZ ) {
+            lines.emplace_back( _o + dy * ub  - dz * vb ,  _o + dy * ub  + dz * vb);
+            lines.emplace_back( _o + dy * ub  + dz * vb ,  _o - dy * ub  + dz * vb);
+            lines.emplace_back( _o - dy * ub  + dz * vb ,  _o - dy * ub  - dz * vb);
+            lines.emplace_back( _o - dy * ub  - dz * vb ,  _o + dy * ub  - dz * vb);	      
+          } else if( isXZ ) {
+            lines.emplace_back( _o + dx1 * ub  - dz * vb ,  _o + dx2 * ub  + dz * vb);
+            lines.emplace_back( _o + dx2 * ub  + dz * vb ,  _o - dx2 * ub  + dz * vb);
+            lines.emplace_back( _o - dx2 * ub  + dz * vb ,  _o - dx1 * ub  - dz * vb);
+            lines.emplace_back( _o - dx1 * ub  - dz * vb ,  _o + dx1 * ub  - dz * vb);	      
+          } else if( isXY ) {
+            lines.emplace_back( _o + dx1 * ub  - dy * vb ,  _o + dx2 * ub  + dy * vb);
+            lines.emplace_back( _o + dx2 * ub  + dy * vb ,  _o - dx2 * ub  + dy * vb);
+            lines.emplace_back( _o - dx2 * ub  + dy * vb ,  _o - dx1 * ub  - dy * vb);
+            lines.emplace_back( _o - dx1 * ub  - dy * vb ,  _o + dx1 * ub  - dy * vb);	      
+          }
+          return lines ;
         }
         //added code by Thorben Quast for simplified set of lines for trapezoids with unequal lengths in x AND y
         else if(shape->IsA() == TGeoTrd2::Class()){

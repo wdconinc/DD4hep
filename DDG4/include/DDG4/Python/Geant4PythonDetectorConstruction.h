@@ -15,8 +15,8 @@
 #define DDG4_PYTHON_GEANT4PYTHONDETECTORCONSTRUCTION_H
 
 // Framework include files
-#include "DDG4/Geant4DetectorConstruction.h"
-#include "DDG4/Python/Geant4PythonCall.h"
+#include <DDG4/Geant4DetectorConstruction.h>
+#include <DDG4/Python/Geant4PythonCall.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -83,11 +83,11 @@ namespace dd4hep {
       /// Set the sensitive detector initialization command
       void setConstructSensitives(PyObject* callable, PyObject* args);
       /// Geometry construction callback. Called at "Construct()"
-      virtual void constructGeo(Geant4DetectorConstructionContext* ctxt);
+      virtual void constructGeo(Geant4DetectorConstructionContext* ctxt)  override;
       /// Electromagnetic field construction callback. Called at "ConstructSDandField()"
-      virtual void constructField(Geant4DetectorConstructionContext* ctxt);
+      virtual void constructField(Geant4DetectorConstructionContext* ctxt)  override;
       /// Sensitive detector construction callback. Called at "ConstructSDandField()"
-      virtual void constructSensitives(Geant4DetectorConstructionContext* ctxt);
+      virtual void constructSensitives(Geant4DetectorConstructionContext* ctxt)  override;
 
     };
   }    // End namespace sim

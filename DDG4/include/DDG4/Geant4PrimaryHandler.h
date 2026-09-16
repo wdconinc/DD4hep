@@ -25,8 +25,9 @@
 #define DDG4_GEANT4PRIMARYHANDLER_H
 
 // Framework include files
-#include "DDG4/Geant4GeneratorAction.h"
+#include <DDG4/Geant4GeneratorAction.h>
 
+// C/C++ include files
 #include <set>
 
 /// Namespace for the AIDA detector description toolkit
@@ -41,6 +42,11 @@ namespace dd4hep {
       std::set<int> m_rejectPDGs = {1, 2, 3, 4, 5, 6, 21, 23, 24, 25};
       /// particles with these PDG IDs are not passed to geant for simulation if their properTime is zero
       std::set<int> m_zeroTimePDGs = {11, 13, 15, 17};
+      /// for these particles the decay time is chosen by Geant4 according to the lifetime configured instead of what is
+      /// assigned in the MC generator
+      std::set<int> m_decayByGeant = {};
+      /// drop primaries outside the world instead of aborting
+      bool m_skipParticlesOutsideWorldVolume = false;
 
       std::string toString() const {
         std::stringstream str;
@@ -48,6 +54,9 @@ namespace dd4hep {
         for (int i: m_rejectPDGs) { str << i << ", "; }
         str << "\nzeroTimePDGs: ";
         for (int i: m_zeroTimePDGs) { str << i << ", "; }
+        str << "\nDecayByGeant: ";
+        for (int i: m_decayByGeant) { str << i << ", "; }
+        str << "\nSkipParticlesOutsideWorldVolume: " << std::boolalpha << m_skipParticlesOutsideWorldVolume;
         return str.str();
       }
     };
@@ -68,7 +77,7 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4PrimaryHandler();
       /// Event generation action callback
-      virtual void operator()(G4Event* event);
+      virtual void operator()(G4Event* event)  override;
 
     public:
       Geant4PrimaryConfig m_primaryConfig{};

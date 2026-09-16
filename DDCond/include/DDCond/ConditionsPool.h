@@ -95,7 +95,7 @@ namespace dd4hep {
       virtual size_t select(Condition::key_type key, RangeConditions& result) = 0;
       /// Select all conditions contained
       virtual size_t select_all(RangeConditions& result) = 0;
-      /// Select the conditons, passing a predicate
+      /// Select the conditions, passing a predicate
       virtual size_t select_all(const ConditionsSelect& predicate) = 0;
       /// Select all conditions contained
       virtual size_t select_all(ConditionsPool& selection_pool) = 0;
@@ -148,9 +148,9 @@ namespace dd4hep {
         PRINT_NONE   = 0,
         PRINT_INSERT = 1<<0,
         PRINT_CLEAR  = 1<<1,
-	PRINT_LOAD   = 1<<2,
+        PRINT_LOAD   = 1<<2,
         PRINT_COMPUTE= 1<<3,
-	PRINT_LAST
+        PRINT_LAST
       };
       /// Processing flags (printout etc.)
       unsigned int flags = 0;

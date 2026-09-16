@@ -12,47 +12,47 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Detector.h"
-#include "DD4hep/Plugins.h"
-#include "DD4hep/Volumes.h"
-#include "DD4hep/Printout.h"
-#include "DDG4/Geant4HierarchyDump.h"
+#include <DD4hep/Detector.h>
+#include <DD4hep/Plugins.h>
+#include <DD4hep/Volumes.h>
+#include <DD4hep/Printout.h>
+#include <DDG4/Geant4HierarchyDump.h>
 
 // Geant4 include files
-#include "G4Version.hh"
-#include "G4VisAttributes.hh"
-#include "G4ProductionCuts.hh"
-#include "G4VUserRegionInformation.hh"
-#include "G4Element.hh"
-#include "G4SDManager.hh"
+#include <G4Version.hh>
+#include <G4VisAttributes.hh>
+#include <G4ProductionCuts.hh>
+#include <G4VUserRegionInformation.hh>
+#include <G4Element.hh>
+#include <G4SDManager.hh>
 
-#include "G4AssemblyVolume.hh"
-#include "G4Box.hh"
-#include "G4Trd.hh"
-#include "G4Tubs.hh"
-#include "G4Cons.hh"
-#include "G4Torus.hh"
-#include "G4Sphere.hh"
-#include "G4Polycone.hh"
-#include "G4Polyhedra.hh"
-#include "G4UnionSolid.hh"
-#include "G4Paraboloid.hh"
-#include "G4SubtractionSolid.hh"
-#include "G4IntersectionSolid.hh"
+#include <G4AssemblyVolume.hh>
+#include <G4Box.hh>
+#include <G4Trd.hh>
+#include <G4Tubs.hh>
+#include <G4Cons.hh>
+#include <G4Torus.hh>
+#include <G4Sphere.hh>
+#include <G4Polycone.hh>
+#include <G4Polyhedra.hh>
+#include <G4UnionSolid.hh>
+#include <G4Paraboloid.hh>
+#include <G4SubtractionSolid.hh>
+#include <G4IntersectionSolid.hh>
 
-#include "G4Region.hh"
-#include "G4UserLimits.hh"
-#include "G4VSensitiveDetector.hh"
+#include <G4Region.hh>
+#include <G4UserLimits.hh>
+#include <G4VSensitiveDetector.hh>
 
-#include "G4LogicalVolume.hh"
-#include "G4Material.hh"
-#include "G4Element.hh"
-#include "G4Isotope.hh"
-#include "G4Transform3D.hh"
-#include "G4ThreeVector.hh"
-#include "G4PVPlacement.hh"
-#include "G4ElectroMagneticField.hh"
-#include "G4FieldManager.hh"
+#include <G4LogicalVolume.hh>
+#include <G4Material.hh>
+#include <G4Element.hh>
+#include <G4Isotope.hh>
+#include <G4Transform3D.hh>
+#include <G4ThreeVector.hh>
+#include <G4PVPlacement.hh>
+#include <G4ElectroMagneticField.hh>
+#include <G4FieldManager.hh>
 
 // C/C++ include files
 #include <iostream>
@@ -60,8 +60,6 @@
 #include <sstream>
 
 using namespace dd4hep::sim;
-using namespace dd4hep;
-using namespace std;
 
 static const char* _T(const std::string& str) {
   return str.c_str();
@@ -78,7 +76,7 @@ Geant4HierarchyDump::Geant4HierarchyDump(Detector& description, unsigned long fl
 Geant4HierarchyDump::~Geant4HierarchyDump() {
 }
 
-void Geant4HierarchyDump::dump(const string& indent, const G4VPhysicalVolume* v) const {
+void Geant4HierarchyDump::dump(const std::string& indent, const G4VPhysicalVolume* v) const {
   G4LogicalVolume*      lv   = v->GetLogicalVolume();
   G4VSensitiveDetector* sd   = lv->GetSensitiveDetector();
   G4RotationMatrix*     rot  = v->GetObjectRotation();
@@ -87,12 +85,12 @@ void Geant4HierarchyDump::dump(const string& indent, const G4VPhysicalVolume* v)
   G4Region*             rg   = lv->GetRegion();
   G4UserLimits*         ul   = lv->GetUserLimits();
   G4int                 ndau = lv->GetNoDaughters();
-  stringstream str;
+  std::stringstream str;
   char text[32];
 
   printout(INFO, "Geant4Hierarchy", "%s -> Placement:%s LV:%s Material:%s Solid:%s # of Daughters:%d CopyNo:%d",
-	   _T(indent), _T(v->GetName()), _T(lv->GetName()), _T(mat->GetName()),
-	   _T(sol->GetName()), ndau, v->GetCopyNo());
+           _T(indent), _T(v->GetName()), _T(lv->GetName()), _T(mat->GetName()),
+           _T(sol->GetName()), ndau, v->GetCopyNo());
 
   if (sd && (m_flags & G4DUMP_SOLID)) {
     str.str("");
@@ -122,7 +120,7 @@ void Geant4HierarchyDump::dump(const string& indent, const G4VPhysicalVolume* v)
       r.xx()*r.yy()*r.zz() + r.xy()*r.yz()*r.zx() + r.xz()*r.yx()*r.zy() -
       r.zx()*r.yy()*r.xz() - r.zy()*r.yz()*r.xx() - r.zz()*r.yx()*r.xy();
     printout(INFO, "Geant4Hierarchy", "%s    Matrix: %sREFLECTED Tr: %8.3g %8.3g %8.3g [mm]",
-	     _T(indent), det > 0e0 ? "NOT " : "", t.x(), t.y(), t.z());
+             _T(indent), det > 0e0 ? "NOT " : "", t.x(), t.y(), t.z());
   }
   for (G4int idau = 0; idau < ndau; ++idau) {
     ::snprintf(text, sizeof(text), "  %-3d", idau);

@@ -19,21 +19,19 @@
 #ifndef DDSEGMENTATION_CYLINDRICALSEGMENTATION_H
 #define DDSEGMENTATION_CYLINDRICALSEGMENTATION_H
 
-#include "DDSegmentation/Segmentation.h"
-
-#include <map>
+#include <DDSegmentation/Segmentation.h>
 
 namespace dd4hep {
   namespace DDSegmentation {
 
-    /// Segmentation base class describing a cyliondrical segmentation
+    /// Segmentation base class describing a cylindrical grid segmentation
     class CylindricalSegmentation: public Segmentation {
     public:
-      /// destructor
+      /// Destructor
       virtual ~CylindricalSegmentation();
 
     protected:
-      /// default constructor using an arbitrary type
+      /// Default constructor using an arbitrary type
       CylindricalSegmentation(const std::string& cellEncoding);
       /// Default constructor used by derived classes passing an existing decoder
       CylindricalSegmentation(const BitFieldCoder* decoder);

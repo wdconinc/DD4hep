@@ -43,6 +43,9 @@
 #include <G4GenericTrap.hh>
 #include <G4ExtrudedSolid.hh>
 #include <G4EllipticalTube.hh>
+#include <G4TessellatedSolid.hh>
+#include <G4TriangularFacet.hh>
+#include <G4QuadrangularFacet.hh>
 
 // C/C++ include files
 
@@ -93,7 +96,8 @@ namespace dd4hep {
       G4ThreeVector   highNorm(hn[0], hn[1], hn[2]);
       return new G4CutTubs(sh->GetName(),
                            sh->GetRmin() * CM_2_MM, sh->GetRmax() * CM_2_MM, sh->GetDz() * CM_2_MM,
-                           sh->GetPhi1() * DEGREE_2_RAD, (sh->GetPhi2()-sh->GetPhi1()) * DEGREE_2_RAD, lowNorm, highNorm);
+                           sh->GetPhi1() * DEGREE_2_RAD, (sh->GetPhi2()-sh->GetPhi1()) * DEGREE_2_RAD,
+                           std::move(lowNorm), std::move(highNorm));
     }
 
     template <> G4VSolid* convertShape<TGeoEltu>(const TGeoShape* shape)  {
@@ -103,10 +107,18 @@ namespace dd4hep {
 
     template <> G4VSolid* convertShape<TwistedTubeObject>(const TGeoShape* shape)  {
       const TwistedTubeObject* sh = (const TwistedTubeObject*) shape;
+      if ( std::fabs(std::fabs(sh->GetNegativeEndZ()) - std::fabs(sh->GetPositiveEndZ())) < 1e-10 )   {
+        return new G4TwistedTubs(sh->GetName(),sh->GetPhiTwist() * DEGREE_2_RAD,
+                                 sh->GetRmin() * CM_2_MM, sh->GetRmax() * CM_2_MM,
+                                 sh->GetPositiveEndZ() * CM_2_MM,
+                                 sh->GetNsegments(),
+                                 (sh->GetPhi2()-sh->GetPhi1()) * DEGREE_2_RAD);
+      }
       return new G4TwistedTubs(sh->GetName(),sh->GetPhiTwist() * DEGREE_2_RAD,
                                sh->GetRmin() * CM_2_MM, sh->GetRmax() * CM_2_MM,
                                sh->GetNegativeEndZ() * CM_2_MM, sh->GetPositiveEndZ() * CM_2_MM,
-                               sh->GetNsegments(), (sh->GetPhi2()-sh->GetPhi1()) * DEGREE_2_RAD);
+                               sh->GetNsegments(),
+                               (sh->GetPhi2()-sh->GetPhi1()) * DEGREE_2_RAD);
     }
 
     template <> G4VSolid* convertShape<TGeoTrd1>(const TGeoShape* shape)  {
@@ -237,18 +249,6 @@ namespace dd4hep {
         vertices.emplace_back(vtx_xy[0] * CM_2_MM, vtx_xy[1] * CM_2_MM);
       return new G4GenericTrap(sh->GetName(), sh->GetDz() * CM_2_MM, vertices);
     }
-  }    // End namespace sim
-}      // End namespace dd4hep
-
-#if ROOT_VERSION_CODE > ROOT_VERSION(6,21,0)
-#include <G4TessellatedSolid.hh>
-#include <G4TriangularFacet.hh>
-#include <G4QuadrangularFacet.hh>
-
-/// Namespace for the AIDA detector description toolkit
-namespace dd4hep {
-  /// Namespace for the Geant4 based simulation part of the AIDA detector description toolkit
-  namespace sim {
 
     template <> G4VSolid* convertShape<TGeoTessellated>(const TGeoShape* shape)  {
       TGeoTessellated*   sh  = (TGeoTessellated*) shape;
@@ -259,9 +259,15 @@ namespace dd4hep {
       for(int i=0; i<num_facet; ++i)  {
         const TGeoFacet& facet = sh->GetFacet(i);
         int nv = facet.GetNvert();
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,31,1)
+        const auto& v0 = sh->GetVertex(facet[0]);
+        const auto& v1 = sh->GetVertex(facet[1]);
+        const auto& v2 = sh->GetVertex(facet[2]);
+#else
         const auto& v0 = sh->GetVertex(facet.GetVertexIndex(0));
         const auto& v1 = sh->GetVertex(facet.GetVertexIndex(1));
         const auto& v2 = sh->GetVertex(facet.GetVertexIndex(2));
+#endif
         G4VFacet* g4f = 0;
         if ( nv == 3 )    {
           g4f = new G4TriangularFacet(G4ThreeVector(v0.x() * CM_2_MM, v0.y() * CM_2_MM, v0.z() * CM_2_MM),
@@ -270,7 +276,11 @@ namespace dd4hep {
                                       ABSOLUTE);
         }
         else if ( nv == 4 )    {
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,31,1)
+          const auto& v3 = sh->GetVertex(facet[3]);
+#else
           const auto& v3 = sh->GetVertex(facet.GetVertexIndex(3));
+#endif
           g4f = new G4QuadrangularFacet(G4ThreeVector(v0.x() * CM_2_MM, v0.y() * CM_2_MM, v0.z() * CM_2_MM),
                                         G4ThreeVector(v1.x() * CM_2_MM, v1.y() * CM_2_MM, v1.z() * CM_2_MM),
                                         G4ThreeVector(v2.x() * CM_2_MM, v2.y() * CM_2_MM, v2.z() * CM_2_MM),
@@ -289,5 +299,3 @@ namespace dd4hep {
     
   }    // End namespace sim
 }      // End namespace dd4hep
-#endif // ROOT_VERSION_CODE > ROOT_VERSION(6,21,0)
-

@@ -15,11 +15,11 @@
 #define DDG4_GEANT4FIELD_H
 
 // Framework include files
-#include "DD4hep/Detector.h"
+#include <DD4hep/Detector.h>
 
 // Geant 4 include files
-#include "G4ElectroMagneticField.hh"
-#include "G4MagneticField.hh"
+#include <G4ElectroMagneticField.hh>
+#include <G4MagneticField.hh>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -47,9 +47,9 @@ namespace dd4hep {
       /// Standard destructor
       virtual ~Geant4Field() {    }
       /// Access field values at a given point
-      virtual void GetFieldValue(const double pos[4], double *arr) const;
+      virtual void GetFieldValue(const double pos[4], double *arr) const  override;
       /// Does field change energy ?
-      virtual G4bool DoesFieldChangeEnergy() const;
+      virtual G4bool DoesFieldChangeEnergy() const  override;
     };
 
   }    // End namespace sim

@@ -14,7 +14,11 @@
 #define DDG4_GEANT4OUTPUT2ROOT_H
 
 // Framework include files
-#include "DDG4/Geant4OutputAction.h"
+#include <DDG4/Geant4OutputAction.h>
+
+#include <atomic>
+#include <memory>
+#include <mutex>
 
 class TFile;
 class TTree;
@@ -36,18 +40,16 @@ namespace dd4hep {
      */
     class Geant4Output2ROOT: public Geant4OutputAction {
     protected:
-      typedef std::map<std::string, TBranch*> Branches;
-      typedef std::map<std::string, TTree*> Sections;
+      using Branches = std::map<std::string, TBranch*>;
+      using Sections = std::map<std::string, TTree*>;
       /// Known file sections
       Sections m_sections;
       /// Branches in the event tree
       Branches m_branches;
       /// Reference to the ROOT file to open
-      TFile* m_file;
-      /// Reference to the event data tree
-      TTree* m_tree;
-      /// File sequence number
-      int    m_fseqNunmber  { 0 };
+      std::unique_ptr<TFile> m_file;
+      /// Reference to the event data tree (owned by m_file)
+      TTree* m_tree = nullptr;
       /// Property: name of the event tree
       std::string m_section;
       /// Property: vector with disabled collections
@@ -55,15 +57,19 @@ namespace dd4hep {
       /// Property: vector with disabled collections
       bool  m_disableParticles = false;
       /// Property: Flag if Monte-Carlo truth should be followed and checked
-      bool m_handleMCTruth;
-      /// Property: Flag if Monte-Carlo truth should be followed and checked
-      bool m_filesByRun;
-      
+      bool m_handleMCTruth = true;
+      /// Property: Flag to create a new output file for each run
+      bool m_filesByRun = false;
+      /// Counter of worker endRun calls so that closeOutput fires only after all workers are done
+      std::atomic<int> m_endRunCount { 0 };
+      /// Static mutex to protect ROOT I/O operations in multi-threaded mode
+      static std::mutex s_rootMutex;
+
     public:
       /// Standard constructor
       Geant4Output2ROOT(Geant4Context* context, const std::string& nam);
       /// Default destructor
-      virtual ~Geant4Output2ROOT();
+      ~Geant4Output2ROOT() override;
       /// Create/access tree by name for non collection user data
       TTree* section(const std::string& nam);
       /// Fill single EVENT branch entry (Geant4 collection data)
@@ -71,15 +77,20 @@ namespace dd4hep {
 
       /// Close current output file
       virtual void closeOutput();
+    private:
+      /// Close the current output file. Must be called with s_rootMutex held.
+      void closeOutputLocked();
       /// Callback to store the Geant4 run information
-      virtual void beginRun(const G4Run* run);
+      void beginRun(const G4Run* run)  override;
+      /// Callback at end of run: write and close the output file while DDG4 is still alive
+      void endRun(const G4Run* run)  override;
       /// Callback to store each Geant4 hit collection
-      virtual void saveCollection(OutputContext<G4Event>& ctxt, G4VHitsCollection* collection);
+      void saveCollection(OutputContext<G4Event>& ctxt, G4VHitsCollection* collection)  override;
       /// Callback to store the Geant4 event
-      virtual void saveEvent(OutputContext<G4Event>& ctxt);
+      void saveEvent(OutputContext<G4Event>& ctxt)  override;
 
       /// Commit data at end of filling procedure
-      virtual void commit(OutputContext<G4Event>& ctxt);
+      void commit(OutputContext<G4Event>& ctxt)  override;
     };
 
   }    // End namespace sim

@@ -12,11 +12,11 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Printout.h"
-#include "DD4hep/InstanceCount.h"
-#include "DDG4/Geant4ParticleHandler.h"
-#include "DDG4/Geant4UserParticleHandler.h"
-#include "CLHEP/Units/SystemOfUnits.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/InstanceCount.h>
+#include <DDG4/Geant4ParticleHandler.h>
+#include <DDG4/Geant4UserParticleHandler.h>
+#include <CLHEP/Units/SystemOfUnits.h>
 
 using namespace dd4hep::sim;
 
@@ -65,6 +65,11 @@ void Geant4UserParticleHandler::combine(Particle& /* to_be_deleted */, Particle&
 }
 
 /// Callback to be answered if the particle MUST be kept during recombination step
-bool Geant4UserParticleHandler::keepParticle(Particle& particle)   {
-  return Geant4ParticleHandler::defaultKeepParticle(particle);
+bool Geant4UserParticleHandler::dropParticle(Particle& particle) {
+  return Geant4ParticleHandler::defaultDropParticle(particle);
+}
+
+/// User overload to handle particle settings when processing the track in the Geant4ParticleHandler.
+void Geant4UserParticleHandler::mark_track(const G4Track* /* track         */,
+                                           Particle*      /* current_track */)  {
 }

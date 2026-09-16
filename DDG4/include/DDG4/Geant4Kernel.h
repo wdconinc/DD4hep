@@ -14,19 +14,12 @@
 #define DDG4_GEANT4KERNEL_H
 
 // Framework include files
-#include "DDG4/Geant4ActionContainer.h"
+#include <DDG4/Geant4ActionContainer.h>
 
 // C/C++ include files
 #include <map>
 #include <typeinfo>
 #include <functional>
-
-class DD4hep_End_Of_File : public std::exception {
-public:
-  DD4hep_End_Of_File() : std::exception() {}
-  virtual const char* what() const noexcept { return "Reached end of input file"; }
-
-};
 
 // Forward declarations
 class G4RunManager;
@@ -36,11 +29,29 @@ class G4VPhysicalVolume;
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
 
+  // Forward declarations
+  class Geant4Interrupts;
+
   /// Namespace for the Geant4 based simulation part of the AIDA detector description toolkit
   namespace sim {
 
     // Forward declarations
+    class Geant4Interrupts;
     class Geant4ActionPhase;
+
+    /// Helper class to indicate the end of the input file
+    class DD4hep_End_Of_File : public std::exception {
+    public:
+      DD4hep_End_Of_File() : std::exception() {}
+      virtual const char* what() const noexcept override { return "Reached end of input file"; }
+    };
+
+    /// Helper class to indicate the stop of processing
+    class DD4hep_Stop_Processing : public std::exception {
+    public:
+      DD4hep_Stop_Processing() : std::exception() {}
+      virtual const char* what() const noexcept override { return "Event loop STOP signalled. Processing stops"; }
+    };
 
     /// Class, which allows all Geant4Action derivatives to access the DDG4 kernel structures.
     /**
@@ -59,67 +70,77 @@ namespace dd4hep {
       typedef std::pair<void*, const std::type_info*>   UserFramework;
       using UserCallbacks = std::vector<std::function<void()> >;
 
+      enum event_loop_status  {
+        EVENTLOOP_HALT = 0,
+        EVENTLOOP_RUNNING = 1,
+      };
+      
     protected:
       /// Reference to the run manager
-      G4RunManager*      m_runManager;
+      G4RunManager*      m_runManager  { nullptr };
       /// Top level control directory
-      G4UIdirectory*     m_control;
+      G4UIdirectory*     m_control     { nullptr };
       /// Reference to Geant4 track manager
-      G4TrackingManager* m_trackMgr;
+      G4TrackingManager* m_trackMgr    { nullptr };
       /// Detector description object
-      Detector*          m_detDesc;
+      Detector*          m_detDesc     { nullptr };
       /// Property pool
-      PropertyManager    m_properties;
+      PropertyManager    m_properties          { };
       /// Reference to the user framework
-      UserFramework      m_userFramework;
+      UserFramework      m_userFramework       { };
 
       /// Action phases
-      Phases        m_phases;
+      Phases        m_phases                   { };
       /// Worker threads
-      Workers       m_workers;
+      Workers       m_workers                  { };
       /// Globally registered actions
-      GlobalActions m_globalActions;
+      GlobalActions m_globalActions            { };
       /// Globally registered filters of sensitive detectors
-      GlobalActions m_globalFilters;
+      GlobalActions m_globalFilters            { };
       /// Property: Client output levels
-      ClientOutputLevels m_clientLevels;
+      ClientOutputLevels m_clientLevels        { };
       /// Property: Name of the G4UI command tree
-      std::string m_controlName;
+      std::string   m_controlName              { };
       /// Property: Name of the UI action. Must be member of the global actions
-      std::string m_uiName;
+      std::string   m_uiName                   { };
       /// Property: Name of the G4 run manager factory to be used. Default: Geant4RunManager
-      std::string m_runManagerType;
+      std::string   m_runManagerType;
       /// Property: Name of the default factory to create G4VSensitiveDetector instances
-      std::string m_dfltSensitiveDetectorType;
+      std::string   m_dfltSensitiveDetectorType;
       /// Property: Names with specialized factories to create G4VSensitiveDetector instances
       std::map<std::string, std::string> m_sensitiveDetectorTypes;
       /// Property: Number of events to be executed in batch mode
-      long        m_numEvent = 10;
+      long          m_numEvent       = 10;
       /// Property: Output level
-      int         m_outputLevel;
+      int           m_outputLevel    = 0;
 
-      /// Property: Running in multi threaded context
-      //bool        m_multiThreaded;
       /// Master property: Number of execution threads in multi threaded mode.
-      int         m_numThreads;
+      int           m_numThreads     = 0;
+      /// Master property: Instantiate the Geant4 scoring manager object
+      int           m_haveScoringMgr = false;
+      /// Master property: Flag if event loop is enabled
+      int           m_processEvents  = EVENTLOOP_RUNNING;
 
+      
       /// Registered action callbacks on configure
-      UserCallbacks m_actionConfigure;
+      UserCallbacks m_actionConfigure  { };
       /// Registered action callbacks on initialize
-      UserCallbacks m_actionInitialize;
+      UserCallbacks m_actionInitialize { };
       /// Registered action callbacks on terminate
-      UserCallbacks m_actionTerminate;
+      UserCallbacks m_actionTerminate  { };
 
 
       /// Flag: Master instance (id<0) or worker (id >= 0)
-      unsigned long      m_id, m_ident;
+      unsigned long      m_id = 0, m_ident = 0;
       /// Access to geometry world
       G4VPhysicalVolume* m_world  = 0;
 
       /// Parent reference
-      Geant4Kernel*      m_master;
-      Geant4Kernel*      m_shared;
-      Geant4Context*     m_threadContext;
+      Geant4Kernel*      m_master         { nullptr };
+      /// Thread context reference
+      Geant4Context*     m_threadContext  { nullptr };
+      /// Interrupt/signal handler: only on master instance
+      Geant4Interrupts*  m_interrupts     { nullptr };
 
       bool isMaster() const  { return this == m_master; }
       bool isWorker() const  { return this != m_master; }
@@ -136,11 +157,9 @@ namespace dd4hep {
       /// Thread's master context
       Geant4Kernel& master()  const  { return *m_master; }
 
-      /// Shared action context
-      Geant4Kernel& shared()  const  { return *m_shared; }
-
       //bool isMultiThreaded() const { return m_multiThreaded; }
       bool isMultiThreaded() const { return m_numThreads > 0; }
+      int numThreads()       const { return m_numThreads; }
 
       /// Access thread identifier
       static unsigned long int thread_self();
@@ -205,6 +224,13 @@ namespace dd4hep {
       const std::map<std::string, std::string>& sensitiveDetectorTypes()  const   {
         return m_sensitiveDetectorTypes;
       }
+      /// Add new sensitive type to factory list
+      /** This is present mainly for debugging purposes and tests.
+       * Never necessary in real life!
+       * For all practical purpose the default type Geant4SensDet is sufficient.
+       *
+       */
+      void defineSensitiveDetectorType(const std::string& type, const std::string& factory);
       /// Access to geometry world
       G4VPhysicalVolume* world()  const;
       /// Set the geometry world
@@ -241,6 +267,19 @@ namespace dd4hep {
       /// Register terminate callback. Signature:   (function)()
       void register_terminate(const std::function<void()>& callback);
 
+      /// Access interrupt handler. Will be created on the first call
+      Geant4Interrupts& interruptHandler()  const;
+      /// Trigger smooth end-of-event-loop with finishing currently processing event
+      void triggerStop();
+      /// Check if event processing should be continued
+      bool processEvents()  const;
+      /// Install DDG4 default handler for a given signal. If no handler: return false
+      bool registerInterruptHandler(int sig_num);
+      /// (Re-)apply registered interrupt handlers to override potentially later registrations by other libraries
+      /** In this case we overwrite signal handlers applied by Geant4.
+       */
+      void applyInterruptHandlers();
+      
       /// Register action by name to be retrieved when setting up and connecting action objects
       /** Note: registered actions MUST be unique.
        *  However, not all actions need to registered....
@@ -293,6 +332,8 @@ namespace dd4hep {
       virtual void loadGeometry(const std::string& compact_file);
       /// Load XML file 
       virtual void loadXML(const char* fname);
+      /// Run dd4hep plugin with arguments
+      virtual long runPlugin(const std::string& plgin, const std::vector<std::string>& args);
 
       /** Geant4 Multi threading support */
       /// Create identified worker instance
@@ -311,7 +352,7 @@ namespace dd4hep {
       /// Run the simulation: Simulate the number of events "num_events" and modify the property "NumEvents"
       virtual int runEvents(int num_events);
       /// Run the simulation: Terminate Geant4
-      virtual int terminate();
+      virtual int terminate()  override;
     };
     /// Declare property
     template <typename T> Geant4Kernel& Geant4Kernel::declareProperty(const std::string& nam, T& val) {

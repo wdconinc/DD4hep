@@ -12,10 +12,10 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Printout.h"
-#include "DD4hep/InstanceCount.h"
-#include "DDG4/Geant4InputHandling.h"
-#include "DDG4/Geant4PrimaryHandler.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/InstanceCount.h>
+#include <DDG4/Geant4InputHandling.h>
+#include <DDG4/Geant4PrimaryHandler.h>
 
 using namespace dd4hep::sim;
 
@@ -26,6 +26,8 @@ Geant4PrimaryHandler::Geant4PrimaryHandler(Geant4Context* ctxt, const std::strin
   InstanceCount::increment(this);
   declareProperty("RejectPDGs", m_primaryConfig.m_rejectPDGs);
   declareProperty("ZeroTimePDGs", m_primaryConfig.m_zeroTimePDGs);
+  declareProperty("DecayByGeant", m_primaryConfig.m_decayByGeant);
+  declareProperty("SkipParticlesOutsideWorldVolume", m_primaryConfig.m_skipParticlesOutsideWorldVolume);
 }
 
 /// Default destructor

@@ -42,14 +42,7 @@ namespace fs = boost::filesystem;
 namespace fs = std::filesystem;
 #endif // USE_BOOST_FILESYSTEM
 
-#if __cplusplus >= 201703 || (__clang__ && __APPLE__)
-#  include <string_view>
-#else
-#  include <experimental/string_view>
-namespace std {
-  using experimental::string_view;
-}
-#endif
+#include <string_view>
 
 #define REG_SCOPE_LOCK std::lock_guard<std::recursive_mutex> _guard( m_mutex );
 
@@ -158,7 +151,7 @@ namespace Gaudi {
 
           std::string search_path;
           const char* envPtr = std::getenv( envVar.c_str() );
-          if ( envPtr ) search_path = envPtr;
+          search_path = envPtr ? envPtr : "/usr/lib64:/usr/lib:/usr/local/lib";
           if ( search_path.empty() ) {
             return;
           }

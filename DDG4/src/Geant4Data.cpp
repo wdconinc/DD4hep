@@ -24,13 +24,10 @@
 #include <G4Allocator.hh>
 #include <G4OpticalPhoton.hh>
 
-using namespace std;
-using namespace dd4hep;
 using namespace dd4hep::sim;
 
 /// Default constructor
-SimpleRun::SimpleRun()
-  : runID(-1), numEvents(0) {
+SimpleRun::SimpleRun()  {
   InstanceCount::increment(this);
 }
 
@@ -40,8 +37,7 @@ SimpleRun::~SimpleRun() {
 }
 
 /// Default constructor
-SimpleEvent::SimpleEvent()
-  : runID(-1), eventID(-1) {
+SimpleEvent::SimpleEvent()  {
   InstanceCount::increment(this);
 }
 
@@ -101,19 +97,17 @@ Geant4HitData::Contribution Geant4HitData::extractContribution(const Geant4FastS
   G4ThreeVector        pos = h.avgPositionG4();
   double               position[] = { pos.x(), pos.y(), pos.z() };
   double               momentum[] = { mom.x(), mom.y(), mom.z() };
-  return Contribution( h.trkID(), h.trkPdgID(), h.energy(), h. trkTime(), 0e0, position, momentum);
+  return Contribution( h.trkID(), h.trkPdgID(), h.energy(), h.trkTime(), -1e0, position, momentum);
 }
 
 /// Default constructor
-Geant4Tracker::Hit::Hit()
-: Geant4HitData(), position(), momentum(), length(0.0), energyDeposit(0.0), truth()
-{
+Geant4Tracker::Hit::Hit()  {
   InstanceCount::increment(this);
 }
 
 /// Standard initializing constructor
 Geant4Tracker::Hit::Hit(int track_id, int pdg_id, double deposit, double time_stamp,
-			double len, const Position& pos, const Direction& mom)
+                        double len, const Position& pos, const Direction& mom)
   : Geant4HitData(), position(pos), momentum(mom), length(len), energyDeposit(deposit),
     truth(track_id, pdg_id, deposit, time_stamp, len, pos, mom)
 {
@@ -201,14 +195,12 @@ Geant4Tracker::Hit& Geant4Tracker::Hit::storePoint(const Geant4FastSimSpot* spot
 }
 
 /// Default constructor (for ROOT)
-Geant4Calorimeter::Hit::Hit()
-: Geant4HitData(), position(), truth(), energyDeposit(0) {
+Geant4Calorimeter::Hit::Hit()  {
   InstanceCount::increment(this);
 }
 
 /// Standard constructor
-Geant4Calorimeter::Hit::Hit(const Position& pos)
-: Geant4HitData(), position(pos), truth(), energyDeposit(0) {
+Geant4Calorimeter::Hit::Hit(const Position& pos) : position(pos)  {
   InstanceCount::increment(this);
 }
 

@@ -13,13 +13,14 @@
 #ifndef DDG4_GEANT4TOUCHABLEHANDLER_H
 #define DDG4_GEANT4TOUCHABLEHANDLER_H
 
+#include <G4VTouchable.hh>
+
 // C/C++ include files
 #include <vector>
 #include <string>
 
 // Forward declarations
 class G4VPhysicalVolume;
-class G4VTouchable;
 class G4Step;
 
 /// Namespace for the AIDA detector description toolkit
@@ -53,6 +54,9 @@ namespace dd4hep {
       Geant4TouchableHandler(const G4Step* step);
       /// Default constructor. Takes the step's pre-touchable
       Geant4TouchableHandler(const G4Step* step, bool use_post_step_point);
+
+      /// Assemble Geant4 volume path
+      static std::string placementPath(const Geant4PlacementPath& path, bool reverse=true);
 
       /// Helper: Generate placement path from touchable object
       Geant4PlacementPath placementPath(bool exception=false) const;

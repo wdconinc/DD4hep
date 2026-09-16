@@ -1,3 +1,13 @@
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//==========================================================================
 /*
  * CartesianStripZ.cpp
  *
@@ -6,7 +16,7 @@
  *              David Blyth, ANL
  */
 
-#include "DDSegmentation/CartesianStripZ.h"
+#include <DDSegmentation/CartesianStripZ.h>
 
 namespace dd4hep {
 namespace DDSegmentation {
@@ -53,18 +63,8 @@ CellID CartesianStripZ::cellID(const Vector3D& localPosition, const Vector3D& /*
 }
 
 std::vector<double> CartesianStripZ::cellDimensions(const CellID&) const {
-#if __cplusplus >= 201103L
     return {_stripSizeZ};
-#else
-    std::vector<double> cellDims(1, 0.0);
-    cellDims[0] = _stripSizeZ;
-    return cellDims;
-#endif
 }
 
 }  // namespace DDSegmentation
 } /* namespace dd4hep */
-
-// This is done DDCore/src/plugins/ReadoutSegmentations.cpp so the plugin is not part of libDDCore
-// needs also #include "DD4hep/Factories.h"
-// DECLARE_SEGMENTATION(CartesianStripZ,create_segmentation<dd4hep::DDSegmentation::CartesianStripZ>)

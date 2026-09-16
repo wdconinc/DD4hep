@@ -1,6 +1,14 @@
 name: clang-tidy-guards
 
-on: [push, pull_request]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - dependabot/**
 
 jobs:
   default:
@@ -8,14 +16,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        LCG: ["dev4/x86_64-el9-clang16-opt"]
+        LCG: ["dev4/x86_64-el9-clang22-opt"]
     steps:
-    - uses: actions/checkout@v3
-    - uses: cvmfs-contrib/github-action-cvmfs@v3
-    - uses: aidasoft/run-lcg-view@v3
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - uses: cvmfs-contrib/github-action-cvmfs@10197e000cc0add8e54ac4fb73d3ed44e2de72b4
+    - uses: aidasoft/run-lcg-view@d8db17c61216548c9192889942d46ff2d7c3a3b6
       with:
         release-platform: ${{ matrix.LCG }}
         run: |
+          # clang-tidy does not work with the clang-wrapper, we setup the direct clang here
+          source /cvmfs/sft.cern.ch/lcg/contrib/clang/22/x86_64-el9/setup.sh
           mkdir build
           cd build
           unset CPATH
@@ -34,7 +44,7 @@ jobs:
             -DDD4HEP_USE_XERCESC=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-fdiagnostics-color=always"  \
-            -DCMAKE_CXX_STANDARD=17 ..
+            -DCMAKE_CXX_STANDARD=20 ..
           echo "::group::Tidy"
           cd ..
           HEADER_FILES=$(find */include/* -name "*.h" | grep -v "/detail/\|/src/\|DDGear.h")

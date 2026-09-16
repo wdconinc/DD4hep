@@ -11,12 +11,11 @@
 //
 //==========================================================================
 
-#include "DD4hep/Fields.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/InstanceCount.h"
-#include "DD4hep/detail/Handle.inl"
+#include <DD4hep/Fields.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/InstanceCount.h>
+#include <DD4hep/detail/Handle.inl>
 
-using namespace std;
 using namespace dd4hep;
 
 typedef CartesianField::Object CartesianFieldObject;
@@ -26,7 +25,10 @@ typedef OverlayedField::Object OverlayedFieldObject;
 DD4HEP_INSTANTIATE_HANDLE(OverlayedFieldObject);
 
 namespace {
-  void calculate_combined_field(vector<CartesianField>& v, const Position& pos, double* field) {
+  void calculate_combined_field(std::vector<CartesianField>& v, const Position& pos, double* field) {
+    for (const auto& i : v ) i.value(pos, field);
+  }
+  void calculate_combined_field(std::vector<CartesianField>& v, const double* pos, double* field) {
     for (const auto& i : v ) i.value(pos, field);
   }
 }
@@ -90,7 +92,7 @@ OverlayedField::Object::~Object() {
 }
 
 /// Object constructor
-OverlayedField::OverlayedField(const string& nam) : Ref_t() {
+OverlayedField::OverlayedField(const std::string& nam) : Ref_t() {
   auto* obj = new Object();
   assign(obj, nam, "overlay_field");
   obj->field_type = CartesianField::OVERLAY;
@@ -116,13 +118,13 @@ void OverlayedField::add(CartesianField field) {
       bool isEle = field.ELECTRIC == (typ & field.ELECTRIC);
       bool isMag = field.MAGNETIC == (typ & field.MAGNETIC);
       if (isEle) {
-        vector < CartesianField > &v = o->electric_components;
+        std::vector < CartesianField > &v = o->electric_components;
         v.emplace_back(field);
         o->field_type |= field.ELECTRIC;
         o->electric = (v.size() == 1) ? field : CartesianField();
       }
       if (isMag) {
-        vector < CartesianField > &v = o->magnetic_components;
+        std::vector < CartesianField > &v = o->magnetic_components;
         v.emplace_back(field);
         o->field_type |= field.MAGNETIC;
         o->magnetic = (v.size() == 1) ? field : CartesianField();
@@ -139,6 +141,12 @@ void OverlayedField::add(CartesianField field) {
 
 /// Returns the 3  magnetic field components (x, y, z).
 void OverlayedField::magneticField(const Position& pos, double* field) const   {
+  const double position[3] = {pos.X(), pos.Y(), pos.Z()};
+  magneticField(position, field);
+}
+
+/// Returns the 3 magnetic field components (x, y, z).
+void OverlayedField::magneticField(const double* pos, double* field) const   {
   if ( isValid() )   {
     field[0] = field[1] = field[2] = 0.0;
     auto* obj = data<Object>();

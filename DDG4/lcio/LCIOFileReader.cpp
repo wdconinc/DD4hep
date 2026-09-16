@@ -27,9 +27,9 @@
 // Framework include files
 #include "LCIOEventReader.h"
 
-#include "DDG4/EventParameters.h"
+#include <DDG4/EventParameters.h>
 
-#include "lcio.h"
+#include <lcio.h>
 
 using namespace lcio ;
 
@@ -44,23 +44,26 @@ namespace dd4hep  {
 
     /// get the parameters from the input LCIO Event and store them in the EventParameters extension
     template <class T=EVENT::LCParameters> void EventParameters::ingestParameters(T const& source) {
-      EVENT::StringVec intKeys; source.getIntKeys(intKeys);
-      EVENT::StringVec floatKeys; source.getFloatKeys(floatKeys);
-      EVENT::StringVec stringKeys; source.getStringKeys(stringKeys);
+      EVENT::StringVec intKeys;
+      EVENT::StringVec floatKeys;
+      EVENT::StringVec stringKeys;
+      source.getIntKeys(intKeys);
+      source.getFloatKeys(floatKeys);
+      source.getStringKeys(stringKeys);
       for(auto const& key: intKeys) {
         EVENT::IntVec intVec;
         source.getIntVals(key,intVec);
-        m_intValues[key] = intVec;
+        m_intValues[key] = std::move(intVec);
       }
       for(auto const& key: floatKeys) {
         EVENT::FloatVec floatVec;
         source.getFloatVals(key,floatVec);
-        m_fltValues[key] = floatVec;
+        m_fltValues[key] = std::move(floatVec);
       }
       for(auto const& key: stringKeys) {
         EVENT::StringVec stringVec;
         source.getStringVals(key,stringVec);
-        m_strValues[key] = stringVec;
+        m_strValues[key] = std::move(stringVec);
       }
     }
 
@@ -84,7 +87,7 @@ namespace dd4hep  {
       virtual ~LCIOFileReader();
 
       /// Read an event and fill a vector of MCParticles.
-      virtual EventReaderStatus readParticleCollection(int event_number, EVENT::LCCollection** particles);
+      virtual EventReaderStatus readParticleCollection(int event_number, CollectionOwner& particles);
       virtual EventReaderStatus moveToEvent(int event_number);
       virtual EventReaderStatus skipEvent() { return EVENT_READER_OK; }
       virtual EventReaderStatus setParameters(std::map< std::string, std::string >& parameters); 
@@ -93,9 +96,9 @@ namespace dd4hep  {
 }
 #endif // DD4HEP_DDG4_LCIOFILEREADER_H
 
-#include "DD4hep/Printout.h"
-#include "DDG4/Factories.h"
-#include "UTIL/ILDConf.h"
+#include <DD4hep/Printout.h>
+#include <DDG4/Factories.h>
+#include <UTIL/ILDConf.h>
 
 using namespace dd4hep::sim;
 
@@ -136,25 +139,29 @@ dd4hep::sim::LCIOFileReader::moveToEvent(int event_number) {
 
 /// Read an event and fill a vector of MCParticles.
 Geant4EventReader::EventReaderStatus
-dd4hep::sim::LCIOFileReader::readParticleCollection(int /*event_number*/, EVENT::LCCollection** particles)  {
+dd4hep::sim::LCIOFileReader::readParticleCollection(int /*event_number*/, LCIOEventReader::CollectionOwner& particles)  {
 
-  ::lcio::LCEvent* evt = m_reader->readNextEvent(); // simply read the events sequentially 
+  ::lcio::LCEvent* evt = m_reader->readNextEvent(); // simply read the events sequentially
   ++m_currEvent ;
 
   if ( evt ) {
-    *particles = evt->getCollection(m_collectionName);
-    if ( *particles ) {
+    particles = LCIOEventReader::CollectionOwner(evt->getCollection(m_collectionName), [](EVENT::LCCollection*){});
+    if ( particles ) {
       printout(INFO,"LCIOFileReader","read collection %s from event %d in run %d ", 
                m_collectionName.c_str(), evt->getEventNumber(), evt->getRunNumber());
       
       // Create input event parameters context
       try {
+        // get EventParameters or create new if not existent yet
         Geant4Context* ctx = context();
-        EventParameters *parameters = new EventParameters();
+        auto* parameters = ctx->event().extension<EventParameters>(false);
+        if (!parameters) {
+          parameters = new EventParameters();
+          ctx->event().addExtension<EventParameters>(parameters);
+        }
         parameters->setRunNumber(evt->getRunNumber());
         parameters->setEventNumber(evt->getEventNumber());
         parameters->ingestParameters(evt->parameters());
-        ctx->event().addExtension<EventParameters>(parameters);
       }
       catch(std::exception &) 
       {

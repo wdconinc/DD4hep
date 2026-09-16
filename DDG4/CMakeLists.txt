@@ -45,15 +45,25 @@ dd4hep_add_dictionary( G__DDG4
   SOURCES python/DDG4Dict.C
   USES    DD4hep::DDCore DD4hep::DDParsers DD4hep::DDG4 Geant4::Interface
   )
+#-----------------------------------------------------------------------------------
+# Note:
+# This is only an example how to add customizable G4 physics constructors.
+# You only need a compiled dictionary. Other specializations unless required
+# by multiple people should be kept in user space.
+#
+dd4hep_add_dictionary( G__DDG4Physics
+  SOURCES python/DDG4PhysicsDict.C
+  USES    DD4hep::DDCore DD4hep::DDParsers DD4hep::DDG4 Geant4::Interface
+  )
 #---------------------------  Plugin library for the simulation framework  ---------
 dd4hep_add_plugin(DDG4Plugins
   SOURCES   plugins/*.cpp
-  GENERATED G__DDG4.cxx
+  GENERATED G__DDG4.cxx G__DDG4Physics.cxx
   USES      DD4hep::DDG4 DD4hep::DDParsers ${XML_LIBRARIES} ROOT::Core ${CLHEP} 
   )
 #---------------------------  Plugin library for the simulation framework  ---------
 
-if(TARGET Python::Python AND TARGET ${DD4HEP_ROOT_PYTHON})
+if(TARGET Python::Python AND TARGET ROOT::ROOTTPython)
   dd4hep_print("|++> Python found, creating DDG4Python Dictionary")
   dd4hep_add_dictionary(G__DDG4Python
     SOURCES src/python/DDG4Python.C
@@ -67,11 +77,9 @@ if(TARGET Python::Python AND TARGET ${DD4HEP_ROOT_PYTHON})
   dd4hep_print("|++> ROOT Has Python, creating DDPython library and plugins")
   add_library(DDPython G__DDPython.cxx tpython/DDPython.cpp)
   add_library(DD4hep::DDPython ALIAS DDPython)
-  target_link_libraries(DDPython DD4hep::DDG4 ROOT::Core Python::Python ${DD4HEP_ROOT_PYTHON})
-  IF(${CMAKE_CXX_STANDARD} GREATER 16)
-    # python header not cxx17 compatible, gives error in clang
-    target_compile_options(DDPython PUBLIC -Wno-register)
-  ENDIF()
+  target_link_libraries(DDPython DD4hep::DDG4 ROOT::Core Python::Python ROOT::ROOTTPython)
+  # python header not cxx17 compatible, gives error in clang
+  target_compile_options(DDPython PUBLIC -Wno-register)
   dd4hep_add_plugin(DDG4Python
     SOURCES   src/python/*.cpp
     GENERATED G__DDG4Python.cxx
@@ -79,12 +87,12 @@ if(TARGET Python::Python AND TARGET ${DD4HEP_ROOT_PYTHON})
     )
   #---Helper to overcome deficiency of the python executable concerning multi-threading
   add_executable(pyddg4 pyddg4.cpp)
-  target_link_libraries(pyddg4 PUBLIC DD4hep::DDPython ROOT::Core ${DD4HEP_ROOT_PYTHON})
+  target_link_libraries(pyddg4 PUBLIC DD4hep::DDPython ROOT::Core ROOT::ROOTTPython)
 
   # install these libraries
   set_target_properties(DDPython DDG4Python PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
   INSTALL(TARGETS DDPython pyddg4 DDG4Python EXPORT DD4hep
-    LIBRARY DESTINATION lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION bin)
 else()
   dd4hep_print("|+++++> Python or PyRoot/ROOTTPython not found, not creating DDG4 Python Dictionaries")
@@ -92,24 +100,36 @@ endif()
 
 #---------------------------  Plugin library for the simulation framework  ---------
 #---------------------------  LCIO Plugins for new simulation framework  -----------
-IF(TARGET LCIO::LCIO)
+IF(TARGET LCIO::lcio)
   dd4hep_add_plugin(DDG4LCIO
     SOURCES lcio/*.cpp
-    USES    DD4hep::DDG4 LCIO::LCIO
+    USES    DD4hep::DDG4 LCIO::lcio
     )
-  install(TARGETS DDG4LCIO EXPORT DD4hep LIBRARY DESTINATION lib)
   set_target_properties(DDG4LCIO PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
 
 ENDIF()
 
 IF(TARGET EDM4HEP::edm4hep)
+  if(podio_VERSION VERSION_GREATER_EQUAL "1.0.0")
+    set(DDG4_PODIO_IO_TARGET podio::podioIO)
+  else()
+    set(DDG4_PODIO_IO_TARGET podio::podioRootIO)
+  endif()
   dd4hep_add_plugin(DDG4EDM4HEP
-    SOURCES edm4hep/*.cpp
-    USES    DD4hep::DDG4 EDM4HEP::edm4hep EDM4HEP::edm4hepDict podio::podio podio::podioDict podio::podioRootIO
+    SOURCES edm4hep/Geant4Output2EDM4hep.cpp
+    USES    DD4hep::DDG4 EDM4HEP::edm4hep EDM4HEP::edm4hepDict podio::podio podio::podioDict ${DDG4_PODIO_IO_TARGET}
     )
-  install(TARGETS DDG4EDM4HEP EXPORT DD4hep LIBRARY DESTINATION lib)
   set_target_properties(DDG4EDM4HEP PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
-
+  if(TARGET podio::podioIO)
+      dd4hep_add_plugin(DDG4EDM4HEPReader
+        SOURCES edm4hep/EDM4hepFileReader.cpp
+        USES    DD4hep::DDG4 EDM4HEP::edm4hep EDM4HEP::edm4hepDict podio::podio podio::podioDict podio::podioIO
+      )
+      set_target_properties(DDG4EDM4HEPReader PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
+      MESSAGE(STATUS "EDM4hepFileReader enabled")
+  else()
+      MESSAGE(STATUS "EDM4hepFileReader requires at least PODIO 1.0, disabled")
+  endif()
 ENDIF()
 
 IF(DD4HEP_USE_HEPMC3)
@@ -143,6 +163,19 @@ IF(DD4HEP_USE_HEPMC3)
   SET(DD4HEP_USE_HEPMC3 ON)
 ENDIF()
 
+#---------------------------  G4HepEm plugin  ----------------------------------------
+IF(TARGET G4HepEm::g4HepEm)
+  dd4hep_print("|++> G4HepEm found, building DDG4HepEm plugin")
+  dd4hep_add_plugin(DDG4HepEm
+    SOURCES g4hepem/Geant4HepEmTrackingPhysics.cpp
+    USES    DD4hep::DDG4 G4HepEm::g4HepEm
+    )
+  set_target_properties(DDG4HepEm PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
+  install(TARGETS DDG4HepEm EXPORT DD4hep
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION bin)
+ENDIF()
+
 #
 #---------------------------  DDRec dependent Plugins  -----------------------------
 #This does not compile at the moment
@@ -172,10 +205,11 @@ get_filename_component(PYTHON_INTERPRETER_BINARY ${Python_EXECUTABLE} NAME)
 configure_file(python/DDSim/bin/ddsim.in.py ${CMAKE_BINARY_DIR}/bin/ddsim @ONLY)
 install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/ddsim DESTINATION bin)
 
-install(PROGRAMS python/bin/checkOverlaps.py DESTINATION bin RENAME checkOverlaps)
-install(PROGRAMS python/bin/checkGeometry.py DESTINATION bin RENAME checkGeometry)
-install(PROGRAMS python/bin/g4MaterialScan.py DESTINATION bin RENAME g4MaterialScan)
-install(PROGRAMS python/bin/g4GeometryScan.py DESTINATION bin RENAME g4GeometryScan)
+install(FILES python/bin/MaterialScanner_Parser.py DESTINATION ${DD4HEP_PYTHON_INSTALL_DIR})
+install(PROGRAMS python/bin/g4MaterialScan.py   DESTINATION bin RENAME g4MaterialScan)
+install(PROGRAMS python/bin/g4GeometryScan.py   DESTINATION bin RENAME g4GeometryScan)
+install(PROGRAMS python/bin/g4GraphicalScan.py  DESTINATION bin RENAME g4GraphicalScan)
+install(PROGRAMS python/bin/g4PolarAngleScan.py DESTINATION bin RENAME g4PolarAngleScan)
 
 # configure and install DD4hepSimulation files
 file(GLOB_RECURSE DDSIM_FILES RELATIVE ${CMAKE_CURRENT_LIST_DIR}/python/DDSim/ python/DDSim/*.py)
@@ -193,9 +227,9 @@ install(DIRECTORY examples DESTINATION examples/DDG4)
 
 set_target_properties(DDG4 DDG4Plugins PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
 
-install(TARGETS DDG4 DDG4Plugins g4FromXML
+install(TARGETS DDG4 g4FromXML
   EXPORT DD4hep
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION bin)
 install(DIRECTORY include/DDG4 DESTINATION include)

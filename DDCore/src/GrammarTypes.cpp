@@ -14,9 +14,9 @@
 // Framework include files
 #include <DD4hep/GrammarParsed.h>
 
-#include "Math/Point3D.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
+#include <Math/Point3D.h>
+#include <Math/Vector4D.h>
+#include <Math/Vector3D.h>
 
 #ifndef DD4HEP_PARSERS_NO_ROOT
 
@@ -51,6 +51,7 @@ DD4HEP_DEFINE_PARSER_GRAMMAR_U_CONT(long long)
 DD4HEP_DEFINE_PARSER_GRAMMAR_CONT_VL(unsigned long,eval_item)
 #ifdef __APPLE__
 DD4HEP_DEFINE_PARSER_GRAMMAR(long long,eval_item)
+DD4HEP_DEFINE_PARSER_GRAMMAR(unsigned long long,eval_item)
 #endif
 #endif   //  DD4HEP_HAVE_ALL_PARSERS
 

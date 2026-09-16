@@ -14,10 +14,10 @@
 #define DDG4_GEANT4USERLIMITS_H
 
 // Framework include files
-#include "DD4hep/Objects.h"
+#include <DD4hep/Objects.h>
 
 // Geant 4 include files
-#include "G4UserLimits.hh"
+#include <G4UserLimits.hh>
 
 // Forward declarations
 class G4ParticleDefinition;
@@ -78,26 +78,26 @@ namespace dd4hep {
       /// Update the object
       virtual void update(LimitSet limitset);
       /// Access the user tracklength for a G4 track object
-      virtual G4double GetMaxAllowedStep(const G4Track& track)
+      virtual G4double GetMaxAllowedStep(const G4Track& track)  override
       {  return maxStepLength.value(track);    }
       /// Access the user tracklength for a G4 track object
-      virtual G4double GetUserMaxTrackLength(const G4Track& track)
+      virtual G4double GetUserMaxTrackLength(const G4Track& track)  override
       {  return maxTrackLength.value(track);   }
       /// Access the proper time cut for a G4 track object
-      virtual G4double GetUserMaxTime (const G4Track& track)
+      virtual G4double GetUserMaxTime (const G4Track& track)  override
       {  return maxTime.value(track);          }
       /// Access the kinetic energy cut for a G4 track object
-      virtual G4double GetUserMinEkine(const G4Track& track)
+      virtual G4double GetUserMinEkine(const G4Track& track)  override
       {  return minEKine.value(track);         }
       /// Access the range cut for a G4 track object
-      virtual G4double GetUserMinRange(const G4Track& track)
+      virtual G4double GetUserMinRange(const G4Track& track)  override
       {  return minRange.value(track);         }
       /// Setters may not be called!
-      virtual void SetMaxAllowedStep(G4double ustepMax);    
-      virtual void SetUserMaxTrackLength(G4double utrakMax);
-      virtual void SetUserMaxTime(G4double utimeMax);
-      virtual void SetUserMinEkine(G4double uekinMin);
-      virtual void SetUserMinRange(G4double urangMin);
+      virtual void SetMaxAllowedStep(G4double ustepMax)  override;    
+      virtual void SetUserMaxTrackLength(G4double utrakMax)  override;
+      virtual void SetUserMaxTime(G4double utimeMax)  override;
+      virtual void SetUserMinEkine(G4double uekinMin)  override;
+      virtual void SetUserMinRange(G4double urangMin)  override;
       /// Allow for debugging user limits (very verbose)
       static bool enable_debug(bool value);
     };

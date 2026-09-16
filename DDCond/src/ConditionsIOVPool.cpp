@@ -12,15 +12,14 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Printout.h"
-#include "DD4hep/InstanceCount.h"
-#include "DDCond/ConditionsIOVPool.h"
-#include "DDCond/ConditionsCleanup.h"
-#include "DDCond/ConditionsDataLoader.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/InstanceCount.h>
+#include <DDCond/ConditionsIOVPool.h>
+#include <DDCond/ConditionsCleanup.h>
+#include <DDCond/ConditionsDataLoader.h>
 
-#include "DD4hep/detail/ConditionsInterna.h"
+#include <DD4hep/detail/ConditionsInterna.h>
 
-using namespace dd4hep;
 using namespace dd4hep::cond;
 
 /// Default constructor
@@ -90,7 +89,7 @@ int ConditionsIOVPool::clean(const ConditionsCleanup& cleaner)   {
   return count;  
 }
 
-/// Remove all key based pools with an age beyon the minimum age
+/// Remove all key based pools with an age beyond the minimum age
 int ConditionsIOVPool::clean(int max_age)   {
   Elements rest;
   int count = 0;

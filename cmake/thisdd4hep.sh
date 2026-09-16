@@ -34,7 +34,7 @@ dd4hep_add_path()   {
     local path_prefix=${2}
     eval path_value=\$$path_name
     # Prevent duplicates
-    path_value=`echo ${path_value} | tr : '\n' | grep -v "^${path_prefix}$" | tr '\n' : | sed 's|:$||'`
+    path_value=`echo ${path_value} | tr : '\n' | (grep -v "^${path_prefix}$" || true) | tr '\n' : | sed 's|:$||'`
     path_value="${path_prefix}${path_value:+:${path_value}}"
     eval export ${path_name}='${path_value}'
     unset path_value
@@ -50,6 +50,7 @@ dd4hep_add_library_path()    {
     else
         dd4hep_add_path LD_LIBRARY_PATH       "$p"
     fi
+    dd4hep_add_path ROOT_LIBRARY_PATH "$p"
 }
 #-----------------------------------------------------------------------------
 #
@@ -104,7 +105,7 @@ fi;
 #----PATH---------------------------------------------------------------------
 dd4hep_add_path PATH       ${THIS}/bin;
 #----LIBRARY_PATH-------------------------------------------------------------
-dd4hep_add_library_path    ${THIS}/lib;
+dd4hep_add_library_path    ${THIS}/@CMAKE_INSTALL_LIBDIR@;
 #----PYTHONPATH---------------------------------------------------------------
 dd4hep_add_path PYTHONPATH ${THIS}/@DD4HEP_PYTHON_INSTALL_DIR@;
 #----ROOT_INCLUDE_PATH--------------------------------------------------------
@@ -113,8 +114,6 @@ dd4hep_add_path ROOT_INCLUDE_PATH ${THIS}/include;
 if [ @APPLE@ ];
 then
     export DD4HEP_LIBRARY_PATH=${DYLD_LIBRARY_PATH};
-else
-    export DD4HEP_LIBRARY_PATH=${LD_LIBRARY_PATH};
 fi;
 #-----------------------------------------------------------------------------
 #

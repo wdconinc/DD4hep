@@ -665,11 +665,15 @@ namespace dd4hep {
       double eunit() const;
       /// Access min/max parameters: eunit
       double eunit(double default_value) const;
+      /// Access layers attribute
+      int    layers()  const;
+      /// Access layers attribute
+      int    layers(int default_value)  const;
       /// Access min/max parameters: lunit
       double lunit() const;
       /// Access min/max parameters: lunit
       double lunit(double default_value) const;
-
+      
       /// Access constants: temperature
       double temperature() const;
       /// Access constants: temperature
@@ -746,14 +750,24 @@ namespace dd4hep {
       std::string refStr() const;
       /// Access "module" attribute as STL string
       std::string moduleStr() const;
+      /// Access "module" attribute as STL string. Return default value if not present
+      std::string moduleStr(const std::string& default_value) const;
       /// Access "readout" attribute as STL string
       std::string readoutStr() const;
+      /// Access "readout" attribute as STL string. Return default value if not present
+      std::string readoutStr(const std::string& default_value) const;
       /// Access vis attribute as STL string. If not present empty return empty string
       std::string visStr() const;
+      /// Access vis attribute as STL string. If not present empty return empty string
+      std::string visStr(const std::string& default_value) const;
       /// Access region attribute as STL string. If not present empty return empty string
       std::string regionStr() const;
+      /// Access region attribute as STL string. If not present empty return empty string
+      std::string regionStr(const std::string& default_value) const;
       /// Access limits attribute as STL string. If not present empty return empty string
       std::string limitsStr() const;
+      /// Access limits attribute as STL string. If not present empty return empty string
+      std::string limitsStr(const std::string& default_value) const;
     };
 
   }       /* End namespace DD4HEP_DIMENSION_NS        */

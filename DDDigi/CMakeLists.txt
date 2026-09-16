@@ -69,7 +69,11 @@ endif()
 if(DD4HEP_USE_EDM4HEP)
   list(APPEND DDDigiIO_SOURCES      "io/DigiEdm4hepOutput.cpp;io/DigiEdm4hepInput.cpp")
   list(APPEND DDDigiIO_DEFINITIONS  "DD4HEP_USE_EDM4HEP=1")
-  list(APPEND DDDigiIO_USES         "EDM4HEP::edm4hep;EDM4HEP::edm4hepDict;podio::podio;podio::podioDict;podio::podioRootIO")
+  if(podio_VERSION VERSION_GREATER_EQUAL "1.0.0")
+    list(APPEND DDDigiIO_USES       "EDM4HEP::edm4hep;EDM4HEP::edm4hepDict;podio::podio;podio::podioDict;podio::podioIO")
+  else()
+    list(APPEND DDDigiIO_USES       "EDM4HEP::edm4hep;EDM4HEP::edm4hepDict;podio::podio;podio::podioDict;podio::podioRootIO")
+  endif()
 else()
   dd4hep_print( "|++> EDM4HEP not used. DDDigi will not be able to write EDM4HEP output.")
 endif()
@@ -82,7 +86,6 @@ dd4hep_add_plugin(DDDigi_IO
     DEFINITIONS    ${DDDigiIO_DEFINITIONS}
   )
   set_target_properties(DDDigi_IO PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
-  install(TARGETS DDDigi_IO EXPORT DD4hep ARCHIVE DESTINATION lib LIBRARY DESTINATION lib)
 #
 #---Package installation procedure(s) ----------------------------------------------
 set_target_properties(DDDigi DDDigiPlugins PROPERTIES VERSION ${DD4hep_VERSION} SOVERSION ${DD4hep_SOVERSION})
@@ -90,8 +93,8 @@ set_target_properties(DDDigi DDDigiPlugins PROPERTIES VERSION ${DD4hep_VERSION} 
 file(GLOB DDDigi_python python/*.py python/*.C)
 install(FILES ${DDDigi_python} DESTINATION ${DD4HEP_PYTHON_INSTALL_DIR})
 #
-install(TARGETS DDDigi DDDigiPlugins EXPORT DD4hep
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
+install(TARGETS DDDigi EXPORT DD4hep
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(DIRECTORY include/DDDigi DESTINATION include)

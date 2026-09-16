@@ -13,7 +13,10 @@
 #ifndef DD4HEP_GEOHANDLER_H
 #define DD4HEP_GEOHANDLER_H
 
-#include "DD4hep/Detector.h"
+/// Framework include files
+#include <DD4hep/Detector.h>
+
+/// C/C++ include files
 #include <set>
 #include <map>
 #include <vector>
@@ -48,17 +51,6 @@ namespace dd4hep {
      */
     class GeoHandlerTypes {
     public:
-#if 0
-      typedef std::set<const TGeoVolume*> ConstVolumeSet;
-      typedef std::map<SensitiveDetector, ConstVolumeSet> SensitiveVolumes;
-      typedef std::map<Region,   ConstVolumeSet>          RegionVolumes;
-      typedef std::map<LimitSet, ConstVolumeSet>          LimitVolumes;
-      typedef std::map<int, std::set<const TGeoNode*> >   Data;
-      typedef std::set<SensitiveDetector>                 SensitiveDetectorSet;
-      typedef std::set<Region>                            RegionSet;
-      typedef std::set<LimitSet>                          LimitSetSet;
-      typedef std::set<TNamed*>                           ObjectSet;
-#endif
       /// Data container to store information obtained during the geometry scan
       /**
        *  \author  M.Frank
@@ -67,7 +59,8 @@ namespace dd4hep {
        */
       class GeometryInfo {
       public:
-        std::set<TGeoShape*>   solids;
+        std::vector<TGeoShape*>   solids;
+        std::set<TGeoShape*>   solid_set;
         std::set<Volume>       volumeSet;
         std::vector<Volume>    volumes;
         std::set<VisAttr>      vis;
@@ -94,13 +87,18 @@ namespace dd4hep {
     class GeoHandler: public GeoHandlerTypes {
 
     protected:
-      bool  m_propagateRegions;
-      std::map<int, std::set<const TGeoNode*> >* m_data;
+      bool  m_propagateRegions { false };
 
+      /// actual container with std::vector (preserves order)
+      std::map<int, std::vector<const TGeoNode*> >*    m_data      { nullptr };
+      /// redundant container with std::set (for lookup purpose)
+      std::map<int, std::set<const TGeoNode*> >* m_set_data { nullptr };
+
+      std::map<const TGeoNode*, std::vector<TGeoNode*> >* m_daughters { nullptr };
       /// Internal helper to collect geometry information from traversal
       GeoHandler& i_collect(const TGeoNode* parent,
-			    const TGeoNode* node,
-			    int level, Region rg, LimitSet ls);
+                            const TGeoNode* node,
+                            int level, Region rg, LimitSet ls);
 
     private:
       /// Never call Copy constructor
@@ -115,7 +113,9 @@ namespace dd4hep {
       /// Default constructor
       GeoHandler();
       /// Initializing constructor
-      GeoHandler(std::map<int, std::set<const TGeoNode*> >* ptr);
+      GeoHandler(std::map<int, std::vector<const TGeoNode*> >* ptr,
+                 std::map<int, std::set<const TGeoNode*> >* ptr_set,
+                 std::map<const TGeoNode*, std::vector<TGeoNode*> >* daus = nullptr);
       /// Default destructor
       virtual ~GeoHandler();
       /// Propagate regions. Returns the previous value
@@ -125,7 +125,7 @@ namespace dd4hep {
       /// Collect geometry information from traversal with aggregated information
       GeoHandler& collect(DetElement top, GeometryInfo& info);
       /// Access to collected node list
-      std::map<int, std::set<const TGeoNode*> >* release();
+      std::map<int, std::vector<const TGeoNode*> >* release();
     };
 
     /// Geometry scanner (handle object)
@@ -137,7 +137,7 @@ namespace dd4hep {
     class GeoScan {
     protected:
       /// Data holder
-      std::map<int, std::set<const TGeoNode*> >* m_data;
+      std::map<int, std::vector<const TGeoNode*> >* m_data;
     public:
       /// Initializing constructor
       GeoScan(DetElement e);

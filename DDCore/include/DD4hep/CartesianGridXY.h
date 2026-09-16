@@ -41,7 +41,7 @@ namespace dd4hep {
    *  fiddled with the handled object directly.....
    *
    *  Note:
-   *  The handle base corrsponding to this object in for
+   *  The handle base corresponding to this object in for
    *  conveniance reasons instantiated in dd4hep/src/Segmentations.cpp.
    *
    *  \author  M.Frank
@@ -55,11 +55,11 @@ namespace dd4hep {
     /// Copy constructor
     CartesianGridXY(const CartesianGridXY& e) = default;
     /// Copy Constructor from segmentation base object
-    CartesianGridXY(const Segmentation& e) : Handle<Object>(e) { }
+    CartesianGridXY(const Segmentation& e) : Handle<Object>(e)  { }
     /// Copy constructor from handle
-    CartesianGridXY(const Handle<Object>& e) : Handle<Object>(e) { }
+    CartesianGridXY(const Handle<Object>& e) : Handle<Object>(e)  { }
     /// Copy constructor from other equivalent handle
-    template <typename Q> CartesianGridXY(const Handle<Q>& e) : Handle<Object>(e) { }
+    template <typename Q> CartesianGridXY(const Handle<Q>& e) : Handle<Object>(e)  { }
     /// Assignment operator
     CartesianGridXY& operator=(const CartesianGridXY& seg) = default;
     /// Equality operator

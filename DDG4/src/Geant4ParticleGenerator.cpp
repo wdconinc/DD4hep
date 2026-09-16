@@ -12,27 +12,27 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Printout.h"
-#include "DD4hep/InstanceCount.h"
-#include "DDG4/Geant4Context.h"
-#include "DDG4/Geant4Primary.h"
-#include "DDG4/Geant4ParticleGenerator.h"
-#include "DDG4/Geant4Random.h"
-#include "CLHEP/Units/SystemOfUnits.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/InstanceCount.h>
+#include <DDG4/Geant4Context.h>
+#include <DDG4/Geant4Primary.h>
+#include <DDG4/Geant4ParticleGenerator.h>
+#include <DDG4/Geant4Random.h>
+#include <CLHEP/Units/PhysicalConstants.h>
+#include <CLHEP/Units/SystemOfUnits.h>
 
 // Geant4 include files
-#include "G4ParticleTable.hh"
-#include "G4ParticleDefinition.hh"
+#include <G4ParticleTable.hh>
+#include <G4ParticleDefinition.hh>
 
 // C/C++ include files
 #include <stdexcept>
 #include <cmath>
 
-using namespace std;
 using namespace dd4hep::sim;
 
 /// Standard constructor
-Geant4ParticleGenerator::Geant4ParticleGenerator(Geant4Context* ctxt, const string& nam)
+Geant4ParticleGenerator::Geant4ParticleGenerator(Geant4Context* ctxt, const std::string& nam)
   : Geant4GeneratorAction(ctxt, nam), m_direction(0,1,0), m_position(0,0,0), m_particle(0)
 {
   InstanceCount::increment(this);
@@ -125,7 +125,7 @@ void Geant4ParticleGenerator::operator()(G4Event*) {
     G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
     m_particle = particleTable->FindParticle(m_particleName);
     if (0 == m_particle) {
-      throw runtime_error("Geant4ParticleGenerator: Bad particle type:"+m_particleName+"!");
+      except("Geant4ParticleGenerator: Bad particle type: %s!", m_particleName.c_str());
     }
   }
   Geant4Event& evt = context()->event();
@@ -159,9 +159,32 @@ void Geant4ParticleGenerator::operator()(G4Event*) {
     p->psz          = unit_direction.Z()*momentum;
     p->mass         = m_particle->GetPDGMass();
     p->charge       = 3 * m_particle->GetPDGCharge();
-    p->spin[0]      = 0;
-    p->spin[1]      = 0;
-    p->spin[2]      = 0;
+    // Optical photons must have a defined polarization; assign a random one
+    // perpendicular to the momentum direction (physical requirement for Geant4 optics).
+    if ( m_particle->GetParticleName() == "opticalphoton" )  {
+      if ( momentum == 0.0 )  {
+        except("Geant4ParticleGenerator: Cannot assign polarization to optical photon with zero momentum!");
+      }
+      // Build two unit vectors orthogonal to the photon direction using Gram-Schmidt.
+      ROOT::Math::XYZVector e1, e2;
+      if ( std::fabs(unit_direction.X()) < 0.9 )
+        e1 = ROOT::Math::XYZVector(1, 0, 0);
+      else
+        e1 = ROOT::Math::XYZVector(0, 1, 0);
+      e2  = unit_direction.Cross(e1).unit();
+      e1  = e2.Cross(unit_direction).unit();    // normalize defensively
+      Geant4Random& rnd = evt.random();
+      double angle = CLHEP::twopi * rnd.rndm();
+      ROOT::Math::XYZVector pol = (std::cos(angle)*e1 + std::sin(angle)*e2).unit();
+      p->spin[0] = pol.X();
+      p->spin[1] = pol.Y();
+      p->spin[2] = pol.Z();
+    }
+    else  {
+      p->spin[0] = 0;
+      p->spin[1] = 0;
+      p->spin[2] = 0;
+    }
     p->colorFlow[0] = 0;
     p->colorFlow[1] = 0;
     p->vsx        = vtx->x;
@@ -175,8 +198,7 @@ void Geant4ParticleGenerator::operator()(G4Event*) {
     vtx->out.insert(p->id);
     printout(INFO,name(),"Particle [%d] %-12s Mom:%.3f GeV vertex:(%6.3f %6.3f %6.3f)[mm] direction:(%6.3f %6.3f %6.3f)",
              p->id, m_particleName.c_str(), momentum/CLHEP::GeV,
-	     vtx->x/CLHEP::mm, vtx->y/CLHEP::mm, vtx->z/CLHEP::mm,
-	     direction.X(), direction.Y(), direction.Z());
-
+             vtx->x/CLHEP::mm, vtx->y/CLHEP::mm, vtx->z/CLHEP::mm,
+             direction.X(), direction.Y(), direction.Z());
   }
 }

@@ -15,8 +15,8 @@
 #define DDG4_GEANT4DATACONVERSION_H
 
 // Framework include files
-#include "DD4hep/VolumeManager.h"
-#include "DD4hep/DetElement.h"
+#include <DD4hep/VolumeManager.h>
+#include <DD4hep/DetElement.h>
 #include <typeinfo>
 
 /// Namespace for the AIDA detector description toolkit
@@ -132,7 +132,7 @@ namespace dd4hep {
         this->self_t::conversions().emplace(&typeid(TAG),this);
         //std::cout << "Registered " << typeName(typeid(*this)) << std::endl;
       }
-      virtual OUTPUT* operator()(const ARGS& args) const;
+      virtual OUTPUT* operator()(const ARGS& args) const  override;
     };
 
   }    // End namespace sim

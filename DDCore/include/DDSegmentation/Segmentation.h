@@ -19,12 +19,11 @@
 #ifndef DDSEGMENTATION_SEGMENTATION_H
 #define DDSEGMENTATION_SEGMENTATION_H
 
-#include "DD4hep/detail/SegmentationsInterna.h"
-#include "DDSegmentation/BitFieldCoder.h"
-#include "DDSegmentation/SegmentationParameter.h"
+#include <DD4hep/detail/SegmentationsInterna.h>
+#include <DDSegmentation/BitFieldCoder.h>
+#include <DDSegmentation/SegmentationParameter.h>
 
 #include <map>
-#include <utility>
 #include <set>
 #include <string>
 #include <vector>
@@ -127,6 +126,14 @@ namespace dd4hep {
           \return vector<double> in natural order of dimensions, e.g., dx/dy/dz, or dr/r*dPhi
       */
       virtual std::vector<double> cellDimensions(const CellID& cellID) const;
+      /// Return true if this segmentation can have cells that span multiple
+      /// volumes.  That is, points from multiple distinct volumes may
+      /// be assigned to the same cell.
+      /// In that case, a working volumeID() implementation is required.
+      virtual bool cellsSpanVolumes() const
+      {
+        return false;
+      }
 
     protected:
       /// Default constructor used by derived classes passing the encoding string

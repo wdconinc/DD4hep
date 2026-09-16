@@ -12,19 +12,14 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Detector.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/Factories.h"
-#include "DD4hep/DetectorHelper.h"
+#include <DD4hep/Detector.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/Factories.h>
+#include <DD4hep/DetectorHelper.h>
 
 // C/C++ include files
-#include <stdexcept>
-#include <algorithm>
 
-using namespace std;
 using namespace dd4hep;
-using namespace dd4hep::detail;
-
 
 namespace  {
 
@@ -37,7 +32,7 @@ namespace  {
    * 
    * See: dd4hep/DetectorHelper.h
    * Test: geoPluginRun -input file:../DD4hep.trunk/examples/CLICSiD/compact/compact.xml \
-   *                    -plugin CLICSiD_DetectorHelperTest			\
+   *                    -plugin CLICSiD_DetectorHelperTest                        \
    *         optional:  -<detector-name (default:SiVertexEndcap)>  [Note the '-'!!!]
    *
    *  @author  M.Frank

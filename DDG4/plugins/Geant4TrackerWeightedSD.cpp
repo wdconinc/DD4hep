@@ -12,19 +12,17 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/DD4hepUnits.h"
-#include "DDG4/Geant4SensDetAction.inl"
-#include "DDG4/Geant4SteppingAction.h"
-#include "DDG4/Geant4TrackingAction.h"
-#include "DDG4/Geant4EventAction.h"
-#include "G4Event.hh"
-#include "G4VSolid.hh"
+#include <DD4hep/DD4hepUnits.h>
+#include <DDG4/Geant4SensDetAction.inl>
+#include <DDG4/Geant4SteppingAction.h>
+#include <DDG4/Geant4TrackingAction.h>
+#include <DDG4/Geant4EventAction.h>
+#include <G4Event.hh>
+#include <G4VSolid.hh>
 
 #include <map>
 #include <limits>
 #include <sstream>
-
-using namespace std;
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -204,27 +202,31 @@ namespace dd4hep {
         double deposit  = pre.truth.deposit;
         if ( current != -1 )  {
           Position pos;
-          Momentum mom  = 0.5 * (pre.momentum + post.momentum);
+          Momentum mom;
           double   time = deposit != 0 ? mean_time / deposit : mean_time;
           char     dist_in[64], dist_out[64];
 
           switch(hit_position_type)  {
           case POSITION_WEIGHTED:
             pos = deposit != 0 ? mean_pos / deposit : mean_pos;
+            mom = 0.5 * (pre.momentum + post.momentum);
             break;
           case POSITION_PREPOINT:
             pos = pre.position;
+            mom = pre.momentum;
             break;
           case POSITION_POSTPOINT:
             pos = post.position;
+            mom = post.momentum;
             break;
           case POSITION_MIDDLE:
           default:
             pos = (post.position + pre.position) / 2.0;
+            mom = 0.5 * (pre.momentum + post.momentum);
             break;
           }
 
-          if ( ended == kSurface || distance_to_outside < numeric_limits<float>::epsilon() )
+          if ( ended == kSurface || distance_to_outside < std::numeric_limits<float>::epsilon() )
             hit_flag |= Geant4Tracker::Hit::HIT_ENDED_SURFACE;
           else if ( ended == kInside )
             hit_flag |= Geant4Tracker::Hit::HIT_ENDED_INSIDE;
@@ -234,7 +236,7 @@ namespace dd4hep {
           Geant4Tracker::Hit* hit = new Geant4Tracker::Hit(pre.truth.trackID,
                                                            pre.truth.pdgID,
                                                            deposit,time, step_length,
-							   pos, mom);
+                                                           pos, mom);
           hit->flag     = hit_flag;
           hit->cellID   = cell;
           hit->g4ID     = g4ID;
@@ -271,7 +273,7 @@ namespace dd4hep {
         }
 
         // std::cout << " process called - pre pos: " << h.prePos() << " post pos " << h.postPos() 
-        // 	  << " edep: " << h.deposit() << std::endl ;
+        //           << " edep: " << h.deposit() << std::endl ;
 
         G4VSolid*     preSolid    = h.solid(h.pre);
         G4VSolid*     postSolid   = h.solid(h.post);
@@ -440,7 +442,7 @@ namespace dd4hep {
       m_userData.sensitive = this;
     }
 
-    /// G4VSensitiveDetector interface: Method invoked at the begining of each event.
+    /// G4VSensitiveDetector interface: Method invoked at the beginning of each event.
     template <> void Geant4SensitiveAction<TrackerWeighted>::begin(G4HCofThisEvent* /* hce */)   {
       m_userData.startEvent();
     }
@@ -477,5 +479,5 @@ namespace dd4hep {
 
 using namespace dd4hep::sim;
 
-#include "DDG4/Factories.h"
+#include <DDG4/Factories.h>
 DECLARE_GEANT4SENSITIVE(Geant4TrackerWeightedAction)

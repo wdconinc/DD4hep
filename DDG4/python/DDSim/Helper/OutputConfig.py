@@ -12,9 +12,9 @@ DD4HEP_USE_EDM4HEP = "@DD4HEP_USE_EDM4HEP@" != "OFF"
 
 
 def defaultOutputFile():
-  if DD4HEP_USE_LCIO:
-    return "dummyOutput.slcio"
-  return "dummyOutput.root"
+  if DD4HEP_USE_LCIO and not DD4HEP_USE_EDM4HEP:
+    return "ddsimOutput.slcio"
+  return "ddsimOutput.root"
 
 
 class OutputConfig(ConfigHelper):
@@ -26,6 +26,7 @@ class OutputConfig(ConfigHelper):
     self._forceLCIO = False
     self._forceEDM4HEP = False
     self._forceDD4HEP = False
+    self._useRNTuple = False
     # no closeProperties, allow custom ones for userPlugin configuration
 
   def _checkConsistency(self):
@@ -70,6 +71,15 @@ class OutputConfig(ConfigHelper):
     self._forceDD4HEP = self.makeBool(val)
     if self._forceDD4HEP:
       self._checkConsistency()
+
+  @property
+  def useRNTuple(self):
+    """Use RNTuple backend for EDM4HEP output (requires podio with RNTuple support)."""
+    return self._useRNTuple
+
+  @useRNTuple.setter
+  def useRNTuple(self, val):
+    self._useRNTuple = self.makeBool(val)
 
   @property
   def userOutputPlugin(self):
@@ -142,18 +152,21 @@ class OutputConfig(ConfigHelper):
     logger.info("++++ Setting up LCIO Output ++++")
     lcOut = geant4.setupLCIOOutput('LcioOutput', dds.outputFile)
     lcOut.RunHeader = dds.meta.addParametersToRunHeader(dds)
-    eventPars = dds.meta.parseEventParameters()
+    eventPars = dds.meta.parseMetaParameters()
     lcOut.EventParametersString, lcOut.EventParametersInt, lcOut.EventParametersFloat = eventPars
     lcOut.RunNumberOffset = dds.meta.runNumberOffset if dds.meta.runNumberOffset > 0 else 0
     lcOut.EventNumberOffset = dds.meta.eventNumberOffset if dds.meta.eventNumberOffset > 0 else 0
     return
 
   def _configureEDM4HEP(self, dds, geant4):
-    logger.info("++++ Setting up EDM4hep ROOT Output ++++")
+    logger.info("++++ Setting up EDM4hep %s Output ++++", "RNTuple" if self.useRNTuple else "ROOT::TTree")
     e4Out = geant4.setupEDM4hepOutput('EDM4hepOutput', dds.outputFile)
-    eventPars = dds.meta.parseEventParameters()
+    e4Out.RNTuple = self.useRNTuple
+    eventPars = dds.meta.parseMetaParameters()
     e4Out.RunHeader = dds.meta.addParametersToRunHeader(dds)
     e4Out.EventParametersString, e4Out.EventParametersInt, e4Out.EventParametersFloat = eventPars
+    runPars = dds.meta.parseMetaParameters(parameterType="run")
+    e4Out.RunParametersString, e4Out.RunParametersInt, e4Out.RunParametersFloat = runPars
     e4Out.RunNumberOffset = dds.meta.runNumberOffset if dds.meta.runNumberOffset > 0 else 0
     e4Out.EventNumberOffset = dds.meta.eventNumberOffset if dds.meta.eventNumberOffset > 0 else 0
     return

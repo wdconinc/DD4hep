@@ -8,7 +8,7 @@
 # For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
 #
 # ==========================================================================
-from __future__ import absolute_import, unicode_literals
+import cppyy
 from dd4hep_base import *  # noqa: F401, F403
 
 logger = None
@@ -94,8 +94,8 @@ def importConstants(description, namespace=None, debug=False):
   """
   ns = current
   if namespace is not None and not hasattr(current, namespace):
-    import imp
-    m = imp.new_module('dddigi.' + namespace)
+    import types
+    m = types.ModuleType('dddigi.' + namespace)
     setattr(current, namespace, m)
     ns = m
   evaluator = dd4hep.g4Evaluator()
@@ -105,9 +105,9 @@ def importConstants(description, namespace=None, debug=False):
   strings = {}
   for c in description.constants():
     if c.second.dataType == 'string':
-      strings[c.first] = c.second.GetTitle()
+      strings[str(c.first)] = c.second.GetTitle()
     else:
-      todo[c.first] = c.second.GetTitle().replace('(int)', '')
+      todo[str(c.first)] = c.second.GetTitle().replace('(int)', '')
   while len(todo) and cnt < 100:
     cnt = cnt + 1
     if cnt == 100:
@@ -121,7 +121,7 @@ def importConstants(description, namespace=None, debug=False):
           logger.info('+++ FAILED to import: "' + k + '" = "' + str(v) + '"')
       logger.info('+++ %s' % (100 * '=',))
 
-    for k, v in todo.items():
+    for k, v in list(todo.items()):
       if not hasattr(ns, k):
         val = evaluator.evaluate(v)
         status = evaluator.status()
@@ -202,14 +202,14 @@ def _kernel_terminate(self):
 
 
 def _default_adopt(self, action):
-  getattr(self, '__adopt')(action.get())
+  self.__adopt(action.get())
 # ---------------------------------------------------------------------------
 
 
 def _adopt_event_action(self, action):
   " Helper to convert DigiActions objects to DigiEventAction "
   proc = Interface.toEventAction(_get_action(action))
-  attr = getattr(self, '__adopt')
+  attr = self.__adopt
   attr(proc)
 # ---------------------------------------------------------------------------
 
@@ -217,7 +217,7 @@ def _adopt_event_action(self, action):
 def _adopt_container_processor(self, action, processor_argument):
   " Helper to convert DigiActions objects to DigiEventAction "
   parent = Interface.toContainerSequenceAction(_get_action(self))
-  attr = getattr(parent, 'adopt_processor')
+  attr = parent.adopt_processor
   proc = Interface.toContainerProcessor(_get_action(action))
   attr(proc, processor_argument)
 # ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ def _adopt_container_processor(self, action, processor_argument):
 
 def _adopt_segment_processor(self, action, processor_argument):
   " Helper to convert DigiActions objects to DigiEventAction "
-  attr = getattr(_get_action(self), '__adopt_segment_processor')
+  attr = _get_action(self).__adopt_segment_processor
   proc = Interface.toContainerProcessor(_get_action(action))
   attr(proc, processor_argument)
 # ---------------------------------------------------------------------------
@@ -244,7 +244,7 @@ def _adopt_sequence_action(self, name, **options):
 
 def _adopt_processor(self, action, containers):
   proc = Interface.toContainerProcessor(_get_action(action))
-  attr = getattr(_get_action(self), '__adopt_processor')
+  attr = _get_action(self).__adopt_processor
   attr(proc, containers)
 # ---------------------------------------------------------------------------
 
@@ -276,6 +276,8 @@ def _set(self, name, value):
   import dd4hep as dd4hep
   act = _get_action(self)
   nam = dd4hep.unicode_2_string(name)
+  if isinstance(value, (list,)):  # cppyy.gbl.string showing up for some reason
+    value = [x.decode('utf-8') if isinstance(x, cppyy.gbl.std.string) else x for x in value]
   if isinstance(value, str):
     val = dd4hep.unicode_2_string(value)
   else:

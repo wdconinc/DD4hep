@@ -1,7 +1,18 @@
-#include "DDSegmentation/BitFieldCoder.h"
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//==========================================================================
+#include <DDSegmentation/BitFieldCoder.h>
 
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 #include <stdexcept>
 
 namespace dd4hep{
@@ -38,7 +49,7 @@ namespace dd4hep{
         _maxVal =  ( 1LL << ( _width - 1 ) ) - 1 ;
       
       } else {
-        _maxVal = 0x0001<<_width  ;
+        _maxVal = 1LL << _width ;
       }
     }
   
@@ -175,7 +186,7 @@ namespace dd4hep{
         unsigned thisOffset ;
 
         switch( subfields.size() ){
-	
+        
         case 2: 
 
           name = subfields[0] ; 
@@ -183,9 +194,9 @@ namespace dd4hep{
           thisOffset = offset ;
 
           offset += abs( width ) ;
-	
+        
           break ;
-	
+        
         case 3: 
           name = subfields[0] ;
           thisOffset = atol( subfields[1].c_str()  ) ;
@@ -194,7 +205,7 @@ namespace dd4hep{
           offset = thisOffset + abs( width ) ;
 
           break ;
-	
+        
         default:
 
           std::stringstream s ;

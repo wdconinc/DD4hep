@@ -15,17 +15,16 @@
 #ifndef DD4HEP_NONE
 
 // Framework include files
-#include "DD4hep/Objects.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/OpaqueData.h"
-#include "DD4hep/OpaqueDataBinder.h"
-#include "XML/XMLParsers.h"
-#include "XML/XMLDimension.h"
-#include "XML/DocumentHandler.h"
+#include <DD4hep/Objects.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/OpaqueData.h>
+#include <DD4hep/OpaqueDataBinder.h>
+#include <XML/XMLParsers.h>
+#include <XML/XMLDimension.h>
+#include <XML/DocumentHandler.h>
 
 
 // C/C++ include files
-#include <stdexcept>
 
 using std::string;
 using namespace dd4hep;
@@ -71,7 +70,6 @@ void dd4hep::xml::parse(xml_h e, Translation3D& tr)   {
 
 /// Convert alignment delta objects to Delta
 void dd4hep::xml::parse(xml_h e, Delta& delta)  {
-  Position pos;
   RotationZYX rot;
   Translation3D piv;
   xml_h  child_rot, child_pos, child_piv;

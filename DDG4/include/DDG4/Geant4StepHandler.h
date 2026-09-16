@@ -17,12 +17,12 @@
 #include <DDG4/Geant4HitHandler.h>
 
 // Geant4 include files
-#include "G4Step.hh"
-#include "G4StepPoint.hh"
-#include "G4VTouchable.hh"
-#include "G4VSensitiveDetector.hh"
-#include "G4EmSaturation.hh"
-#include "G4Version.hh"
+#include <G4Step.hh>
+#include <G4StepPoint.hh>
+#include <G4VTouchable.hh>
+#include <G4VSensitiveDetector.hh>
+#include <G4EmSaturation.hh>
+#include <G4Version.hh>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -53,8 +53,8 @@ namespace dd4hep {
       Geant4StepHandler() = delete;
       /// Initializing constructor
       Geant4StepHandler(const G4Step* s)
-	: Geant4HitHandler(s->GetTrack(), (s->GetPreStepPoint()->GetTouchableHandle())()),
-	step(s), pre(s->GetPreStepPoint()), post(s->GetPostStepPoint())
+        : Geant4HitHandler(s->GetTrack(), (s->GetPreStepPoint()->GetTouchableHandle())()),
+        step(s), pre(s->GetPreStepPoint()), post(s->GetPostStepPoint())
       {
         applyBirksLaw = false;
       }

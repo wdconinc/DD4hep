@@ -3,12 +3,14 @@
 Some imports to make sure that the DD4hep environment is complete.
 Since it can be disabled in CMake, the import of DDG4 is tested in another file.
 """
-from __future__ import absolute_import, unicode_literals, print_function
 import traceback
 import warnings
 import pytest
 
 parametrize = pytest.mark.parametrize
+
+ImportFehler = ImportError
+FEHLER = "ERROR: "
 
 moduleNames = [
     'dd4hep',
@@ -39,15 +41,15 @@ def test_module(moduleName):
 
     # Test whether it is correctly imported from DD4hep
 
-  except ImportError as e:
+  except ImportFehler as e:
     msg = "could not import %s: %s" % (moduleName, repr(e))
     print(traceback.print_exc())
 
     if moduleName in ALLOWED_TO_FAIL:
-      warnings.warn(msg)
+      warnings.warn(msg, stacklevel=2)
       pytest.skip("WARN: " + msg)
     elif moduleName in GRAPHIC_MODULES:
-      warnings.warn(msg + "(Possibly due to system graphic libraries not present)")
+      warnings.warn(msg + "(Possibly due to system graphic libraries not present)", stacklevel=2)
       pytest.skip("WARN: " + msg + "(Possibly due to system graphic libraries not present)")
     else:
-      pytest.fail("ERROR: " + msg)
+      pytest.fail(FEHLER + msg)

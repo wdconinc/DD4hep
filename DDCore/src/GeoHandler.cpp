@@ -12,28 +12,26 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Detector.h"
-#include "DD4hep/GeoHandler.h"
-#include "DD4hep/detail/ObjectsInterna.h"
+#include <DD4hep/Detector.h>
+#include <DD4hep/GeoHandler.h>
+#include <DD4hep/detail/ObjectsInterna.h>
 
 // ROOT includes
-#include "TGeoManager.h"
-#include "TGeoCompositeShape.h"
-#include "TGeoBoolNode.h"
-#include "TClass.h"
+#include <TGeoManager.h>
+#include <TGeoCompositeShape.h>
+#include <TGeoBoolNode.h>
+#include <TClass.h>
 
 // C/C++ include files
-#include <iostream>
 
-using namespace dd4hep::detail;
 using namespace dd4hep;
-using namespace std;
 
 namespace {
-  void collectSolid(GeoHandler::GeometryInfo& geo,
-		    const string& name,
-		    const string& node,
-		    TGeoShape* shape,
+
+  void collectSolid(detail::GeoHandler::GeometryInfo& geo,
+                    const std::string& name,
+                    const std::string& node,
+                    TGeoShape* shape,
                     TGeoMatrix* matrix)
   {
     if ( 0 == ::strncmp(shape->GetName(), "TGeo", 4) )  {
@@ -45,62 +43,82 @@ namespace {
       collectSolid(geo, name + "_left", name + "_left", boolean->GetLeftShape(), boolean->GetLeftMatrix());
       collectSolid(geo, name + "_right", name + "_right", boolean->GetRightShape(), boolean->GetRightMatrix());
     }
-    geo.solids.emplace(shape);
+    if(geo.solid_set.emplace(shape).second) {
+      geo.solids.push_back(shape);
+    }
     geo.trafos.emplace_back(node, matrix);
   }
 }
 
 /// Default constructor
-GeoHandler::GeoHandler() : m_propagateRegions(false)  {
-  m_data = new map<int,set<const TGeoNode*> >();
+detail::GeoHandler::GeoHandler()  {
+  m_data = new std::map<int, std::vector<const TGeoNode*> >();
+  m_set_data = new std::map<int, std::set<const TGeoNode*> >();
 }
 
 /// Initializing constructor
-GeoHandler::GeoHandler(map<int,set<const TGeoNode*> >* ptr)
-  : m_propagateRegions(false), m_data(ptr) {
+detail::GeoHandler::GeoHandler(std::map<int, std::vector<const TGeoNode*> >* ptr,
+                std::map<int, std::set<const TGeoNode*> >* ptr_set,
+                std::map<const TGeoNode*, std::vector<TGeoNode*> >* daus)
+  : m_data(ptr), m_set_data(ptr_set), m_daughters(daus)
+{
 }
 
 /// Default destructor
-GeoHandler::~GeoHandler() {
+detail::GeoHandler::~GeoHandler() {
   if (m_data)
     delete m_data;
+  if (m_set_data)
+    delete m_set_data;
+
   m_data = nullptr;
+  m_set_data = nullptr;
 }
 
-map<int,set<const TGeoNode*> >* GeoHandler::release() {
-  map<int,set<const TGeoNode*> >* d = m_data;
+std::map<int, std::vector<const TGeoNode*> >* detail::GeoHandler::release() {
+  /// release the std::vector geometry container (preserves order)
+  std::map<int, std::vector<const TGeoNode*> >* d = m_data;
   m_data = nullptr;
+
+  /// the std::set container (for lookup purpose) is not needed anymore, so delete it
+  /// the container is always present since the call of the constructor
+  /// we never expect to call release() twice (will release nullptr)
+  delete m_set_data;
+  m_set_data = nullptr;
+
   return d;
 }
 
 /// Propagate regions. Returns the previous value
-bool GeoHandler::setPropagateRegions(bool value)   {
+bool detail::GeoHandler::setPropagateRegions(bool value)   {
   bool old = m_propagateRegions;
   m_propagateRegions = value;
   return old;
 }
 
-GeoHandler& GeoHandler::collect(DetElement element) {
+detail::GeoHandler& detail::GeoHandler::collect(DetElement element) {
   DetElement par = element.parent();
-  TGeoNode* par_node = par.isValid() ? par.placement().ptr() : nullptr;
+  TGeoNode*  par_node = par.isValid() ? par.placement().ptr() : nullptr;
   m_data->clear();
+  m_set_data->clear();
   return i_collect(par_node, element.placement().ptr(), 0, Region(), LimitSet());
 }
 
-GeoHandler& GeoHandler::collect(DetElement element, GeometryInfo& info) {
+detail::GeoHandler& detail::GeoHandler::collect(DetElement element, GeometryInfo& info) {
   DetElement par = element.parent();
   TGeoNode* par_node = par.isValid() ? par.placement().ptr() : nullptr;
   m_data->clear();
+  m_set_data->clear();
   i_collect(par_node, element.placement().ptr(), 0, Region(), LimitSet());
-  for (auto i = m_data->rbegin(); i != m_data->rend(); ++i) {
+  for ( auto i = m_data->rbegin(); i != m_data->rend(); ++i ) {
     const auto& mapped = (*i).second;
-    for (const TGeoNode* n : mapped )  {
+    for ( const TGeoNode* n : mapped )  {
       TGeoVolume* v = n->GetVolume();
-      if (v) {
+      if ( v ) {
         Material mat(v->GetMedium());
         Volume   vol(v);
         // Note : assemblies and the world do not have a real volume nor a material
-        if (info.volumeSet.find(vol) == info.volumeSet.end()) {
+        if ( info.volumeSet.find(vol) == info.volumeSet.end() ) {
           info.volumeSet.emplace(vol);
           info.volumes.emplace_back(vol);
         }
@@ -125,58 +143,66 @@ GeoHandler& GeoHandler::collect(DetElement element, GeometryInfo& info) {
   return *this;
 }
 
-GeoHandler& GeoHandler::i_collect(const TGeoNode* /* parent */,
-				  const TGeoNode*    current,
-				  int level, Region rg, LimitSet ls)
+detail::GeoHandler& detail::GeoHandler::i_collect(const TGeoNode* /* parent */,
+                                                  const TGeoNode*    current,
+                                                  int level, Region rg, LimitSet ls)
 {
-  TGeoVolume* volume = current->GetVolume();
-  TObjArray* nodes = volume->GetNodes();
-  int num_children = nodes ? nodes->GetEntriesFast() : 0;
-  Volume vol(volume);
-  Region   region = vol.region();
-  LimitSet limits = vol.limitSet();
+  /// Early-exit if this node has already been collected at this level.
+  /// Daughters of a TGeoVolume are the same TGeoNode pointers for every placement of
+  /// that volume; without this guard the subtree would be traversed once per placement
+  /// (N times for a volume placed N times) with all but the first producing no output.
+  if ( !(*m_set_data)[level].emplace(current).second )
+    return *this;
+
+  TGeoVolume* vol    = current->GetVolume();
+  TObjArray*  nodes  = vol->GetNodes();
+  Volume      volume = vol;
+  Region      region = volume.region();
+  LimitSet    limits = volume.limitSet();
 
   if ( m_propagateRegions )  {
     if ( !region.isValid() && rg.isValid() )   {
       region = rg;
-      vol.setRegion(region);
+      volume.setRegion(region);
     }
     if ( !limits.isValid() && ls.isValid() )  {
       limits = ls;
-      vol.setLimitSet(limits);
+      volume.setLimitSet(limits);
     }
   }
-  (*m_data)[level].emplace(current);
-  if (num_children > 0) {
-    for (int i = 0; i < num_children; ++i) {
-      TGeoNode* node = (TGeoNode*) nodes->At(i);
-      i_collect(current, node, level + 1, region, limits);
-    }
+  (*m_data)[level].push_back(current);
+  int num = nodes ? nodes->GetEntriesFast() : 0;
+  for (int i = 0; i < num; ++i)
+    i_collect(current, (TGeoNode*)nodes->At(i), level + 1, region, limits);
+  /// Now collect all the daughters of this volume, so that we can reconnect them in the correct order
+  if ( m_daughters && m_daughters->find(current) == m_daughters->end() )  {
+    auto [idau,success] = m_daughters->emplace(current, std::vector<TGeoNode*>());
+    for (int i = 0; i < num; ++i)
+      idau->second.push_back((TGeoNode*)nodes->At(i));
   }
   return *this;
 }
 
 /// Initializing constructor
-GeoScan::GeoScan(DetElement e) {
+detail::GeoScan::GeoScan(DetElement e)  {
   m_data = GeoHandler().collect(e).release();
 }
 
 /// Initializing constructor
-GeoScan::GeoScan(DetElement e, bool propagate) {
+detail::GeoScan::GeoScan(DetElement e, bool propagate) {
   GeoHandler h;
   h.setPropagateRegions(propagate);
   m_data = h.collect(e).release();
 }
 
 /// Default destructor
-GeoScan::~GeoScan() {
-  if (m_data)
-    delete m_data;
-  m_data = 0;
+detail::GeoScan::~GeoScan() {
+  delete m_data;
+  m_data = nullptr;
 }
 
 /// Work callback
-GeoScan& GeoScan::operator()() {
+detail::GeoScan& detail::GeoScan::operator()() {
   return *this;
 }
 

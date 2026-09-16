@@ -14,9 +14,9 @@
 #define DD4HEP_CONDITIONSPROCESSOR_H
 
 // Framework include files
-#include "DD4hep/DetElement.h"
-#include "DD4hep/Conditions.h"
-#include "DD4hep/ConditionsMap.h"
+#include <DD4hep/DetElement.h>
+#include <DD4hep/Conditions.h>
+#include <DD4hep/ConditionsMap.h>
 
 // C/C++ include files
 #include <memory>
@@ -28,7 +28,7 @@ namespace dd4hep {
   namespace cond   {
 
 
-    /// Generic condition processor facade for the Conditons::Processor object
+    /// Generic condition processor facade for the Conditions::Processor object
     /**
      *  This wrapper converts any object, which has the signature
      *  int operator()(Condition cond) const
@@ -67,7 +67,7 @@ namespace dd4hep {
     ConditionsProcessor<typename std::remove_reference<T>::type> conditionsProcessor(T&& obj)
     { return ConditionsProcessor<typename std::remove_reference<T>::type>(obj);   }
 
-    /// Generic condition processor facade for the Conditons::Processor object
+    /// Generic condition processor facade for the Conditions::Processor object
     /**
      *  This wrapper converts any object, which has the signature
      *  int operator()(Condition cond) const

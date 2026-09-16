@@ -14,7 +14,7 @@
 #define DD4HEP_CONDITIONANY_H
 
 // Framework include files
-#include "DD4hep/Conditions.h"
+#include <DD4hep/Conditions.h>
 
 // C/C++ include files
 #include <any>
@@ -108,11 +108,11 @@ namespace dd4hep {
 
     /// Flag operations: Get condition flags
     mask_type flags()  const;
-    /// Flag operations: Set a conditons flag
+    /// Flag operations: Set a conditions flag
     void setFlag(mask_type option);
-    /// Flag operations: UN-Set a conditons flag
+    /// Flag operations: UN-Set a conditions flag
     void unFlag(mask_type option);
-    /// Flag operations: Test for a given a conditons flag
+    /// Flag operations: Test for a given a conditions flag
     bool testFlag(mask_type option) const;
 
     /// Generic getter. Specify the exact type, not a polymorph type

@@ -122,7 +122,7 @@ class ParticleHandler(ConfigHelper):
     if not self.userParticleHandler:
       return
 
-    if self.userParticleHandler not in ["Geant4TCUserParticleHandler"]:
+    if self.userParticleHandler not in ["Geant4TCUserParticleHandler", "Geant4TVUserParticleHandler"]:
       logger.error("unknown UserParticleHandler: %r" % self.userParticleHandler)
       exit(1)
 
@@ -143,7 +143,7 @@ class ParticleHandler(ConfigHelper):
       except AttributeError as e:
         logger.debug("Attribute tracker_region_zmin for asymmetric tracker region missing %s", e)
         logger.debug("  will use symmetric region defined by tracker_region_zmax")
-        user.TrackingVolume_Zmin = str(-float(user.TrackingVolume_Zmax))
+        user.TrackingVolume_Zmin = str(-float(DDG4.tracker_region_zmax))
 
       logger.info(" *** definition of tracker region *** ")
       logger.info("    tracker_region_zmin = %s", user.TrackingVolume_Zmin)
@@ -151,6 +151,14 @@ class ParticleHandler(ConfigHelper):
       logger.info("    tracker_region_rmax = %s", user.TrackingVolume_Rmax)
       logger.info(" ************************************ ")
 
+      part.adopt(user)
+
+    elif self.userParticleHandler == "Geant4TVUserParticleHandler":
+      if not kernel.detectorDescription().trackingVolume().isValid():
+        logger.error("Geant4TVUserParticleHandler requested but no tracking_volume defined in the XML")
+        exit(1)
+
+      user = DDG4.Action(kernel, "%s/UserParticleHandler" % self.userParticleHandler)
       part.adopt(user)
 
     return

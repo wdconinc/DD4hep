@@ -11,27 +11,16 @@
 //
 //==========================================================================
 
-#include "DD4hep/FieldTypes.h"
-#include "DD4hep/detail/Handle.inl"
+#include <DD4hep/FieldTypes.h>
+#include <DD4hep/detail/Handle.inl>
 #include <cmath>
 
-using namespace std;
 using namespace dd4hep;
 
 #ifndef INFINITY
 #define INFINITY (numeric_limits<double>::max())
 #endif
 
-// fallthrough only exists from c++17
-#if defined __has_cpp_attribute
-#if __has_cpp_attribute(fallthrough)
-#define ATTR_FALLTHROUGH [[fallthrough]]
-#else
-#define ATTR_FALLTHROUGH
-#endif
-#else
-#define ATTR_FALLTHROUGH
-#endif
 
 DD4HEP_INSTANTIATE_HANDLE(ConstantField);
 DD4HEP_INSTANTIATE_HANDLE(SolenoidField);
@@ -39,10 +28,23 @@ DD4HEP_INSTANTIATE_HANDLE(DipoleField);
 DD4HEP_INSTANTIATE_HANDLE(MultipoleField);
 
 /// Compute  the field components at a given location and add to given field
-void ConstantField::fieldComponents(const double* /* pos */, double* field) {
-  field[0] += direction.X();
-  field[1] += direction.Y();
-  field[2] += direction.Z();
+void ConstantField::fieldComponents(const double* pos, double* field) {
+  if ( 0 == flag || nullptr == volume.ptr() )  {
+    field[0] += direction.X();
+    field[1] += direction.Y();
+    field[2] += direction.Z();
+  }
+  else if ( flag&FIELD_LOCAL )  {
+    Transform3D::Point p0(pos[0],pos[1],pos[2]);
+    Transform3D::Point p = this->inverse_pos * p0;
+    const Double_t coords[3] = {p.x(), p.y(), p.z()};
+    if( volume->Contains(coords) )  {
+      field[0] += direction.X();
+      field[1] += direction.Y();
+      field[2] += direction.Z();
+    }
+  }
+  /// Coordinates not in volume: nothing to sum up.
 }
 
 /// Initializing constructor
@@ -57,10 +59,10 @@ void SolenoidField::fieldComponents(const double* pos, double* field) {
   double z = pos[2] ;
   //  std::cout << " field z=" << z << " maxZ=" << maxZ << " minZ = " << minZ << std::endl ;
   if( z > minZ && z < maxZ ){
-    double radius = std::sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
-    if (radius < innerRadius)
+    const double radius2 = pos[0] * pos[0] + pos[1] * pos[1];
+    if (radius2 < innerRadius * innerRadius)
       field[2] += innerField;
-    else if (radius < outerRadius)
+    else if (radius2 < outerRadius * outerRadius)
       field[2] += outerField;
   }
 }
@@ -96,6 +98,7 @@ namespace   {
   constexpr static unsigned char FIELD_IDENTITY      = 1<<1;
   constexpr static unsigned char FIELD_ROTATION_ONLY = 1<<2;
   constexpr static unsigned char FIELD_POSITION_ONLY = 1<<3;
+  constexpr static unsigned char FIELD_HAS_AABB      = 1<<4;
 }
 
 /// Initializing constructor
@@ -116,14 +119,48 @@ void MultipoleField::fieldComponents(const double* pos, double* field) {
     else  {
       flag |= FIELD_POSITION_ONLY;
       if ( (std::abs(dx) + std::abs(dy) + std::abs(dz)) < eps )
-	flag |= FIELD_IDENTITY;
+        flag |= FIELD_IDENTITY;
     }
     this->inverse  = this->transform.Inverse();
     this->transform.GetRotation(this->rotation);
     this->transform.GetTranslation(this->translation);
+    if ( volume.isValid() )   {
+      // Obtain the bounding box from the shape. TGeoBBox is the base class
+      // for most shapes, but not all.
+      TGeoShape* shape = volume.ptr();
+      auto* bbox = dynamic_cast<TGeoBBox*>(shape);
+      if ( bbox )  {
+        bbox->ComputeBBox();
+        const double* orig = bbox->GetOrigin();
+        double bdx = bbox->GetDX();
+        double bdy = bbox->GetDY();
+        double bdz = bbox->GetDZ();
+        // Transform the local bbox center to world frame
+        Transform3D::Point world_center =
+          this->transform * Transform3D::Point(orig[0], orig[1], orig[2]);
+        // World half-extents via rotation-matrix abs-sum formula (OBB -> AABB)
+        double hx = std::abs(xx)*bdx + std::abs(xy)*bdy + std::abs(xz)*bdz;
+        double hy = std::abs(yx)*bdx + std::abs(yy)*bdy + std::abs(yz)*bdz;
+        double hz = std::abs(zx)*bdx + std::abs(zy)*bdy + std::abs(zz)*bdz;
+        this->aabb_min[0] = world_center.X() - hx;
+        this->aabb_max[0] = world_center.X() + hx;
+        this->aabb_min[1] = world_center.Y() - hy;
+        this->aabb_max[1] = world_center.Y() + hy;
+        this->aabb_min[2] = world_center.Z() - hz;
+        this->aabb_max[2] = world_center.Z() + hz;
+        flag |= FIELD_HAS_AABB;
+      }
+    }
   }
+  // AABB pre-filter: reject positions outside the world-frame bounding box
+  if ( (flag&FIELD_HAS_AABB) &&
+       (pos[0] < aabb_min[0] || pos[0] > aabb_max[0] ||
+        pos[1] < aabb_min[1] || pos[1] > aabb_max[1] ||
+        pos[2] < aabb_min[2] || pos[2] > aabb_max[2]) )
+    return;
+  // Transform the input position to the local frame of the field
   Transform3D::Point p, p0(pos[0],pos[1],pos[2]);
-  if      ( flag&FIELD_IDENTITY      ) p = p0;
+  if      ( flag&FIELD_IDENTITY      ) p = std::move(p0);
   else if ( flag&FIELD_POSITION_ONLY ) p = p0 - this->translation;
   else      p = this->inverse * p0;
 
@@ -143,23 +180,23 @@ void MultipoleField::fieldComponents(const double* pos, double* field) {
     case 4:      // Octupole momentum
       by += (1./6.) * ( coefficents[3] * (x2*x - 3.0*x*y2) + skews[3]*(y2*y - 3.0*x2*y) );
       bx += (1./6.) * ( coefficents[3] * (3.0*x2*y - y2*y) + skews[3]*(x2*x - 3.0*x*y2) );
-      ATTR_FALLTHROUGH;
+      [[fallthrough]];
     case 3:      // Sextupole momentum:
       by +=  (1./2.) * ( coefficents[2] * (x2 - y2) - skews[2] * 2.0 * xy );
       bx +=  (1./2.) * ( coefficents[2] * 2.0 * xy + skews[2] * (x2 - y2) );
-      ATTR_FALLTHROUGH;
+      [[fallthrough]];
     case 2:      // Quadrupole momentum:
       bx += coefficents[1] * y + skews[1]*x;
       by += coefficents[1] * x - skews[1]*y;
-      ATTR_FALLTHROUGH;
+      [[fallthrough]];
     case 1:      // Dipole momentum:
       bx += skews[0];
       by += coefficents[0];
-      ATTR_FALLTHROUGH;
+      [[fallthrough]];
     case 0:      // Nothing, but still valid
       break;
     default:     // Error condition
-      throw runtime_error("Invalid multipole field definition!");
+      throw std::runtime_error("Invalid multipole field definition!");
     }
     Transform3D::Point f = this->rotation * Transform3D::Point(bx, by, B_z);
     field[0] += f.X();

@@ -15,10 +15,10 @@
 #define DD4HEP_DETECTORDATA_H
 
 // Framework includes
-#include "DD4hep/Printout.h"
-#include "DD4hep/Detector.h"
-#include "DD4hep/ObjectExtensions.h"
-#include "DD4hep/detail/VolumeManagerInterna.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/Detector.h>
+#include <DD4hep/ObjectExtensions.h>
+#include <DD4hep/detail/VolumeManagerInterna.h>
 
 // C/C++ include files
 #include <stdexcept>
@@ -73,8 +73,9 @@ namespace dd4hep {
           if (!throw_on_doubles || r.second) {
             if (not r.second) {
               printout(WARNING,"Detector",
-		       "+++ Object '%s' is already defined. New value will be ignored",
-		       n.c_str());
+                       "+++ Object '%s' is already defined. New value will be ignored",
+                       n.c_str());
+              delete e.ptr();
             }
             return;
           }

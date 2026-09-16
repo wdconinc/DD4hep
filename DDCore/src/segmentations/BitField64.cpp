@@ -1,8 +1,19 @@
-#include "DDSegmentation/BitField64.h"
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//==========================================================================
+#include <DDSegmentation/BitField64.h>
 
 #include <cmath>
-#include <algorithm>
-#include <stdexcept>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 namespace dd4hep{
 
@@ -35,14 +46,14 @@ namespace DDSegmentation {
       const BitFieldElement& bv = b._coder->fields()[i] ;
       
       os << "  " <<  bv.name()
-	 << " [" <<  bv.offset()  << ":"  ;
+         << " [" <<  bv.offset()  << ":"  ;
       
       if(  bv.isSigned()  )  os << "-" ;
 
       os << bv.width() << "]  : "  ;
       
       os << b._coder->get( b._value , i)
-	 << std::endl ;
+         << std::endl ;
       
     }
   

@@ -13,29 +13,29 @@
 
 // Framework include files
 #define DDG4_MAKE_INSTANTIATIONS
-#include "DD4hep/Detector.h"
-#include "DD4hep/Printout.h"
-#include "DDG4/Geant4HitCollection.h"
-#include "DDG4/Geant4DataConversion.h"
-#include "DDG4/Geant4SensDetAction.h"
-#include "DDG4/Geant4Context.h"
-#include "DDG4/Geant4Primary.h"
-#include "DDG4/Geant4Data.h"
+#include <DD4hep/Detector.h>
+#include <DD4hep/Printout.h>
+#include <DDG4/Geant4HitCollection.h>
+#include <DDG4/Geant4DataConversion.h>
+#include <DDG4/Geant4SensDetAction.h>
+#include <DDG4/Geant4Context.h>
+#include <DDG4/Geant4Primary.h>
+#include <DDG4/Geant4Data.h>
 
 // LCIO includes
-#include "lcio.h"
-#include "IMPL/LCCollectionVec.h"
+#include <lcio.h>
+#include <IMPL/LCCollectionVec.h>
 //
-#include "IMPL/LCEventImpl.h"
-#include "IMPL/ClusterImpl.h"
-#include "IMPL/SimTrackerHitImpl.h"
-#include "IMPL/SimCalorimeterHitImpl.h"
-#include "IMPL/MCParticleImpl.h"
+#include <IMPL/LCEventImpl.h>
+#include <IMPL/ClusterImpl.h>
+#include <IMPL/SimTrackerHitImpl.h>
+#include <IMPL/SimCalorimeterHitImpl.h>
+#include <IMPL/MCParticleImpl.h>
 //
-#include "UTIL/Operators.h"
-#include "UTIL/ILDConf.h"
+#include <UTIL/Operators.h>
+#include <UTIL/ILDConf.h>
 
-#include "CLHEP/Units/SystemOfUnits.h"
+#include <CLHEP/Units/SystemOfUnits.h>
 
 using namespace std;
 using namespace lcio ;
@@ -148,10 +148,10 @@ namespace dd4hep {
 #if LCIO_VERSION_GE( 2, 8 )
         auto particleIt = pm->particles().find(trackID);
         if( ( particleIt != pm->particles().end()) ){
-	  // if the original track ID of the particle is not the same as the
-	  // original track ID of the hit it was produced by an MCParticle that
-	  // is no longer stored
-	  lc_hit->setProducedBySecondary( (particleIt->second->originalG4ID != t.trackID) );
+          // if the original track ID of the particle is not the same as the
+          // original track ID of the hit it was produced by an MCParticle that
+          // is no longer stored
+          lc_hit->setProducedBySecondary( (particleIt->second->originalG4ID != t.trackID) );
         }
 #endif
         lc_coll->addElement(lc_hit);
@@ -213,7 +213,7 @@ namespace dd4hep {
         lc_hit->setCellID0((hit->cellID >>    0         ) & 0xFFFFFFFF);
         lc_hit->setCellID1((hit->cellID >> sizeof(int)*8) & 0xFFFFFFFF); // ????
         lc_hit->setPosition(pos);
-        ///No! Done when adding particle contrbutions: lc_hit->setEnergy( hit->energyDeposit );
+        ///No! Done when adding particle contributions: lc_hit->setEnergy( hit->energyDeposit );
         lc_coll->addElement(lc_hit);
         /// Now add the individual track contributions to the LCIO hit structure
         for(Contributions::const_iterator j=hit->truth.begin(); j!=hit->truth.end(); ++j)   {

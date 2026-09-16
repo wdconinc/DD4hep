@@ -13,25 +13,23 @@
 //====================================================================
 
 // Framework include files
-#include "DD4hep/Memory.h"
-#include "DD4hep/Plugins.h"
-#include "DDG4/Geant4Primary.h"
-#include "DDG4/Geant4Context.h"
-#include "DDG4/Geant4Kernel.h"
-#include "DDG4/Geant4InputAction.h"
-#include "DDG4/Geant4RunAction.h"
+#include <DD4hep/Memory.h>
+#include <DD4hep/Plugins.h>
+#include <DDG4/Geant4Primary.h>
+#include <DDG4/Geant4Context.h>
+#include <DDG4/Geant4Kernel.h>
+#include <DDG4/Geant4InputAction.h>
+#include <DDG4/Geant4RunAction.h>
 
-#include "G4Event.hh"
+#include <G4Event.hh>
 
-using namespace std;
 using namespace dd4hep::sim;
-typedef dd4hep::detail::ReferenceBitMask<int> PropertyMask;
-typedef Geant4InputAction::Vertices Vertices ;
+using Vertices = Geant4InputAction::Vertices;
+using PropertyMask = dd4hep::detail::ReferenceBitMask<int>;
 
 
 /// Initializing constructor
-Geant4EventReader::Geant4EventReader(const std::string& nam)
-  : m_name(nam), m_directAccess(false), m_currEvent(0), m_inputAction(0)
+Geant4EventReader::Geant4EventReader(const std::string& nam) : m_name(nam)
 {
 }
 
@@ -77,8 +75,8 @@ void Geant4EventReader::checkParameters(std::map< std::string, std::string > &pa
   }
   for (auto const& pairNV : parameters ) {
     printout(FATAL,"EventReader::checkParameters","Unknown parameter name: %s with value %s",
-	     pairNV.first.c_str(),
-	     pairNV.second.c_str());
+             pairNV.first.c_str(),
+             pairNV.second.c_str());
   }
   throw std::runtime_error("Unknown parameter for event reader");
 
@@ -118,7 +116,7 @@ Geant4EventReader::moveToEvent(int /* event_number */)   {
 #endif
 
 /// Standard constructor
-Geant4InputAction::Geant4InputAction(Geant4Context* ctxt, const string& nam)
+Geant4InputAction::Geant4InputAction(Geant4Context* ctxt, const std::string& nam)
   : Geant4GeneratorAction(ctxt,nam), m_reader(0), m_currentEventNumber(0)
 {
   declareProperty("Input",          m_input);
@@ -127,6 +125,8 @@ Geant4InputAction::Geant4InputAction(Geant4Context* ctxt, const string& nam)
   declareProperty("MomentumScale",  m_momScale = 1.0);
   declareProperty("HaveAbort",      m_abort = true);
   declareProperty("Parameters",     m_parameters = {});
+  declareProperty("AlternativeDecayStatuses", m_alternativeDecayStatuses = {});
+  declareProperty("AlternativeStableStatuses", m_alternativeStableStatuses = {});
   m_needsControl = true;
 
   runAction().callAtBegin(this, &Geant4InputAction::beginRun);
@@ -148,7 +148,7 @@ void Geant4InputAction::createReader() {
   if ( m_input.empty() )  {
     except("InputAction: No input file declared!");
   }
-  string err;
+  std::string err;
   TypeName tn = TypeName::split(m_input,"|");
   try  {
     m_reader = PluginService::Create<Geant4EventReader*>(tn.first,tn.second);
@@ -163,7 +163,7 @@ void Geant4InputAction::createReader() {
     m_reader->checkParameters( m_parameters );
     m_reader->setInputAction( this );
     m_reader->registerRunParameters();
-  } catch(const exception& e)  {
+  } catch(const std::exception& e)  {
     err = e.what();
   }
   if ( !err.empty() )  {
@@ -173,8 +173,8 @@ void Geant4InputAction::createReader() {
 
 
 /// helper to report Geant4 exceptions
-string Geant4InputAction::issue(int i)  const  {
-  stringstream str;
+std::string Geant4InputAction::issue(int i)  const  {
+  std::stringstream str;
   str << "Geant4InputAction[" << name() << "]: Event " << i << " ";
   return str.str();
 }
@@ -184,7 +184,7 @@ int Geant4InputAction::readParticles(int evt_number,
                                      Vertices& vertices,
                                      std::vector<Particle*>& particles)
 {
-  //in case readParticles is called diractly outside of having a run, we make sure a reader exists
+  //in case readParticles is called directly outside of having a run, we make sure a reader exists
   createReader();
   int evid = evt_number + m_firstEvent;
   int status = m_reader->moveToEvent(evid);
@@ -197,7 +197,7 @@ int Geant4InputAction::readParticles(int evt_number,
   }
 
   if ( Geant4EventReader::EVENT_READER_OK != status )  {
-    string msg = issue(evid)+"Error when moving to event - ";
+    std::string msg = issue(evid)+"Error when moving to event - ";
     if ( status == Geant4EventReader::EVENT_READER_EOF ) msg += " EOF: [end of file].";
     else msg += " Unknown error condition";
     if ( m_abort )  {
@@ -217,9 +217,8 @@ int Geant4InputAction::readParticles(int evt_number,
     }
   }
 
-
   if ( Geant4EventReader::EVENT_READER_OK != status )  {
-    string msg = issue(evid)+"Error when moving to event - ";
+    std::string msg = issue(evid)+"Error when moving to event - ";
     if ( status == Geant4EventReader::EVENT_READER_EOF ) msg += " EOF: [end of file].";
     else msg += " Unknown error condition";
     if ( m_abort )  {
@@ -234,7 +233,7 @@ int Geant4InputAction::readParticles(int evt_number,
 
 /// Callback to generate primary particles
 void Geant4InputAction::operator()(G4Event* event)   {
-  vector<Particle*>         primaries;
+  std::vector<Particle*>    primaries;
   Geant4Event&              evt = context()->event();
   Geant4PrimaryEvent*       prim = evt.extension<Geant4PrimaryEvent>();
   Vertices                  vertices ;
@@ -286,4 +285,18 @@ void Geant4InputAction::operator()(G4Event* event)   {
     inter->particles.emplace(p->id,p);
     p.dumpWithMomentumAndVertex(outputLevel()-1,name(),"->");
   }
+}
+
+void Geant4InputAction::setGeneratorStatus(int genStatus, PropertyMask& status) {
+  if ( genStatus == 0 ) status.set(G4PARTICLE_GEN_EMPTY);
+  else if ( genStatus == 1 ) status.set(G4PARTICLE_GEN_STABLE);
+  else if ( genStatus == 2 ) status.set(G4PARTICLE_GEN_DECAYED);
+  else if ( genStatus == 3 ) status.set(G4PARTICLE_GEN_DOCUMENTATION);
+  else if ( genStatus == 4 ) status.set(G4PARTICLE_GEN_BEAM);
+  else if ( m_alternativeDecayStatuses.count(genStatus) ) status.set(G4PARTICLE_GEN_DECAYED);
+  else if ( m_alternativeStableStatuses.count(genStatus) ) status.set(G4PARTICLE_GEN_STABLE);
+  else
+    status.set(G4PARTICLE_GEN_OTHER);
+
+  return;
 }

@@ -40,8 +40,12 @@ if (DD4HEP_USE_GEANT4)
     GENERATED G__DDG4UserDict.cxx
     USES      DD4hep::DDCore DD4hep::DDG4 Geant4::Interface ROOT::Core ROOT::Geom ROOT::GenVector ROOT::RIO
     )
-  install(TARGETS DDG4UserLib LIBRARY DESTINATION lib)
-  install(FILES ${LIBRARY_OUTPUT_PATH}/G__DDG4UserDict.rootmap DESTINATION lib)
+  set(DD4HEP_INSTALL_LIBRARY lib)
+  if(CMAKE_INSTALL_LIBDIR)
+    set(DD4HEP_INSTALL_LIBRARY ${CMAKE_INSTALL_LIBDIR})
+  endif()
+  install(FILES ${LIBRARY_OUTPUT_PATH}/G__DDG4UserDict.rootmap DESTINATION ${DD4HEP_INSTALL_LIBRARY} COMPONENT dev)
+  unset(DD4HEP_INSTALL_LIBRARY)
   #
   #
   dd4hep_install_dir(data    DESTINATION ${CMAKE_INSTALL_PREFIX}/examples/DDG4 )
@@ -51,21 +55,21 @@ if (DD4HEP_USE_GEANT4)
   dd4hep_configure_scripts (DDG4 DEFAULT_SETUP WITH_TESTS)
   #
   # Test HepMC input reader
-  dd4hep_add_test_reg( DDG4_HepMC_reader
+  dd4hep_add_test_reg( DDG4_sim_HepMC_reader
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DD4hep_ROOT}/examples/DDG4/examples/readHEPMC.py
                       ${DDG4examples_INSTALL}/data/hepmc_geant4.dat
     REGEX_PASS "Geant4InputAction\\[Input\\]: Event 10 Error when moving to event -  EOF")
   #
   # Test HepMC input reader with slightly non-standard HEPMC file
-  dd4hep_add_test_reg( DDG4_HepMC_reader_minbias
+  dd4hep_add_test_reg( DDG4_sim_HepMC_reader_minbias
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DD4hep_ROOT}/examples/DDG4/examples/readHEPMC.py
                       ${DDG4examples_INSTALL}/data/LHCb_MinBias_HepMC.txt
     REGEX_PASS "Geant4InputAction\\[Input\\]: Event 27 Error when moving to event -  EOF")
   #
   # Test property types with specialized action
-  dd4hep_add_test_reg( DDG4_Test_property_types
+  dd4hep_add_test_reg( DDG4_sim_Test_property_types
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DDG4examples_INSTALL}/scripts/TestProperties.py
     REGEX_PASS "Test PASSED"
@@ -81,7 +85,7 @@ if (DD4HEP_USE_GEANT4)
   )
   #
   # Test G4 creation of G4ExtendedMaterial and G4LogicalCrystalVolume
-  dd4hep_add_test_reg( DDG4_G4ExtendedMaterial_G4LogicalCrystalVolume
+  dd4hep_add_test_reg( DDG4_sim_G4ExtendedMaterial_G4LogicalCrystalVolume
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DDG4examples_INSTALL}/scripts/Channeling.py -batch -events 3
     REGEX_PASS "Created specialize logical volume \\[G4LogicalCrystalVolume\\]: ChannelingDevice_vol"
@@ -89,7 +93,7 @@ if (DD4HEP_USE_GEANT4)
   )
   #
   # Test G4 stacking action
-  dd4hep_add_test_reg( DDG4_TestStackingAction
+  dd4hep_add_test_reg( DDG4_sim_TestStackingAction
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DDG4examples_INSTALL}/scripts/TestStacking.py -batch -events 3
     REGEX_PASS " \\[2\\] Calling classifyNewTrack. StackManager"
@@ -97,7 +101,7 @@ if (DD4HEP_USE_GEANT4)
   )
   #
   # Test G4 stepping action
-  dd4hep_add_test_reg( DDG4_TestSteppingAction
+  dd4hep_add_test_reg( DDG4_sim_TestSteppingAction
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DDG4examples_INSTALL}/scripts/TestStepping.py -batch -events 3
     REGEX_PASS " Track Calls Suspended: [1-9][0-9]*"
@@ -105,11 +109,19 @@ if (DD4HEP_USE_GEANT4)
   )
   #
   # Test G4 command UI
-  dd4hep_add_test_reg( DDG4_UIManager
+  dd4hep_add_test_reg( DDG4_sim_UIManager
     COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
     EXEC_ARGS  ${Python_EXECUTABLE} ${DDG4examples_INSTALL}/scripts/TestUserCommands.py
     REGEX_PASS " Parameter value at call 13 is 'terminate-command-2'"
     REGEX_FAIL " ERROR ;EXCEPTION;Exception"
+  )
+  #
+  # Test G4 SIGINT handler
+  dd4hep_add_test_reg( DDG4_sim_SIGINT_handler
+    COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_DDG4.sh"
+    EXEC_ARGS  ${Python_EXECUTABLE} ${DDG4examples_INSTALL}/scripts/TestSIGINT.py
+    REGEX_PASS "Event loop STOP signalled. Processing stops"
+    REGEX_FAIL " ERROR ;EXCEPTION"
   )
   #
 endif()

@@ -14,7 +14,7 @@
 #ifndef DDG4_GEANT4GDMLDETECTOR_H
 #define DDG4_GEANT4GDMLDETECTOR_H
 
-#include "G4VUserDetectorConstruction.hh"
+#include <G4VUserDetectorConstruction.hh>
 #include <string>
 
 /// Namespace for the AIDA detector description toolkit
@@ -37,10 +37,10 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4GDMLDetector() {
       }
-      G4VPhysicalVolume* Construct();
+      G4VPhysicalVolume* Construct()  override;
     private:
       std::string m_fileName;
-      G4VPhysicalVolume* m_world;
+      G4VPhysicalVolume* m_world { nullptr };
     };
   }
 }

@@ -12,11 +12,11 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/Factories.h"
-#include "DD4hep/Printout.h"
+#include <DD4hep/Factories.h>
+#include <DD4hep/Printout.h>
 
 // ROOT includes
-#include "TPython.h"
+#include <TPython.h>
 
 using namespace std;
 using namespace dd4hep;
@@ -87,7 +87,8 @@ namespace  {
           result = TPython::Exec(c.second.c_str());
           break;
         case 'c':
-          TPython::Eval(c.second.c_str());
+          // we do not care about the result
+          TPython::Exec(c.second.c_str());
           result = kTRUE;
           break;
         case 'p':

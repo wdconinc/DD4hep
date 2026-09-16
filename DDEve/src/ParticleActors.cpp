@@ -12,22 +12,21 @@
 //==========================================================================
 
 // Framework include files
-#include "DDEve/ParticleActors.h"
-#include "DD4hep/DD4hepUnits.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/Objects.h"
+#include <DDEve/ParticleActors.h>
+#include <DD4hep/DD4hepUnits.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/Objects.h>
 
-#include "TEveTrack.h"
-#include "TEveBoxSet.h"
-#include "TEvePointSet.h"
-#include "TEveCompound.h"
-#include "TEveTrackPropagator.h"
+#include <TEveTrack.h>
+#include <TEveBoxSet.h>
+#include <TEvePointSet.h>
+#include <TEveCompound.h>
+#include <TEveTrackPropagator.h>
 
-#include "TParticle.h"
-#include "TDatabasePDG.h"
-#include "TGeoManager.h"
+#include <TParticle.h>
+#include <TDatabasePDG.h>
+#include <TGeoManager.h>
 
-using namespace std;
 using namespace dd4hep;
 
 #ifdef DD4HEP_USE_GEANT4_UNITS
@@ -90,13 +89,11 @@ void MCParticleCreator::addCompound(const std::string& name, TEveLine* e)   {
 void MCParticleCreator::addCompoundLight(const std::string& name, TEveLine* e)   {
   Compounds::const_iterator i = types.find(name);
   if ( i == types.end() )  {
-    static int icol = 0;
     TEveCompound* o = new TEveCompound(name.c_str(),name.c_str());
     particles->AddElement(o);
     i = types.emplace(name,o).first;
     o->SetMainColor(kBlack);
     o->CSCApplyMainColorToAllChildren();
-    ++icol;
   }
   TEveCompound* c = (*i).second;
   e->SetLineWidth(1);

@@ -35,35 +35,38 @@ dd4hep_configure_output()
 set(RICH_INSTALL ${CMAKE_INSTALL_PREFIX}/examples/RICH)
 dd4hep_add_plugin(RICHExample SOURCES src/*.cpp
   USES DD4hep::DDCore DD4hep::DDRec DD4hep::DDCond ROOT::Core ROOT::Geom ROOT::GenVector ROOT::MathCore)
-install(TARGETS RICHExample LIBRARY DESTINATION lib)
 install(DIRECTORY compact scripts DESTINATION ${RICH_INSTALL} )
 dd4hep_configure_scripts( RICH DEFAULT_SETUP WITH_TESTS)
 
+if(NOT TARGET DD4hep::DDG4)
+  return()
+endif()
+
 # ---Test: run simulation
-dd4hep_add_test_reg( RICH_simulation
+dd4hep_add_test_reg( RICH_sim_simulation
   COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_RICH.sh"
   EXEC_ARGS  ${Python_EXECUTABLE} ${RICH_INSTALL}/scripts/richsim.py
              --outputFile "${RICH_INSTALL}/sim.root"
   REGEX_PASS "TEST: passed"
   REGEX_FAIL " Exception; EXCEPTION;ERROR;Error;FATAL"
-  )
+)
 
 # ---Test: Number of raw photon hits
-dd4hep_add_test_reg( RICH_number_of_hits
+dd4hep_add_test_reg( RICH_sim_number_of_hits
   COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_RICH.sh"
   EXEC_ARGS  root.exe -b -x -n -q -l
              "${RICH_INSTALL}/scripts/test_number_of_hits.C(\"${RICH_INSTALL}/sim.root\")"
   REGEX_PASS "TEST: passed"
   REGEX_FAIL "TEST: failed"
-  DEPENDS RICH_simulation
-  )
+  DEPENDS RICH_sim_simulation
+)
 
 # ---Test: Energy deposition
-dd4hep_add_test_reg( RICH_energy_deposition
+dd4hep_add_test_reg( RICH_sim_energy_deposition
   COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_RICH.sh"
   EXEC_ARGS  root.exe -b -x -n -q -l
              "${RICH_INSTALL}/scripts/test_energy_deposition.C(\"${RICH_INSTALL}/sim.root\")"
   REGEX_PASS "TEST: passed"
   REGEX_FAIL "TEST: failed"
-  DEPENDS RICH_simulation
-  )
+  DEPENDS RICH_sim_simulation
+)

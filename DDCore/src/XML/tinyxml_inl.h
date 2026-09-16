@@ -30,14 +30,12 @@
 */
 
 
-#include <ctype.h>
-
 #ifdef TIXML_USE_STL
 #include <sstream>
 #include <iostream>
 #endif
 
-#include "XML/tinyxml.h"
+#include <XML/tinyxml.h>
 
 
 bool TiXmlBase::condenseWhiteSpace = true;

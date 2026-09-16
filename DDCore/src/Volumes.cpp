@@ -40,9 +40,7 @@
 #include <sstream>
 #include <iomanip>
 
-using namespace std;
 using namespace dd4hep;
-using namespace dd4hep::detail;
 
 /*
  *  The section below uses the new ROOT features using user extensions to volumes
@@ -71,17 +69,17 @@ namespace {
     return o;
   }
 
-  TGeoVolume* _createTGeoVolume(const string& name, TGeoShape* s, TGeoMedium* m)  {
+  TGeoVolume* _createTGeoVolume(const std::string& name, TGeoShape* s, TGeoMedium* m)  {
     geo_volume_t* e = new geo_volume_t(name.c_str(),s,m);
     e->SetUserExtension(new Volume::Object());
     return e;
   }
-  TGeoVolume* _createTGeoVolumeAssembly(const string& name)  {
+  TGeoVolume* _createTGeoVolumeAssembly(const std::string& name)  {
     geo_assembly_t* e = new geo_assembly_t(name.c_str()); // It is important to use the correct constructor!!
     e->SetUserExtension(new Assembly::Object());
     return e;
   }
-  TGeoVolumeMulti* _createTGeoVolumeMulti(const string& name, TGeoMedium* medium)  {
+  TGeoVolumeMulti* _createTGeoVolumeMulti(const std::string& name, TGeoMedium* medium)  {
     TGeoVolumeMulti* e = new TGeoVolumeMulti(name.c_str(), medium);
     e->SetUserExtension(new VolumeMulti::Object());
     return e;
@@ -89,7 +87,8 @@ namespace {
   PlacedVolume::Object* _data(const PlacedVolume& v) {
     PlacedVolume::Object* o = _userExtension(v);
     if (o) return o;
-    throw runtime_error("dd4hep: Attempt to access invalid handle of type: PlacedVolume");
+    except("PlacedVolume::_data", "+++ Attempt to access invalid handle of type: PlacedVolume");
+    return nullptr;
   }
   /// Accessor to the data part of the Volume
   Volume::Object* _data(const Volume& v, bool throw_exception = true) {
@@ -99,7 +98,8 @@ namespace {
       return o;
     else if (!throw_exception)
       return nullptr;
-    throw runtime_error("dd4hep: Attempt to access invalid handle of type: PlacedVolume");
+    except("Volume::_data", "+++ Attempt to access invalid handle of type: Volume");
+    return nullptr;
   }
 
   class VolumeImport   {
@@ -107,7 +107,7 @@ namespace {
     void setShapeTitle(TGeoVolume* vol)   {
       if ( vol )   {
         TGeoShape* sh = vol->GetShape();
-        string tag = get_shape_tag(sh);
+        std::string tag = get_shape_tag(sh);
         sh->SetTitle(tag.c_str());
       }
     }
@@ -216,7 +216,7 @@ namespace {
       return nullptr;
     }
     map.Add(v, vol);
-    string nam;
+    std::string nam;
     if (newname && newname[0])  {
       nam = newname;
       vol->SetName(newname);
@@ -299,7 +299,6 @@ namespace {
 
 }
 
-
 /// Perform scan
 void ReflectionBuilder::execute()  const   {
   TGeoIterator next(detector.manager().GetTopVolume());
@@ -361,9 +360,8 @@ PlacedVolumeExtension::PlacedVolumeExtension()
 
 /// Default move
 PlacedVolumeExtension::PlacedVolumeExtension(PlacedVolumeExtension&& c)
-  : TGeoExtension(c), magic(move(c.magic)), refCount(0), volIDs() {
+  : TGeoExtension(c), magic(std::move(c.magic)), refCount(0), volIDs(std::move(c.volIDs)) {
   INCREMENT_COUNTER;
-  volIDs = move(c.volIDs);
 }
 
 /// Copy constructor
@@ -377,6 +375,21 @@ PlacedVolumeExtension::PlacedVolumeExtension(const PlacedVolumeExtension& c)
 PlacedVolumeExtension::~PlacedVolumeExtension() {
   if ( this->params ) this->params->release();
   DECREMENT_COUNTER;
+}
+
+/// Move assignment
+PlacedVolumeExtension& PlacedVolumeExtension::operator=(PlacedVolumeExtension&& copy)  {
+  magic  = std::move(copy.magic);
+  params = std::move(copy.params);
+  volIDs = std::move(copy.volIDs);
+  return *this;
+}
+/// Assignment operator
+PlacedVolumeExtension& PlacedVolumeExtension::operator=(const PlacedVolumeExtension& copy) {
+  magic  = copy.magic;
+  params = copy.params;
+  volIDs = copy.volIDs;
+  return *this;
 }
 
 /// TGeoExtension overload: Method called whenever requiring a pointer to the extension
@@ -396,8 +409,8 @@ void PlacedVolumeExtension::Release() const  {
 }
 
 /// Lookup volume ID
-vector<PlacedVolumeExtension::VolID>::const_iterator
-PlacedVolumeExtension::VolIDs::find(const string& name) const {
+std::vector<PlacedVolumeExtension::VolID>::const_iterator
+PlacedVolumeExtension::VolIDs::find(const std::string& name) const {
   for (Base::const_iterator i = this->Base::begin(); i != this->Base::end(); ++i)
     if (name == (*i).first)
       return i;
@@ -405,8 +418,8 @@ PlacedVolumeExtension::VolIDs::find(const string& name) const {
 }
 
 /// Insert a new value into the volume ID container
-std::pair<vector<PlacedVolumeExtension::VolID>::iterator, bool>
-PlacedVolumeExtension::VolIDs::insert(const string& name, int value) {
+std::pair<std::vector<PlacedVolumeExtension::VolID>::iterator, bool>
+PlacedVolumeExtension::VolIDs::insert(const std::string& name, int value) {
   Base::iterator i = this->Base::begin();
   for (; i != this->Base::end(); ++i)
     if (name == (*i).first)
@@ -420,12 +433,12 @@ PlacedVolumeExtension::VolIDs::insert(const string& name, int value) {
 }
 
 /// String representation for debugging
-string PlacedVolumeExtension::VolIDs::str()  const   {
-  stringstream str;
-  str << hex;
+std::string PlacedVolumeExtension::VolIDs::str()  const   {
+  std::stringstream str;
+  str << std::hex;
   for(const auto& i : *this )   {
-    str << i.first << "=" << setw(4) << right
-        << setfill('0') << i.second << setfill(' ') << " ";
+    str << i.first << "=" << std::setw(4) << std::right
+        << std::setfill('0') << i.second << std::setfill(' ') << " ";
   }
   return str.str();
 }
@@ -473,7 +486,7 @@ PlacedVolume PlacedVolume::daughter(std::size_t which)  const   {
       return m_element->GetDaughter(which);
     }
     except("Volume","+++ Access daughter %ld of %s [Has only %d daughters]",
-	   which, m_element->GetName(), m_element->GetNdaughters());
+           which, m_element->GetName(), m_element->GetNdaughters());
   }
   except("Volume","+++ Cannot access daughters of a non-existing volume!");
   return nullptr;
@@ -485,7 +498,7 @@ const PlacedVolume::VolIDs& PlacedVolume::volIDs() const {
 }
 
 /// Add identifier
-PlacedVolume& PlacedVolume::addPhysVolID(const string& nam, int value) {
+PlacedVolume& PlacedVolume::addPhysVolID(const std::string& nam, int value) {
   auto* o = _data(*this);
   if ( !o->params )   {
     o->volIDs.emplace_back(nam, value);
@@ -493,14 +506,14 @@ PlacedVolume& PlacedVolume::addPhysVolID(const string& nam, int value) {
   }
   if ( value > 0 )    {
     except("PlacedVolume",
-	   "+++ addPhysVolID(%s): parameterised volumes only accept '0' is volID."
-	   "These automatically get overwritten with the copy number!",
-	   ptr()->GetName());
+           "+++ addPhysVolID(%s): parameterised volumes only accept '0' is volID."
+           "These automatically get overwritten with the copy number!",
+           ptr()->GetName());
   }
   if ( !o->volIDs.empty() )    {
     except("PlacedVolume",
-	   "+++ addPhysVolID(%s): parameterised volumes can only host 1 physical volume ID."
-	   " vol id '%s' is already defined!", ptr()->GetName(), o->volIDs[0].first.c_str());
+           "+++ addPhysVolID(%s): parameterised volumes can only host 1 physical volume ID."
+           " vol id '%s' is already defined!", ptr()->GetName(), o->volIDs[0].first.c_str());
   }
   for(PlacedVolume pv : o->params->placements)  {
     auto* p = _data(pv);
@@ -524,15 +537,15 @@ Position PlacedVolume::position()  const    {
 }
 
 /// String dump
-string PlacedVolume::toString() const {
-  stringstream str;
+std::string PlacedVolume::toString() const {
+  std::stringstream str;
   Object* obj = _data(*this);
   str << m_element->GetName() << ":  vol='" << m_element->GetVolume()->GetName()
       << "' mat:'" << m_element->GetMatrix()->GetName()
       << "' volID[" << obj->volIDs.size() << "] ";
   for (VolIDs::const_iterator i = obj->volIDs.begin(); i != obj->volIDs.end(); ++i)
     str << (*i).first << "=" << (*i).second << "  ";
-  str << ends;
+  str << std::ends;
   return str.str();
 }
 
@@ -614,23 +627,23 @@ void VolumeExtension::Release() const  {
 }
 
 /// Constructor to be used when creating a new geometry tree.
-Volume::Volume(const string& nam) {
+Volume::Volume(const std::string& nam) {
   m_element = _createTGeoVolume(nam,0,0);
 }
 
 /// Constructor to be used when creating a new geometry tree.
-Volume::Volume(const string& nam, const string& title) {
+Volume::Volume(const std::string& nam, const std::string& title) {
   m_element = _createTGeoVolume(nam,0,0);
   m_element->SetTitle(title.c_str());
 }
 
 /// Constructor to be used when creating a new geometry tree. Also sets materuial and solid attributes
-Volume::Volume(const string& nam, const Solid& sol, const Material& mat) {
+Volume::Volume(const std::string& nam, const Solid& sol, const Material& mat) {
   m_element = _createTGeoVolume(nam, sol.ptr(), mat.ptr());
 }
 
 /// Constructor to be used when creating a new geometry tree. Also sets materuial and solid attributes
-Volume::Volume(const string& nam, const string& title, const Solid& sol, const Material& mat) {
+Volume::Volume(const std::string& nam, const std::string& title, const Solid& sol, const Material& mat) {
   m_element = _createTGeoVolume(nam, sol.ptr(), mat.ptr());
   m_element->SetTitle(title.c_str());
 }
@@ -711,8 +724,21 @@ bool Volume::isAssembly()   const   {
   return m_element ? m_element->IsAssembly() : false;
 }    
 
+/// Set the smartless option for G4 voxelization. Returns previous value
+double Volume::setSmartlessValue(double new_value)  {
+  Object* obj = _data(*this);
+  double tmp = obj->smartLess;
+  obj->smartLess = new_value;
+  return tmp;
+}
+
+/// access the smartless option for G4 voxelization
+double Volume::smartlessValue()  const  {
+  return _data(*this)->smartLess;
+}
+
 /// Divide volume into subsections (See the ROOT manuloa for details)
-Volume Volume::divide(const string& divname, int iaxis, int ndiv,
+Volume Volume::divide(const std::string& divname, int iaxis, int ndiv,
                       double start, double step, int numed, const char* option)   {
   TGeoVolume* p = m_element;
   if ( p )  {
@@ -741,7 +767,7 @@ PlacedVolume _addNode(TGeoVolume* par, TGeoVolume* daughter, int id, TGeoMatrix*
     except("dd4hep","Volume: Attempt to place volume without placement matrix.");
   }
   if ( transform != detail::matrix::_identity() ) {
-    string nam = string(daughter->GetName()) + "_placement";
+    std::string nam = std::string(daughter->GetName()) + "_placement";
     transform->SetName(nam.c_str());
   }
   TGeoShape* shape = daughter->GetShape();
@@ -797,7 +823,7 @@ PlacedVolume _addNode(TGeoVolume* par, Volume daughter, int copy_nr, const Rotat
   double elements[9];
   rot3D.GetComponents(elements);
   r.SetMatrix(elements);
-  auto matrix = make_unique<TGeoCombiTrans>(TGeoTranslation(0,0,0),r);
+  auto matrix = std::make_unique<TGeoCombiTrans>(TGeoTranslation(0,0,0),r);
   return _addNode(par, daughter, copy_nr, matrix.release());
 }
 
@@ -810,7 +836,7 @@ PlacedVolume _addNode(TGeoVolume* par, Volume daughter, int copy_nr, const Trans
   tr.GetTranslation(pos3D);
   rot3D.GetComponents(elements);
   r.SetMatrix(elements);
-  auto matrix = make_unique<TGeoCombiTrans>(TGeoTranslation(pos3D.x(), pos3D.y(), pos3D.z()),r);
+  auto matrix = std::make_unique<TGeoCombiTrans>(TGeoTranslation(pos3D.x(), pos3D.y(), pos3D.z()),r);
   return _addNode(par, daughter, copy_nr, matrix.release());
 }
 
@@ -876,14 +902,14 @@ PlacedVolume Volume::placeVolume(const Volume& volume, int copy_no, const Rotati
 
 /// 1D volume replication implementation
 PlacedVolume Volume::replicate(const Volume entity, ReplicationAxis axis,
-			       size_t count, double inc, double start)
+                               size_t count, double inc, double start)
 {
   Transform3D offset(1e0,  0e0,  0e0,  axis == X_axis ? start : 0e0,
-		     0e0,  1e0,  0e0,  axis == Y_axis ? start : 0e0,
-		     0e0,  0e0,  1e0,  axis == Z_axis ? start : 0e0);
+                     0e0,  1e0,  0e0,  axis == Y_axis ? start : 0e0,
+                     0e0,  0e0,  1e0,  axis == Z_axis ? start : 0e0);
   Transform3D tr(1e0,  0e0,  0e0,  axis == X_axis ? inc : 0e0,
-		 0e0,  1e0,  0e0,  axis == Y_axis ? inc : 0e0,
-		 0e0,  0e0,  1e0,  axis == Z_axis ? inc : 0e0);
+                 0e0,  1e0,  0e0,  axis == Y_axis ? inc : 0e0,
+                 0e0,  0e0,  1e0,  axis == Z_axis ? inc : 0e0);
   PlacedVolume pv = paramVolume1D(offset, entity, count, tr);
   auto* data = pv.data();
   data->params->flags = axis | REPLICATED;
@@ -907,9 +933,9 @@ PlacedVolume Volume::paramVolume1D(Volume entity, size_t count, const Transform3
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume1D(const Transform3D& start,
-				   Volume entity,
-				   size_t count,
-				   const Transform3D& trafo)
+                                   Volume entity,
+                                   size_t count,
+                                   const Transform3D& trafo)
 {
   Transform3D tr(start);
   PlacedVolume pv =
@@ -917,8 +943,8 @@ PlacedVolume Volume::paramVolume1D(const Transform3D& start,
   auto* data = pv.data();
   if ( pv->GetNdaughters() > 1 )   {
     except("Volume","paramVolume1D: Mother %s has too many daughters: %ld "
-	   "Parameterized volumes may only have one single daughter!",
-	   ptr()->GetName(), pv.volume()->GetNdaughters());
+           "Parameterized volumes may only have one single daughter!",
+           ptr()->GetName(), pv.volume()->GetNdaughters());
   }
   data->params = new PlacedVolumeExtension::Parameterisation();
   data->params->addref();
@@ -941,50 +967,50 @@ PlacedVolume Volume::paramVolume1D(const Transform3D& start,
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume2D(Volume entity,
-				   size_t count_1,
-				   const Transform3D& trafo_1,
-				   size_t count_2,
-				   const Transform3D& trafo_2)
+                                   size_t count_1,
+                                   const Transform3D& trafo_1,
+                                   size_t count_2,
+                                   const Transform3D& trafo_2)
 {
   return paramVolume2D(Transform3D(), entity, count_1, trafo_1, count_2, trafo_2);
 }
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume2D(const Transform3D& start,
-				   Volume entity,
-				   size_t count_1,
-				   const Position& pos_1,
-				   size_t count_2,
-				   const Position& pos_2)
+                                   Volume entity,
+                                   size_t count_1,
+                                   const Position& pos_1,
+                                   size_t count_2,
+                                   const Position& pos_2)
 {
   return paramVolume2D(start, entity, count_1, Transform3D(pos_1), count_2, Transform3D(pos_2));
 }
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume2D(Volume entity,
-				   size_t count_1,
-				   const Position& pos_1,
-				   size_t count_2,
-				   const Position& pos_2)
+                                   size_t count_1,
+                                   const Position& pos_1,
+                                   size_t count_2,
+                                   const Position& pos_2)
 {
   return paramVolume2D(Transform3D(), entity, count_1, Transform3D(pos_1), count_2, Transform3D(pos_2));
 }
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume2D(const Transform3D& start,
-				   Volume entity,
-				   size_t count_1,
-				   const Transform3D& trafo_1,
-				   size_t count_2,
-				   const Transform3D& trafo_2)
+                                   Volume entity,
+                                   size_t count_1,
+                                   const Transform3D& trafo_1,
+                                   size_t count_2,
+                                   const Transform3D& trafo_2)
 {
   PlacedVolume pv =
     _addNode(m_element, entity, get_copy_number(m_element), detail::matrix::_transform(start));
   auto* data = pv.data();
   if ( pv->GetNdaughters() > 1 )   {
     except("Volume","paramVolume1D: Mother %s has too many daughters: %ld "
-	   "Parameterized volumes may only have one single daughter!",
-	   ptr()->GetName(), pv.volume()->GetNdaughters());
+           "Parameterized volumes may only have one single daughter!",
+           ptr()->GetName(), pv.volume()->GetNdaughters());
   }
   data->params = new PlacedVolumeExtension::Parameterisation();
   data->params->addref();
@@ -1001,10 +1027,10 @@ PlacedVolume Volume::paramVolume2D(const Transform3D& start,
     Transform3D tr1 = tr2;
     for(size_t i = 0; i < count_1; ++i)    {
       if ( !( i == 0 && j == 0 ) )   {
-	PlacedVolume ppv =
-	  _addNode(m_element, entity, get_copy_number(m_element), detail::matrix::_transform(tr1));
-	data->params->placements.emplace_back(ppv);
-	ppv.data()->params = data->params->addref();
+        PlacedVolume ppv =
+          _addNode(m_element, entity, get_copy_number(m_element), detail::matrix::_transform(tr1));
+        data->params->placements.emplace_back(ppv);
+        ppv.data()->params = data->params->addref();
       }
       tr1 *= trafo_1;
     }
@@ -1015,52 +1041,52 @@ PlacedVolume Volume::paramVolume2D(const Transform3D& start,
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume3D(const Transform3D& start,
-				   Volume entity,
-				   size_t count_1,
-				   const Position& pos_1,
-				   size_t count_2,
-				   const Position& pos_2,
-				   size_t count_3,
-				   const Position& pos_3)
+                                   Volume entity,
+                                   size_t count_1,
+                                   const Position& pos_1,
+                                   size_t count_2,
+                                   const Position& pos_2,
+                                   size_t count_3,
+                                   const Position& pos_3)
 {
   return paramVolume3D(start, entity, 
-		       count_1, Transform3D(pos_1),
-		       count_2, Transform3D(pos_2),
-		       count_3, Transform3D(pos_3));
+                       count_1, Transform3D(pos_1),
+                       count_2, Transform3D(pos_2),
+                       count_3, Transform3D(pos_3));
 }
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume3D(Volume entity,
-				   size_t count_1,
-				   const Position& pos_1,
-				   size_t count_2,
-				   const Position& pos_2,
-				   size_t count_3,
-				   const Position& pos_3)
+                                   size_t count_1,
+                                   const Position& pos_1,
+                                   size_t count_2,
+                                   const Position& pos_2,
+                                   size_t count_3,
+                                   const Position& pos_3)
 {
   return paramVolume3D(Transform3D(), entity,
-		       count_1, Transform3D(pos_1),
-		       count_2, Transform3D(pos_2),
-		       count_3, Transform3D(pos_3));
+                       count_1, Transform3D(pos_1),
+                       count_2, Transform3D(pos_2),
+                       count_3, Transform3D(pos_3));
 }
 
 /// Constructor to be used when creating a new parameterised volume object
 PlacedVolume Volume::paramVolume3D(const Transform3D& start,
-				   Volume entity,
-				   size_t count_1,
-				   const Transform3D& trafo_1,
-				   size_t count_2,
-				   const Transform3D& trafo_2,
-				   size_t count_3,
-				   const Transform3D& trafo_3)
+                                   Volume entity,
+                                   size_t count_1,
+                                   const Transform3D& trafo_1,
+                                   size_t count_2,
+                                   const Transform3D& trafo_2,
+                                   size_t count_3,
+                                   const Transform3D& trafo_3)
 {
   PlacedVolume pv =
     _addNode(m_element, entity, get_copy_number(m_element), detail::matrix::_transform(start));
   auto* data = pv.data();
   if ( pv->GetNdaughters() > 1 )   {
     except("Volume","paramVolume1D: Mother %s has too many daughters: %ld "
-	   "Parameterized volumes may only have one single daughter!",
-	   ptr()->GetName(), pv.volume()->GetNdaughters());
+           "Parameterized volumes may only have one single daughter!",
+           ptr()->GetName(), pv.volume()->GetNdaughters());
   }
   data->params = new PlacedVolumeExtension::Parameterisation();
   data->params->addref();
@@ -1079,13 +1105,13 @@ PlacedVolume Volume::paramVolume3D(const Transform3D& start,
     for(size_t j=0; j < count_2; ++j)    {
       Transform3D tr1 = tr2;
       for(size_t i = 0; i < count_1; ++i)    {
-	if ( !( i == 0 && j == 0 && k == 0 ) )   {
-	  PlacedVolume ppv =
-	    _addNode(m_element, entity, get_copy_number(m_element), detail::matrix::_transform(tr1));
-	  data->params->placements.emplace_back(ppv);
-	  ppv.data()->params = data->params->addref();
-	}
-	tr1 *= trafo_1;
+        if ( !( i == 0 && j == 0 && k == 0 ) )   {
+          PlacedVolume ppv =
+            _addNode(m_element, entity, get_copy_number(m_element), detail::matrix::_transform(tr1));
+          data->params->placements.emplace_back(ppv);
+          ppv.data()->params = data->params->addref();
+        }
+        tr1 *= trafo_1;
       }
       tr2 *= trafo_2;
     }
@@ -1095,16 +1121,16 @@ PlacedVolume Volume::paramVolume3D(const Transform3D& start,
 }
 
 /// Set the volume's option value
-const Volume& Volume::setOption(const string& opt) const {
+const Volume& Volume::setOption(const std::string& opt) const {
   if ( isValid() )   {
     m_element->SetOption(opt.c_str());
     return *this;
   }
-  throw runtime_error("dd4hep: Attempt to access invalid handle of type: PlacedVolume");
+  throw std::runtime_error("dd4hep: Attempt to access invalid handle of type: PlacedVolume");
 }
 
 /// Access the volume's option value
-string Volume::option() const {
+std::string Volume::option() const {
   return m_element->GetOption();
 }
 
@@ -1116,9 +1142,9 @@ const Volume& Volume::setMaterial(const Material& mat) const {
       m_element->SetMedium(medium);
       return *this;
     }
-    throw runtime_error("dd4hep: Volume: Medium " + string(mat.name()) + " is not registered with geometry manager.");
+    throw std::runtime_error("dd4hep: Volume: Medium " + std::string(mat.name()) + " is not registered with geometry manager.");
   }
-  throw runtime_error("dd4hep: Volume: Attempt to assign invalid material.");
+  throw std::runtime_error("dd4hep: Volume: Attempt to assign invalid material.");
 }
 
 /// Access to the Volume material
@@ -1155,14 +1181,17 @@ const Volume& Volume::setVisAttributes(const VisAttr& attr) const {
       if (draw_style == VisAttr::SOLID) {
         m_element->SetFillStyle(1001);   // Root: solid
 
-#if ROOT_VERSION_CODE >= ROOT_VERSION(6,0,0)
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,29,0)
+        // Set directly transparency to the volume, NOT to the material as for ROOT < 6.29
+        m_element->ResetTransparency(Char_t((1.0-vis->alpha)*100));
+#else
         // As suggested by Valentin Volkl https://sft.its.cern.ch/jira/browse/DDFORHEP-20
         //
         // According to https://root.cern.ch/phpBB3/viewtopic.php?t=2309#p66013
         // a transparency>50 will make a volume invisible in the normal pad.
         // Hence: possibly restrict transparency to a maximum of 50.
         //        but let's see first how this behaves.
-        m_element->SetTransparency((1.0-vis->alpha)*100);
+        m_element->SetTransparency(Char_t((1.0-vis->alpha)*100));
 #endif
       }
       else {
@@ -1188,7 +1217,7 @@ const Volume& Volume::setVisAttributes(const VisAttr& attr) const {
 }
 
 /// Set Visualization attributes to the volume
-const Volume& Volume::setVisAttributes(const Detector& description, const string& nam) const {
+const Volume& Volume::setVisAttributes(const Detector& description, const std::string& nam) const {
   if (!nam.empty()) {
     VisAttr attr = description.visAttributes(nam);
     setVisAttributes(attr);
@@ -1197,7 +1226,7 @@ const Volume& Volume::setVisAttributes(const Detector& description, const string
 }
 
 /// Attach attributes to the volume
-const Volume& Volume::setAttributes(const Detector& description, const string& rg, const string& ls, const string& vis) const {
+const Volume& Volume::setAttributes(const Detector& description, const std::string& rg, const std::string& ls, const std::string& vis) const {
   if (!rg.empty())
     setRegion(description.region(rg));
   if (!ls.empty())
@@ -1239,7 +1268,7 @@ Box Volume::boundingBox() const {
 }
 
 /// Set the regional attributes to the volume
-const Volume& Volume::setRegion(const Detector& description, const string& nam) const {
+const Volume& Volume::setRegion(const Detector& description, const std::string& nam) const {
   if (!nam.empty()) {
     return setRegion(description.region(nam));
   }
@@ -1258,7 +1287,7 @@ Region Volume::region() const {
 }
 
 /// Set the limits to the volume
-const Volume& Volume::setLimitSet(const Detector& description, const string& nam) const {
+const Volume& Volume::setLimitSet(const Detector& description, const std::string& nam) const {
   if (!nam.empty()) {
     return setLimitSet(description.limitSet(nam));
   }
@@ -1300,7 +1329,7 @@ bool Volume::hasProperties()  const   {
 }
 
 /// Add Volume property (name-value pair)
-void Volume::addProperty(const string& nam, const string& val) const  {
+void Volume::addProperty(const std::string& nam, const std::string& val) const  {
   auto* o = _data(*this);
   if ( !o->properties )   {
     o->properties = new TList();
@@ -1312,11 +1341,11 @@ void Volume::addProperty(const string& nam, const string& val) const  {
     return;
   }
   except("Volume::addProperty", "Volume: '%s' Property '%s' is already set!",
-	 ptr()->GetName(), nam.c_str());
+         ptr()->GetName(), nam.c_str());
 }
 
 /// Access property value. Returns default_value if the property is not present
-string Volume::getProperty(const string& nam, const string& default_val)   const {
+std::string Volume::getProperty(const std::string& nam, const std::string& default_val)   const {
   const auto* o = _data(*this);
   if ( !o->properties )   {
     return default_val;
@@ -1327,12 +1356,12 @@ string Volume::getProperty(const string& nam, const string& default_val)   const
 }
 
 /// Constructor to be used when creating a new assembly object
-Assembly::Assembly(const string& nam) {
+Assembly::Assembly(const std::string& nam) {
   m_element = _createTGeoVolumeAssembly(nam);
 }
 
 /// Constructor to be used when creating a new multi-volume object
-VolumeMulti::VolumeMulti(const string& nam, Material mat) {
+VolumeMulti::VolumeMulti(const std::string& nam, Material mat) {
   m_element = _createTGeoVolumeMulti(nam, mat.ptr());
 }
 
@@ -1352,11 +1381,11 @@ void VolumeMulti::verifyVolumeMulti()   {
 }
 
 /// Output mesh vertices to string
-string dd4hep::toStringMesh(PlacedVolume place, int prec)   {
+std::string dd4hep::toStringMesh(PlacedVolume place, int prec)   {
   Volume       vol   = place->GetVolume();
   TGeoMatrix*  mat   = place->GetMatrix();
   Solid        sol   = vol.solid();
-  stringstream os;
+  std::stringstream os;
   struct _numbering {
     double adjust(double value)  const   {
       if ( std::abs(value) < TGeoShape::Tolerance() )
@@ -1367,7 +1396,7 @@ string dd4hep::toStringMesh(PlacedVolume place, int prec)   {
 
   if ( vol->IsA() == TGeoVolumeAssembly::Class() )    {
     for(int i=0; i<vol->GetNdaughters(); ++i)  {
-      os << toStringMesh(vol->GetNode(i), prec) << endl;
+      os << toStringMesh(vol->GetNode(i), prec) << std::endl;
     }
     return os.str();
   }
@@ -1378,36 +1407,36 @@ string dd4hep::toStringMesh(PlacedVolume place, int prec)   {
   Double_t* points = new Double_t[3*nvert];
   sol->SetPoints(points);
 
-  os << setw(16) << left << sol->IsA()->GetName()
-     << " " << nvert << " Mesh-points:" << endl;
-  os << setw(16) << left << sol->IsA()->GetName() << " " << sol->GetName()
+  os << std::setw(16) << std::left << sol->IsA()->GetName()
+     << " " << nvert << " Mesh-points:" << std::endl;
+  os << std::setw(16) << std::left << sol->IsA()->GetName() << " " << sol->GetName()
      << " N(mesh)=" << sol->GetNmeshVertices()
-     << "  N(vert)=" << nvert << "  N(seg)=" << nsegs << "  N(pols)=" << npols << endl;
+     << "  N(vert)=" << nvert << "  N(seg)=" << nsegs << "  N(pols)=" << npols << std::endl;
     
   for(int i=0; i<nvert; ++i)   {
     Double_t* p = points + 3*i;
     Double_t global[3], local[3] = {p[0], p[1], p[2]};
     mat->LocalToMaster(local, global);
-    os << setw(16) << left << sol->IsA()->GetName() << " " << setw(3) << left << i
-       << " Local  ("  << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(local[0])
-       << ", "         << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(local[1])
-       << ", "         << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(local[2])
-       << ") Global (" << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(global[0])
-       << ", "         << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(global[1])
-       << ", "         << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(global[2])
-       << ")" << endl;
+    os << std::setw(16) << std::left << sol->IsA()->GetName() << " " << std::setw(3) << std::left << i
+       << " Local  ("  << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(local[0])
+       << ", "         << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(local[1])
+       << ", "         << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(local[2])
+       << ") Global (" << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(global[0])
+       << ", "         << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(global[1])
+       << ", "         << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(global[2])
+       << ")" << std::endl;
   }
   Box box = sol;
   const Double_t* org = box->GetOrigin();
-  os << setw(16) << left << sol->IsA()->GetName()
+  os << std::setw(16) << std::left << sol->IsA()->GetName()
      << " Bounding box: "
-     << " dx="        << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(box->GetDX())
-     << " dy="        << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(box->GetDY())
-     << " dz="        << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(box->GetDZ())
-     << " Origin: x=" << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(org[0])
-     << " y="         << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(org[1])
-     << " z="         << setw(7) << setprecision(prec) << fixed << right << _vertex.adjust(org[2])
-     << endl;
+     << " dx="        << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(box->GetDX())
+     << " dy="        << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(box->GetDY())
+     << " dz="        << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(box->GetDZ())
+     << " Origin: x=" << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(org[0])
+     << " y="         << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(org[1])
+     << " z="         << std::setw(7) << std::setprecision(prec) << std::fixed << std::right << _vertex.adjust(org[2])
+     << std::endl;
   
   /// -------------------- DONE --------------------
   delete [] points;

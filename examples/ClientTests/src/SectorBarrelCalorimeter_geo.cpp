@@ -15,18 +15,16 @@
 #include "XML/Layering.h"
 #include <limits>
 
-using namespace std;
 using namespace dd4hep;
-using namespace dd4hep::detail;
 
 static void placeStaves(DetElement&   parent,
-			DetElement&   stave,
-			double        rmin, 
-			int           numsides, 
-			double        total_thickness, 
-			Volume        envelopeVolume, 
-			double        innerAngle, 
-			Volume        sectVolume)
+                        DetElement&   stave,
+                        double        rmin, 
+                        int           numsides, 
+                        double        total_thickness, 
+                        Volume        envelopeVolume, 
+                        double        innerAngle, 
+                        Volume        sectVolume)
 {
   double innerRotation    = innerAngle;
   double offsetRotation   = -innerRotation / 2;
@@ -39,7 +37,7 @@ static void placeStaves(DetElement&   parent,
   for (int module = 1; module <= numsides; ++module)  {
     DetElement det  = module>1 ? stave.clone(_toString(module,"stave%d")) : stave;
     PlacedVolume pv = envelopeVolume.placeVolume(sectVolume,Transform3D(RotationZYX(0,rotY,rotX),
-									Translation3D(-posX,-posY,0)));
+                                                                        Translation3D(-posX,-posY,0)));
     // Not a valid volID: pv.addPhysVolID("stave", 0);
     pv.addPhysVolID("module",module);
     det.setPlacement(pv);
@@ -55,7 +53,7 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
   Layering    layering(x_det);
   //xml_comp_t  staves      = x_det.staves();
   xml_dim_t   dim         = x_det.dimensions();
-  string      det_name    = x_det.nameStr();
+  std::string det_name    = x_det.nameStr();
   Material    air         = description.air();
   double      totalThickness = layering.totalThickness();
   int         numSides    = dim.numsides();
@@ -108,9 +106,9 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
     const Layer* lay    = layering.layer(layer_num-1); // Get the layer from the layering engine.
     // Loop over repeats for this layer.
     for (int j = 0; j < repeat; j++)    {
-      string     layer_name      = det_name+_toString(layer_num,"_layer%d");
-      double     layer_thickness = lay->thickness();
-      DetElement layer(stave,_toString(layer_num,"layer%d"),x_det.id());
+      std::string layer_name      = det_name+_toString(layer_num,"_layer%d");
+      double      layer_thickness = lay->thickness();
+      DetElement  layer(stave,_toString(layer_num,"layer%d"),x_det.id());
 
       // Layer position in Z within the stave.
       layer_pos_z += layer_thickness / 2;
@@ -121,31 +119,31 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
       double slice_pos_z = -(layer_thickness / 2);
       int slice_number = 1;
       for(xml_coll_t k(x_layer,_U(slice)); k; ++k)  {
-	xml_comp_t x_slice = k;
-	string   slice_name      = layer_name + _toString(slice_number,"_slice%d");
-	double   slice_thickness = x_slice.thickness();
-	Material slice_material  = description.material(x_slice.materialStr());
-	DetElement slice(layer,_toString(slice_number,"slice%d"),x_det.id());
+        xml_comp_t  x_slice = k;
+        std::string slice_name      = layer_name + _toString(slice_number,"_slice%d");
+        double      slice_thickness = x_slice.thickness();
+        Material    slice_material  = description.material(x_slice.materialStr());
+        DetElement  slice(layer,_toString(slice_number,"slice%d"),x_det.id());
 
-	slice_pos_z += slice_thickness / 2;
-	// Slice volume & box
-	Volume slice_vol(slice_name,Box(layer_dim_x,detZ/2,slice_thickness/2),slice_material);
+        slice_pos_z += slice_thickness / 2;
+        // Slice volume & box
+        Volume slice_vol(slice_name,Box(layer_dim_x,detZ/2,slice_thickness/2),slice_material);
 
-	if ( x_slice.isSensitive() ) {
-	  sens.setType("calorimeter");
-	  slice_vol.setSensitiveDetector(sens);
-	}
-	// Set region, limitset, and vis.
-	slice_vol.setAttributes(description,x_slice.regionStr(),x_slice.limitsStr(),x_slice.visStr());
-	// slice PlacedVolume
-	PlacedVolume slice_phv = layer_vol.placeVolume(slice_vol,Position(0,0,slice_pos_z));
-	slice_phv.addPhysVolID("slice",slice_number);
+        if ( x_slice.isSensitive() ) {
+          sens.setType("calorimeter");
+          slice_vol.setSensitiveDetector(sens);
+        }
+        // Set region, limitset, and vis.
+        slice_vol.setAttributes(description,x_slice.regionStr(),x_slice.limitsStr(),x_slice.visStr());
+        // slice PlacedVolume
+        PlacedVolume slice_phv = layer_vol.placeVolume(slice_vol,Position(0,0,slice_pos_z));
+        slice_phv.addPhysVolID("slice",slice_number);
 
-	slice.setPlacement(slice_phv);
-	// Increment Z position for next slice.
-	slice_pos_z += slice_thickness / 2;
-	// Increment slice number.
-	++slice_number;
+        slice.setPlacement(slice_phv);
+        // Increment Z position for next slice.
+        slice_pos_z += slice_thickness / 2;
+        // Increment slice number.
+        ++slice_number;
       }
       // Set region, limitset, and vis.
       layer_vol.setAttributes(description,x_layer.regionStr(),x_layer.limitsStr(),x_layer.visStr());
@@ -159,7 +157,10 @@ static Ref_t create_detector(Detector& description, xml_h e, SensitiveDetector s
       // Increment the layer X dimension.
       layer_pos_x = (layerR-rmin)/tan_external;
       layer_dim_x =  (std::sqrt(rmax*rmax - layerR*layerR)+half_polyFace - layer_pos_x)/2.0;
-      cout<<"Rmin: "<< rmin<<" Rmax: "<<rmax<<" half_polyFace: "<<half_polyFace<<" Layer " <<layer_num<<" layerR: "<<layerR<<" layer_dim_x:" <<layer_dim_x<<endl;
+      std::cout << "Rmin: " <<  rmin << " Rmax: " << rmax
+                << " half_polyFace: " << half_polyFace
+                << " Layer "  << layer_num << " layerR: " << layerR << " layer_dim_x:"  << layer_dim_x
+                << std::endl;
       // Increment the layer Z position.
       layer_pos_z += layer_thickness / 2;
       // Increment the layer number.

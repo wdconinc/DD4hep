@@ -14,9 +14,9 @@
 #define DD4HEP_CONDITIONS_H
 
 // Framework include files
-#include "DD4hep/IOV.h"
-#include "DD4hep/Handle.h"
-#include "DD4hep/OpaqueData.h"
+#include <DD4hep/IOV.h>
+#include <DD4hep/Handle.h>
+#include <DD4hep/OpaqueData.h>
 
 // C/C++ include files
 #include <vector>
@@ -101,10 +101,7 @@ namespace dd4hep {
       LAST_DET_KEY        = ~0x0U
     };
     /// Flags to indicate global conditions ranges
-    enum {
-      FIRST_KEY           =  0x0ULL,
-      LAST_KEY            = ~0x0ULL        
-    };
+    static constexpr unsigned long long int FIRST_KEY =  0x0ULL, LAST_KEY  = ~0x0ULL;
 
     /// Abstract base for processing callbacks to conditions objects
     /**
@@ -190,11 +187,11 @@ namespace dd4hep {
 #endif
     /// Flag operations: Get condition flags
     mask_type flags()  const;
-    /// Flag operations: Set a conditons flag
+    /// Flag operations: Set a conditions flag
     void setFlag(mask_type option);
-    /// Flag operations: UN-Set a conditons flag
+    /// Flag operations: UN-Set a conditions flag
     void unFlag(mask_type option);
-    /// Flag operations: Test for a given a conditons flag
+    /// Flag operations: Test for a given a conditions flag
     bool testFlag(mask_type option) const;
 
     /** Conditions meta-data and handling of the data binding  */
@@ -462,7 +459,7 @@ namespace dd4hep {
    *  };
    *  
    *  long counter = 0;
-   *  for_each(std::begin(conditons), std::end(conditions), MyCounter(counter));
+   *  for_each(std::begin(conditions), std::end(conditions), MyCounter(counter));
    *
    *  \author  M.Frank
    *  \version 1.0

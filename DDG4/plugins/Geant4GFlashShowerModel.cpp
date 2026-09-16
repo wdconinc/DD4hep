@@ -123,7 +123,6 @@ namespace dd4hep  {
 // C/C++ include files
 #include <sstream>
 
-using namespace dd4hep;
 using namespace dd4hep::sim;
 
 /// Standard constructor
@@ -168,7 +167,7 @@ void Geant4GFlashShowerModel::adoptShowerParametrization(Geant4Action* action)  
       return;
     }
     except("The supplied parametrization %s was found as Geant4Action, but is no "
-	   "GVFlashShowerParameterisation!", this->m_paramName.c_str());
+           "GVFlashShowerParameterisation!", this->m_paramName.c_str());
   }
 }
 
@@ -203,9 +202,9 @@ void Geant4GFlashShowerModel::constructSensitives(Geant4DetectorConstructionCont
       G4Material* mat1 = this->getMaterial(m_material);
       G4Material* mat2 = this->getMaterial(m_material_2);
       this->m_parametrization = 
-	new GFlashSamplingShowerParameterisation(mat1, mat2, m_parameter_1, m_parameter_2, nullptr);
+        new GFlashSamplingShowerParameterisation(mat1, mat2, m_parameter_1, m_parameter_2, nullptr);
       logger << "GFlashSamplingShowerParameterisation Materials: " << mat1->GetName()
-	     << "  " << mat2->GetName() << " Params: " << m_parameter_1 << " " << m_parameter_2;
+             << "  " << mat2->GetName() << " Params: " << m_parameter_1 << " " << m_parameter_2;
     }
     else   {
       auto* action = kernel.globalAction(this->m_paramName, false);
@@ -232,19 +231,19 @@ void Geant4GFlashShowerModel::constructSensitives(Geant4DetectorConstructionCont
 
   for(const auto& prop : this->m_eMin)    {
     G4ParticleDefinition* def = this->getParticleDefinition(prop.first);
-    double val = dd4hep::_toDouble(prop.second) * dd4hep::GeV/CLHEP::GeV;
+    double val = dd4hep::_toDouble(prop.second) / CLHEP::GeV;
     this->m_particleBounds->SetMinEneToParametrise(*def, val);
     this->info("SetMinEneToParametrise [%-16s] = %8.4f GeV", prop.first.c_str(), val);
   }
   for(const auto& prop : this->m_eMax)    {
     G4ParticleDefinition* def = this->getParticleDefinition(prop.first);
-    double val = dd4hep::_toDouble(prop.second) * dd4hep::GeV/CLHEP::GeV;
+    double val = dd4hep::_toDouble(prop.second) / CLHEP::GeV;
     this->m_particleBounds->SetMaxEneToParametrise(*def, val);
     this->info("SetMaxEneToParametrise [%-16s] = %8.4f GeV", prop.first.c_str(), val);
   }
   for(const auto& prop : this->m_eKill)    {
     G4ParticleDefinition* def = this->getParticleDefinition(prop.first);
-    double val = dd4hep::_toDouble(prop.second) * dd4hep::GeV/CLHEP::GeV;
+    double val = dd4hep::_toDouble(prop.second) / CLHEP::GeV;
     this->m_particleBounds->SetEneToKill(*def, val);
     this->info("SetEneToKill           [%-16s] = %8.4f GeV", prop.first.c_str(), val);
   }

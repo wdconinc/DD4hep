@@ -8,7 +8,6 @@
 # For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
 #
 # ==========================================================================
-from __future__ import absolute_import, unicode_literals
 import DDG4
 #
 """
@@ -33,7 +32,7 @@ def run():
     cmds = []
     if not args.runs:
       args.runs = 1
-    for i in range(int(args.runs)):
+    for _i in range(int(args.runs)):
       cmds.append(run)
     cmds.append('/ddg4/UI/terminate')
     m.ui.Commands = cmds

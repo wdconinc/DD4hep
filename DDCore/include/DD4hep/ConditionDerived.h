@@ -14,9 +14,9 @@
 #define DD4HEP_CONDITIONDERIVED_H
 
 // Framework include files
-#include "DD4hep/Memory.h"
-#include "DD4hep/Conditions.h"
-#include "DD4hep/detail/ConditionsInterna.h"
+#include <DD4hep/Memory.h>
+#include <DD4hep/Conditions.h>
+#include <DD4hep/detail/ConditionsInterna.h>
 
 // C/C++ include files
 #include <memory>
@@ -68,7 +68,7 @@ namespace dd4hep {
       virtual Detector& detectorDescription() const = 0;
       /// Required IOV value for update cycle
       virtual const IOV& requiredValidity()  const = 0;
-      /// Accessor for the current conditons mapping
+      /// Accessor for the current conditions mapping
       virtual ConditionsMap& conditionsMap() const = 0;
       /// Interface to access conditions by conditions key
       virtual Condition get(const ConditionKey& key) = 0;
@@ -167,7 +167,7 @@ namespace dd4hep {
         return resolver->requiredValidity();
       }
 
-      /// Accessor for the current conditons mapping
+      /// Accessor for the current conditions mapping
       ConditionsMap& conditionsMap() const    {
         return resolver->conditionsMap();
       }
@@ -401,7 +401,7 @@ namespace dd4hep {
     ConditionUpdateContext::get(const ConditionKey& key_value)   {
       Condition cond = condition(key_value);
       if ( cond.isValid() )  {
-        return cond.get<T>();	    /// return already bound data to wanted type
+        return cond.get<T>();            /// return already bound data to wanted type
       }
       accessFailure(key_value);
       throw std::runtime_error("ConditionUpdateCall");
@@ -412,7 +412,7 @@ namespace dd4hep {
     ConditionUpdateContext::get(const ConditionKey& key_value)  const  {
       Condition cond = condition(key_value);
       if ( cond.isValid() )  {
-        return cond.get<T>();	    /// return already bound data to wanted type
+        return cond.get<T>();            /// return already bound data to wanted type
       }
       accessFailure(key_value);
       throw std::runtime_error("ConditionUpdateCall");

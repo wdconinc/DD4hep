@@ -20,6 +20,7 @@
 
 // Geant4 include files
 #include <G4ThreeVector.hh>
+#include <G4VTouchable.hh>
 
 // C/C++ include files
 #include <vector>
@@ -28,7 +29,6 @@
 class G4HCofThisEvent;
 class G4Step;
 class G4Event;
-class G4VTouchable;
 class G4TouchableHistory;
 class G4VHitsCollection;
 class G4VReadOutGeometry;
@@ -83,6 +83,8 @@ namespace dd4hep {
       virtual std::string fullPath() const = 0;
       /// Access to the sensitive type of the detector
       virtual const std::string& sensitiveType() const = 0;
+      /// Access the DDG4 action sequence
+      virtual Geant4SensDetActionSequence* sequence() const = 0;
     };
 
     /// Base class to construct filters for Geant4 sensitive detectors
@@ -134,7 +136,12 @@ namespace dd4hep {
 
     protected:
       /// Property: Hit creation mode. Maybe one of the enum HitCreationFlags
-      int  m_hitCreationMode = 0;
+      int  m_hitCreationMode                  {       0 };
+      /// Property: Use the volume manager to access CellID and VolumeID
+      bool m_useVolumeManager                 {    true };
+      /// Property: Debug/Print Cell IDs in functions cellID(), volumeID()
+      bool m_debugVolumeID                    {   false };
+
 #if defined(G__ROOT) || defined(__CLING__) || defined(__ROOTCLING__)
       /// Reference to the detector description object
       Detector*            m_detDesc          { nullptr };
@@ -163,11 +170,19 @@ namespace dd4hep {
       /// Standard destructor
       virtual ~Geant4Sensitive();
 
+      /// Get the detector identifier (DetElement::id())
+      int id()  const;
+  
       /// Access to the sensitive detector object
       Geant4ActionSD& detector() const;
 
       /// Access to the sensitive detector object
       void setDetector(Geant4ActionSD* sens_det);
+
+      /// Access volume manager usage flag. This is a subdetector specific flag
+      bool useVolumeManager()  const  {
+        return m_useVolumeManager;
+      }
 
       /// Property access to the hit creation mode
       int hitCreationMode() const  {
@@ -204,7 +219,7 @@ namespace dd4hep {
         return detector().readoutGeometry();
       }
 
-      /// Access the detector desciption object
+      /// Access the detector description object
       Detector& detectorDescription()   const;
 
       /// Mark the track to be kept for MC truth propagation during hit processing
@@ -253,7 +268,7 @@ namespace dd4hep {
       /// Define collections created by this sensitivie action object
       virtual void defineCollections();
 
-      /// G4VSensitiveDetector interface: Method invoked at the begining of each event.
+      /// G4VSensitiveDetector interface: Method invoked at the beginning of each event.
       /** The hits collection(s) created by this sensitive detector must
        *  be set to the G4HCofThisEvent object at one of these two methods.
        */
@@ -314,7 +329,7 @@ namespace dd4hep {
      *  \version 1.0
      *  \ingroup DD4HEP_SIMULATION
      */
-    class Geant4SensDetActionSequence: public Geant4Action {
+    class Geant4SensDetActionSequence : public Geant4Action {
     public:
       typedef Geant4HitCollection* (*create_t)(const std::string&, const std::string&, Geant4Sensitive*);
       typedef std::pair<std::string, std::pair<Geant4Sensitive*,create_t> > HitCollection;
@@ -322,28 +337,28 @@ namespace dd4hep {
 
     protected:
       /// Geant4 hit collection context
-      G4HCofThisEvent* m_hce = 0;
+      G4HCofThisEvent*        m_hce  { nullptr };
       /// Callback sequence for event initialization action
-      CallbackSequence m_begin;
+      CallbackSequence        m_begin;
       /// Callback sequence for event finalization action
-      CallbackSequence m_end;
+      CallbackSequence        m_end;
       /// Callback sequence for step processing
-      CallbackSequence m_process;
+      CallbackSequence        m_process;
       /// Callback sequence to invoke the event deletion
-      CallbackSequence m_clear;
+      CallbackSequence        m_clear;
       /// The list of sensitive detector objects
       Actors<Geant4Sensitive> m_actors;
       /// The list of sensitive detector filter objects
       Actors<Geant4Filter>    m_filters;
 
       /// Hit collection creators
-      HitCollections m_collections;
+      HitCollections          m_collections;
       /// Reference to the sensitive detector element
-      SensitiveDetector m_sensitive;
+      SensitiveDetector       m_sensitive;
       /// Reference to G4 sensitive detector
-      Geant4ActionSD* m_detector;
+      Geant4ActionSD*         m_detector;
       /// The true sensitive type of the detector
-      std::string m_sensitiveType;
+      std::string             m_sensitiveType;
       /// Create a new typed hit collection
       template <typename TYPE> static 
       Geant4HitCollection* _create(const std::string& det, const std::string& coll, Geant4Sensitive* sd) {
@@ -424,7 +439,7 @@ namespace dd4hep {
       /// GFLASH/FastSim interface: Callback before hit processing starts. Invoke all filters.
       bool accept(const Geant4FastSimSpot* step) const;
 
-      /// G4VSensitiveDetector interface: Method invoked at the begining of each event.
+      /// G4VSensitiveDetector interface: Method invoked at the beginning of each event.
       /** The hits collection(s) created by this sensitive detector must
        *  be set to the G4HCofThisEvent object at one of these two methods.
        */
@@ -516,14 +531,14 @@ namespace dd4hep {
       typedef T UserData;
     protected:
       /// Property: collection name. If not set default is readout name!
-      std::string m_collectionName    { };
+      std::string m_collectionName  {   };
       /// Property: segmentation name for parallel readouts. If not set readout segmentation is used!
-      std::string m_readoutName       { };
+      std::string m_readoutName     {   };
 
       /// Collection identifier
       std::size_t m_collectionID    { 0 };
       /// User data block
-      UserData    m_userData          { };
+      UserData    m_userData        {   };
 
     protected:
       /// Define standard assignments and constructors
@@ -570,7 +585,7 @@ namespace dd4hep {
       /// Finalization overload for specialization
       virtual void finalize()  final;
 
-      /// G4VSensitiveDetector interface: Method invoked at the begining of each event.
+      /// G4VSensitiveDetector interface: Method invoked at the beginning of each event.
       virtual void begin(G4HCofThisEvent* hce)  final;
       /// G4VSensitiveDetector interface: Method invoked at the end of each event.
       virtual void end(G4HCofThisEvent* hce)  final;

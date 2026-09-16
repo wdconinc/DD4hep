@@ -12,18 +12,16 @@
 //==========================================================================
 
 // Framework includes
-#include "DDG4/IoStreams.h"
+#include <DDG4/IoStreams.h>
+
+// ROOT include files
+#include <TFile.h>
 
 // C/C++ include files
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cstdio>
-
-// ROOT include files
-#include "TFile.h"
-
-using namespace dd4hep;
 
 namespace {
   /// Anonymous cast class to get access to protected members of TFile ;-)
@@ -33,11 +31,11 @@ namespace {
     virtual ~MyTFile() {}
   public:
     /// Basic write call
-    virtual Int_t SysWrite(Int_t fd, const void* buf, Int_t len)  { return TFile::SysWrite(fd, buf, len);  }
+    virtual Int_t SysWrite(Int_t fd, const void* buf, Int_t len)  override  { return TFile::SysWrite(fd, buf, len);  }
     /// Basic read call
-    virtual Int_t SysRead(Int_t fd, void* buf, Int_t len)         { return TFile::SysRead(fd,buf,len);     }
+    virtual Int_t SysRead(Int_t fd, void* buf, Int_t len)  override         { return TFile::SysRead(fd,buf,len);     }
     /// Basic seek call
-    virtual Long64_t SysSeek(Int_t fd, Long64_t off, Int_t way)   { return TFile::SysSeek(fd, off, way);   }
+    virtual Long64_t SysSeek(Int_t fd, Long64_t off, Int_t way)  override   { return TFile::SysSeek(fd, off, way);   }
   };
 }
 

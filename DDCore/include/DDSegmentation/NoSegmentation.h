@@ -19,7 +19,7 @@
 #ifndef DDSEGMENTATION_NOSEGMENTATION_H
 #define DDSEGMENTATION_NOSEGMENTATION_H
 
-#include "DDSegmentation/Segmentation.h"
+#include <DDSegmentation/Segmentation.h>
 
 namespace dd4hep {
   namespace DDSegmentation {
@@ -32,7 +32,7 @@ namespace dd4hep {
 
         NoSegmentation(const std::string& cellEncoding = "");
         NoSegmentation(const BitFieldCoder* decoder);
-	
+        
         virtual Vector3D position(const CellID& cellID) const;
         virtual CellID cellID(const Vector3D& localPosition, const Vector3D& globalPosition, const VolumeID& volumeID) const;
 

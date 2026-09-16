@@ -12,16 +12,15 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/InstanceCount.h"
-#include "DDEve/EveUserContextMenu.h"
-#include "DDEve/ElementList.h"
+#include <DD4hep/InstanceCount.h>
+#include <DDEve/EveUserContextMenu.h>
+#include <DDEve/ElementList.h>
 
 // ROOT include files
 
 // C/C++ include files
 #include <stdexcept>
 
-using namespace std;
 using namespace dd4hep;
 
 ClassImp(ElementList)
@@ -56,8 +55,8 @@ TEveElementList* ElementList::CloneElement() const  {
 
 /// Instantiator
 ElementListContextMenu& ElementListContextMenu::install(Display* disp)   {
-  static ElementListContextMenu s(disp);
-  return s;
+  static ElementListContextMenu menu(disp);
+  return menu;
 }
 
 /// Initializing constructor

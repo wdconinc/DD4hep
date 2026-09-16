@@ -14,16 +14,12 @@
 #define PARSERS_PRIMITIVES_H
 
 // Framework include files
-#include "Parsers/config.h"
+#include <Parsers/config.h>
 
 // C/C++ include files
 #include <map>
-#include <list>
 #include <vector>
 #include <string>
-#if __cplusplus >= 201703 || (__clang__ && __APPLE__)
-#include <string_view>
-#endif
 #include <limits>
 #include <cstdint>
 
@@ -335,14 +331,12 @@ namespace dd4hep {
     }
     /// Helper to delete objects from heap and reset the pointer. Saves many many lines of code
     template <typename T> inline void deletePtr(T*& ptr) {
-      if (0 != ptr)
-        delete ptr;
+      delete ptr;
       ptr = 0;
     }
     /// Helper to delete objects from heap and reset the pointer. Saves many many lines of code
     template <typename T> inline void deleteObject(T* ptr) {
-      if (0 != ptr)
-        delete ptr;
+      delete ptr;
     }
     /// Helper to delete objects from heap and reset the pointer
     template <typename T> inline void destroyObject(T*& ptr) {
@@ -708,7 +702,7 @@ namespace dd4hep {
 #else
     const std::type_info& type;
 #endif
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
     typedef void* (*cast_t)(const void*);
     cast_t      cast;
   protected:
@@ -738,7 +732,7 @@ namespace dd4hep {
     }
 #endif
   protected:
-    /// Defautl destructor
+    /// Default destructor
     virtual ~Cast();
 
   public:
@@ -771,7 +765,7 @@ namespace dd4hep {
   private:
     /// Initializing Constructor
     ComponentCast(const Cast& c, destroy_t d) : destroy(d), cast(c)  {}
-    /// Defautl destructor
+    /// Default destructor
     virtual ~ComponentCast() = default;
     /// Function template to create destructor
     template <typename TYPE> static void _destroy(void* arg)  {

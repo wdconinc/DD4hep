@@ -29,21 +29,26 @@
 #include <TColor.h>
 #include <TGeoBoolNode.h>
 #include <TGeoSystemOfUnits.h>
+
 // C/C++ include files
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
+#include <cfloat>
+#include <cfenv>
 
 using namespace dd4hep;
-using namespace dd4hep::detail;
+using DetectorChecksum = dd4hep::detail::DetectorChecksum;
 
 namespace {
+  
   bool is_volume(const TGeoVolume* volume)  {
     Volume v(volume);
     return v.data() != 0;
   }
   inline double check_null(double d)   {
-    if ( abs(d) < 1e-12 )
+    if ( fabs(d) < 1e-12 )
       return 0e0;
     else
       return d;
@@ -51,6 +56,70 @@ namespace {
   template <typename O, typename C, typename F> void handle(const O* o, const C& c, F pmf) {
     for (typename C::const_iterator i = c.begin(); i != c.end(); ++i) {
       (o->*pmf)(*i);
+    }
+  }
+  template <typename T>
+  void _do_output(const std::string& title, bool reorder, bool with_file, bool have_hash, const T& container)   {
+    std::ofstream out;
+    std::string tit = title + ":";
+    char delim = have_hash ? '\'' : ' ';
+    std::string fname = title + "s.txt";
+
+    if ( with_file )  {
+      out.open(fname, std::ios::out);
+    }
+    if ( reorder )   {
+      std::map<DetectorChecksum::hash_t, const DetectorChecksum::entry_t*> m;
+      for(const auto& e : container)
+        m.emplace(e.second.hash, &e.second);
+
+      for(const auto& e : m)   {
+        auto data = format(nullptr, "+++ %-12s0x%016lx %c%s%c",
+                           tit.c_str(), e.second->hash, delim, have_hash ? e.second->data.c_str() : "", delim);
+        printout(ALWAYS, "DetectorChecksum", data.c_str());
+        if ( with_file ) out << data << std::endl;
+      }
+      return;
+    }
+    for(const auto& e : container)   {
+      auto data = format(nullptr, "+++ %-12s0x%016lx %c%s%c",
+                         tit.c_str(), e.second.hash, delim, have_hash ? e.second.data.c_str() : "", delim);
+      printout(ALWAYS, "DetectorChecksum", data.c_str());
+      if ( with_file ) out << data << std::endl;
+    }
+  }
+  template <typename T>
+  void _do_output_name(const std::string& title, bool reorder, bool with_file, bool have_hash, const T& container)   {
+    std::ofstream out;
+    std::string tit = title + ":";
+    char delim = have_hash ? '\'' : ' ';
+    std::string fname = title + "s.txt";
+
+    if ( with_file )  {
+      out.open(fname, std::ios::out);
+    }
+    if ( reorder )   {
+      std::map<DetectorChecksum::hash_t, const DetectorChecksum::entry_t*> m;
+      std::map<DetectorChecksum::hash_t, typename T::key_type> v;
+      for(const auto& e : container)  {
+        v.emplace(e.second.hash, e.first);
+        m.emplace(e.second.hash, &e.second);
+      }
+      for(const auto& e : m)   {
+        auto data = format(nullptr, "+++ %-12s0x%016lx %-32s %c%s%c",
+                           tit.c_str(), e.second->hash, v[e.first].name(),
+                           delim, have_hash ? e.second->data.c_str() : "", delim);
+        printout(ALWAYS, "DetectorChecksum", data.c_str());
+        if ( with_file ) out << data << std::endl;
+      }
+      return;
+    }
+    for(const auto& e : container)   {
+      auto data = format(nullptr, "+++ %-12s0x%016lx %-32s %c%s%c",
+                         tit.c_str(), e.second.hash, e.first.name(),
+                         delim, have_hash ? e.second.data.c_str() : "", delim);
+      printout(ALWAYS, "DetectorChecksum", data.c_str());
+      if ( with_file ) out << data << std::endl;
     }
   }
 }
@@ -69,13 +138,17 @@ DetectorChecksum::~DetectorChecksum() {
 template <typename T> std::string DetectorChecksum::refName(T handle)  const  {
   std::string nam = handle->GetName();
   std::size_t idx = nam.find("_0x");
-  return idx == std::string::npos ? nam : nam.substr(0, idx);
+  if ( idx == std::string::npos ) return nam;
+  return nam.substr(0, idx);
 }
+
 template <> std::string DetectorChecksum::refName(Segmentation handle)  const  {
   std::string nam = handle->name();
   std::size_t idx = nam.find("_0x");
-  return idx == std::string::npos ? nam : nam.substr(0, idx);
+  if ( idx == std::string::npos ) return nam;
+  return nam.substr(0, idx);
 }
+
 template <typename T> std::string DetectorChecksum::attr_name(T handle)  const  {
   std::string n = " name=\"" + refName(handle)+"\"";
   return n;
@@ -553,7 +626,12 @@ const DetectorChecksum::entry_t& DetectorChecksum::handleSolid(Solid solid) cons
             except("DetectorChecksum","+++ TGeoTessellated volume with unsupported number of vertices: %s", solid.name());
           }
           for (int ivertex = 0; ivertex < facet.GetNvert(); ivertex++) {
-            log << " vertex" << ivertex + 1 << "=\"" << nam << "_v" << facet.GetVertexIndex(ivertex) << "\"";
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,31,1)
+            auto vertexIndex = facet[ivertex];
+#else
+            auto vertexIndex = facet.GetVertexIndex(ivertex);
+#endif
+            log << " vertex" << ivertex + 1 << "=\"" << nam << "_v" << vertexIndex << "\"";
           }
           log << " type=\"ABSOLUTE\"/>" << newline;
         }
@@ -598,7 +676,7 @@ const DetectorChecksum::entry_t& DetectorChecksum::handleRotation(const TGeoMatr
   auto& geo = data().mapOfRotations;
   auto  iro = geo.find(trafo);
   if ( iro == geo.end() )    {
-    XYZAngles    rot = detail::matrix::_xyzAngles(trafo->GetRotationMatrix());
+    XYZAngles rot = detail::matrix::_xyzAngles(trafo->GetRotationMatrix());
     std::stringstream log = logger();
     log << "<rotation"
         << " unit=\"" << m_ang_unit_nam  << "\""
@@ -813,8 +891,10 @@ const DetectorChecksum::entry_t& DetectorChecksum::handlePlacement(PlacedVolume 
     log << ">" << newline;
     if ( matrix )   {
       log << " " << handlePosition(matrix).hash << newline;
+      //log << " " << _to_hex(handlePosition(matrix).hash) << newline;
       if ( matrix->IsRotation() )  {
         log << " " << handleRotation(matrix).hash << newline;
+        //log << " " << _to_hex(handleRotation(matrix).hash) << newline;
       }
     }
     if ( node.data() )   {
@@ -909,7 +989,7 @@ const DetectorChecksum::entry_t& DetectorChecksum::handleSegmentation(Segmentati
         log << "/>" << newline;
       }
       log << " </parameters>" << newline;
-      log << "</segmentatoin>";
+      log << "</segmentation>";
       ise = geo.emplace(seg, make_entry(log)).first;
     }
     return ise->second;
@@ -983,7 +1063,7 @@ const DetectorChecksum::entry_t& DetectorChecksum::handleHeader() const {
     geo.header = make_entry(log);
     return geo.header;
   }
-  printout(WARNING,"DetectorChecksum","+++ No Detector header information availible from the geometry description.");
+  printout(WARNING,"DetectorChecksum","+++ No Detector header information available from the geometry description.");
   return empty_entry;
 }
 
@@ -1134,14 +1214,16 @@ void DetectorChecksum::checksumDetElement(int lvl, DetElement det, hashes_t& has
       code = detail::hash64(&hashes[hash_idx_pv], sizeof(hash_t));
       str << " " << std::setfill(' ') << std::setw(9) << std::left << "+place"
           << " " << std::setfill('0') << std::setw(16) << std::hex << code;
-      code = detail::hash64(&hashes[hash_idx_daughters], (hash_idx_children-hash_idx_daughters)*sizeof(hash_t));
-      if ( !(child_places.empty() && hashed_places.empty()) )
+      if ( !(child_places.empty() && hashed_places.empty()) ) {
+        code = detail::hash64(&hashes[hash_idx_daughters], (hash_idx_children-hash_idx_daughters)*sizeof(hash_t));
         str << " " << std::setfill(' ') << std::setw(10) << std::left << "+daughters"
             << " " << std::setfill('0') << std::setw(16) << std::hex << code;
-      code = detail::hash64(&hashes[hash_idx_children], (hashes.size()-hash_idx_children)*sizeof(hash_t));
-      if ( !det.children().empty() )
+      }
+      if ( !det.children().empty() ) {
+        code = detail::hash64(&hashes[hash_idx_children], (hashes.size()-hash_idx_children)*sizeof(hash_t));
         str << " " << std::setfill(' ') << std::setw(9) << std::left << "+children"
             << " " << std::setfill('0') << std::setw(16) << std::hex << code;
+      }
       std::cout << str.str() << std::endl;
       if ( hash_idx_pv-hash_idx_ro > 0 )  {
         str.str("");
@@ -1212,52 +1294,52 @@ void DetectorChecksum::checksumPlacement(PlacedVolume pv, hashes_t& hashes, bool
 
 /// Dump elements used in this apparatus
 void DetectorChecksum::dump_elements()   const   {
-  const auto& geo = data().mapOfElements;
-  for(const auto& e : geo)   {
-    Atom a = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Element   %-32s    0x%016lx%s",
-             a.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
+  _do_output_name("Element", reorder, write_files, debug>1 && have_hash_strings, data().mapOfElements);
 }
 
 /// Dump materials used in this apparatus
 void DetectorChecksum::dump_materials()   const   {
-  const auto& geo = data().mapOfMaterials;
-  for(const auto& e : geo)   {
-    Material material = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Material  %-32s    0x%016lx%s",
-             material.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
+  _do_output_name("Material", reorder, write_files, debug>1 && have_hash_strings, data().mapOfMaterials);
 }
 
 /// Dump solids used in this apparatus
 void DetectorChecksum::dump_solids()   const   {
-  const auto& geo = data().mapOfSolids;
-  for(const auto& e : geo)   {
-    Solid solid = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Solid     %-32s    0x%016lx%s",
-             solid.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
+  _do_output_name("Solid", reorder, write_files, debug>1 && have_hash_strings, data().mapOfSolids);
+}
+
+/// Dump positions used in this apparatus
+void DetectorChecksum::dump_positions()   const   {
+  _do_output("Position", reorder, write_files, have_hash_strings, data().mapOfPositions);
+}
+
+/// Dump rotations used in this apparatus
+void DetectorChecksum::dump_rotations()   const   {
+  _do_output("Rotation", reorder, write_files, have_hash_strings, data().mapOfRotations);
 }
 
 /// Dump volumes used in this apparatus
 void DetectorChecksum::dump_volumes()   const   {
-  const auto& geo = data().mapOfVolumes;
-  for(const auto& e : geo)   {
-    Volume volume = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Volume    %-32s    0x%016lx%s",
-             volume.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
+  _do_output_name("Volume", reorder, write_files, debug>1 && have_hash_strings, data().mapOfVolumes);
 }
 
 /// Dump placements used in this apparatus
 void DetectorChecksum::dump_placements()   const   {
-  const auto& geo = data().mapOfPlacements;
-  for(const auto& e : geo)   {
-    PlacedVolume pv = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Placement %-32s    0x%016lx%s",
-             pv.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
+  _do_output_name("Placement", reorder, write_files, debug>1 && have_hash_strings, data().mapOfPlacements);
+}
+
+/// Dump iddescriptors used in this apparatus
+void DetectorChecksum::dump_iddescriptors()   const   {
+  _do_output_name("ID desc", reorder, write_files, debug>1 && have_hash_strings, data().mapOfIdSpecs);
+}
+
+/// Dump segmentations used in this apparatus
+void DetectorChecksum::dump_segmentations()   const   {
+  _do_output_name("Segment", reorder, write_files, debug>1 && have_hash_strings, data().mapOfSegmentations);
+}
+
+/// Dump sensitives used in this apparatus
+void DetectorChecksum::dump_sensitives()   const   {
+  _do_output_name("Sens.Det", reorder, write_files, debug>0 && have_hash_strings, data().mapOfSensDets);
 }
 
 /// Dump detelements used in this apparatus
@@ -1265,8 +1347,8 @@ void DetectorChecksum::dump_detelements()   const   {
   const auto& geo = data().mapOfDetElements;
   for(const auto& e : geo)   {
     DetElement de = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Detelement %-32s    0x%016lx%s",
-             de.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
+    printout(ALWAYS, "DetectorChecksum",   "+++ Detelement: 0x%016lx  %-32s  %s",
+             e.second.hash, de.name(), debug > 2 ? ("\n"+e.second.data).c_str() : "");
     if ( de.path() == "/world" )   {
       PlacedVolume pv  = de.placement();
       Volume       vol = pv.volume();
@@ -1275,43 +1357,13 @@ void DetectorChecksum::dump_detelements()   const   {
       const auto&   ev = handleVolume(vol);
       const auto&   ep = handlePlacement(pv);
 
-      printout(ALWAYS, "DetectorChecksum", "    Solid     %-32s    0x%016lx%s",
-               sol.name(), es.hash, debug > 2 ? ("\n"+es.data).c_str() : "");
-      printout(ALWAYS, "DetectorChecksum", "    Volume    %-32s    0x%016lx%s",
-               vol.name(), ev.hash, debug > 2 ? ("\n"+ev.data).c_str() : "");
-      printout(ALWAYS, "DetectorChecksum", "    Placement %-32s    0x%016lx%s",
-               pv.name(),  ep.hash, debug > 2 ? ("\n"+ep.data).c_str() : "");
+      printout(ALWAYS, "DetectorChecksum", "    Solid:      0x%016lx  %-32s  %s",
+               es.hash, sol.name(), debug > 2 ? ("\n"+es.data).c_str() : "");
+      printout(ALWAYS, "DetectorChecksum", "    Volume:     0x%016lx  %-32s  %s",
+               ev.hash, vol.name(), debug > 2 ? ("\n"+ev.data).c_str() : "");
+      printout(ALWAYS, "DetectorChecksum", "    Placement:  0x%016lx  %-32s  %s",
+               ep.hash, pv.name(),  debug > 2 ? ("\n"+ep.data).c_str() : "");
     }
-  }
-}
-
-/// Dump iddescriptors used in this apparatus
-void DetectorChecksum::dump_iddescriptors()   const   {
-  const auto& geo = data().mapOfIdSpecs;
-  for(const auto& e : geo)   {
-    IDDescriptor v = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ ID desc   %-32s    0x%016lx%s",
-             v.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
-}
-
-/// Dump segmentations used in this apparatus
-void DetectorChecksum::dump_segmentations()   const   {
-  const auto& geo = data().mapOfSegmentations;
-  for(const auto& e : geo)   {
-    Segmentation segmentation = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Segment   %-32s    0x%016lx%s",
-             segmentation.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
-  }
-}
-
-/// Dump sensitives used in this apparatus
-void DetectorChecksum::dump_sensitives()   const   {
-  const auto& geo = data().mapOfSensDets;
-  for(const auto& e : geo)   {
-    SensitiveDetector sd = e.first;
-    printout(ALWAYS, "DetectorChecksum", "+++ Sens.Det. %-32s    0x%016lx%s",
-             sd.name(), e.second.hash, debug > 2 ? ("\n"+e.second.data).c_str() : "");
   }
 }
 
@@ -1320,8 +1372,9 @@ static long create_checksum(Detector& description, int argc, char** argv) {
   int precision = 6, newline = 1, level = 1, meshes = 0, readout = 0, debug = 0;
   int dump_elements = 0, dump_materials = 0, dump_solids = 0, dump_volumes = 0;
   int dump_placements = 0, dump_detelements = 0, dump_sensitives = 0;
-  int dump_iddesc = 0, dump_segmentations = 0;
-  int have_hash_strings = 0;
+  int dump_iddesc = 0, dump_segmentations = 0, dump_pos = 0;
+  int dump_rot = 0;
+  int have_hash_strings = 0, reorder = 0, write_files = 0;
   std::string len_unit, ang_unit, ene_unit, dens_unit, atom_unit;
 
   for(int i = 0; i < argc && argv[i]; ++i)  {
@@ -1357,6 +1410,10 @@ static long create_checksum(Detector& description, int argc, char** argv) {
       dump_solids = 1;
     else if ( 0 == ::strncmp("-dump_volumes",argv[i],10) )
       dump_volumes = 1;
+    else if ( 0 == ::strncmp("-dump_positions",argv[i],12) )
+      dump_pos = 1;
+    else if ( 0 == ::strncmp("-dump_rotations",argv[i],12) )
+      dump_rot = 1;
     else if ( 0 == ::strncmp("-dump_placements",argv[i],10) )
       dump_placements = 1;
     else if ( 0 == ::strncmp("-dump_detelements",argv[i],10) )
@@ -1367,6 +1424,10 @@ static long create_checksum(Detector& description, int argc, char** argv) {
       dump_segmentations = 1;
     else if ( 0 == ::strncmp("-dump_iddescriptors",argv[i],10) )
       dump_iddesc = 1;
+    else if ( 0 == ::strncmp("-write_files",argv[i],8) )
+     write_files = 1;
+    else if ( 0 == ::strncmp("-reorder",argv[i],6) )
+      reorder = 1;
     else if ( 0 == ::strncmp("-keep_hashes",argv[i],8) )
       have_hash_strings = 1;
     else  {
@@ -1381,6 +1442,8 @@ static long create_checksum(Detector& description, int argc, char** argv) {
         "                            default: false                                      \n"
         "     -keep_hash             keep the hash strings (not only hash codes.         \n"
         "                            Useful for debugging and -dump_<x> options.         \n"
+        "     -precsision <digits>   Set floating point precision after comma            \n"
+        "                            for the checsum calculation.                        \n"
         "                                                                                \n"
         "   Debugging: Dump individual hash codes (debug>=1)                             \n"
         "   Debugging: and the hashed string (debug>2)                                   \n"
@@ -1388,12 +1451,16 @@ static long create_checksum(Detector& description, int argc, char** argv) {
         "     -dump_materials        Dump hashes of used materials                       \n"
         "     -dump_solids           Dump hashes of used solids                          \n"
         "     -dump_volumes          Dump hashes of used volumes                         \n"
+        "     -dump_positions        Dump hashes of used positions                       \n"
+        "     -dump_rotations        Dump hashes of used rotations                       \n"
         "     -dump_placements       Dump hashes of used placements                      \n"
         "     -dump_detelements      Dump hashes of used detelements                     \n"
         "     -dump_sensitive        Dump hashes of sensitive detectors                  \n"
-        "     -dump_readout          Dump hashes of readout entities                     \n"
         "     -dump_iddescriptors    Dump hashes of ID descriptors                       \n"
         "     -dump_segmentations    Dump hashes of readout segmentations                \n"
+        "     -write_files           Write a file for each category dumped (debugging).  \n"
+        "                            File name is <item>.txt (aka. Positions.txt etc.    \n"
+        "     -reorder               Reorder dump containers according to hash.          \n"
         "                                                                                \n"
         "   Modify units in the created hash strings (deprecated):                       \n"
         "     -length_unit  <value>  Unit of length  as literal. default: mm             \n"
@@ -1402,8 +1469,8 @@ static long create_checksum(Detector& description, int argc, char** argv) {
         "     -density_unit <value>  Unit of density as literal. default: g/cm3          \n"
         "     -atomic_unit <value>   Unit of atomic weight as literal. default: g/mole   \n"
         "                                                                                \n"
-        "     -debug <number>        Enable debug printouts.                             \n"
-        "     -help                  Print this help output                              \n"
+        "     -debug <number>        Steer additional debug printouts (gets verbose)     \n"
+        "     -help                  Print this help output                            \n\n"
         "     Arguments given: " << arguments(argc, argv) << std::endl << std::flush;
       ::exit(EINVAL);
     }
@@ -1411,26 +1478,34 @@ static long create_checksum(Detector& description, int argc, char** argv) {
   DetectorChecksum wr(description);
   DetElement de = description.world();
   wr.precision = precision;
-  if ( !len_unit.empty()  ) wr.m_len_unit_nam = len_unit;
-  if ( !ang_unit.empty()  ) wr.m_ang_unit_nam = ang_unit;
-  if ( !ene_unit.empty()  ) wr.m_ene_unit_nam = ene_unit;
-  if ( !dens_unit.empty() ) wr.m_densunit_nam = dens_unit;
-  if ( !atom_unit.empty() ) wr.m_atomunit_nam = atom_unit;
+  if ( !len_unit.empty()  ) wr.m_len_unit_nam = std::move(len_unit);
+  if ( !ang_unit.empty()  ) wr.m_ang_unit_nam = std::move(ang_unit);
+  if ( !ene_unit.empty()  ) wr.m_ene_unit_nam = std::move(ene_unit);
+  if ( !dens_unit.empty() ) wr.m_densunit_nam = std::move(dens_unit);
+  if ( !atom_unit.empty() ) wr.m_atomunit_nam = std::move(atom_unit);
   if ( newline ) wr.newline = "\n";
   wr.have_hash_strings = have_hash_strings;
-  wr.hash_meshes = meshes;
+  wr.write_files  = write_files;
+  wr.reorder      = reorder;
+  wr.hash_meshes  = meshes;
   wr.hash_readout = readout;
-  wr.max_level = level;
-  wr.debug = debug;
+  wr.max_level    = level;
+  wr.debug        = debug;
   wr.configure();
 
   bool make_dump = false;
   if ( dump_elements   || dump_materials  || dump_solids || 
        dump_volumes    || dump_placements || dump_detelements ||
-       dump_sensitives || dump_iddesc     || dump_segmentations )   {
+       dump_sensitives || dump_iddesc     || dump_segmentations ||
+       dump_pos        || dump_rot )
+  {
     make_dump = true;
     wr.debug = 1;
   }
+  int round = std::fegetround();
+  std::fesetround(FE_TONEAREST);
+  printout(INFO,"DetectorChecksum","+++ Rounding mode: %d new: %d", round, std::fegetround());
+
   DetectorChecksum::hashes_t hash_vec;
   DetectorChecksum::hash_t checksum = 0;
   if ( !detectors.empty() )  {
@@ -1465,13 +1540,15 @@ static long create_checksum(Detector& description, int argc, char** argv) {
     wr.debug = debug;
     if ( dump_elements      ) wr.dump_elements();
     if ( dump_materials     ) wr.dump_materials();
-    if ( dump_detelements   ) wr.dump_detelements();
-    if ( dump_placements    ) wr.dump_placements();
-    if ( dump_volumes       ) wr.dump_volumes();
+    if ( dump_pos           ) wr.dump_positions();
+    if ( dump_rot           ) wr.dump_rotations();
     if ( dump_solids        ) wr.dump_solids();
+    if ( dump_volumes       ) wr.dump_volumes();
+    if ( dump_placements    ) wr.dump_placements();
     if ( dump_sensitives    ) wr.dump_sensitives();
     if ( dump_segmentations ) wr.dump_segmentations();
     if ( dump_iddesc        ) wr.dump_iddescriptors();
+    if ( dump_detelements   ) wr.dump_detelements();
   }
   return 1;
 }

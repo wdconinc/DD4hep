@@ -14,13 +14,12 @@
 #define DD4HEP_IDDESCRIPTOR_H
 
 // Framework include files
-#include "DD4hep/Handle.h"
-#include "DD4hep/BitFieldCoder.h"
+#include <DD4hep/Handle.h>
+#include <DD4hep/BitFieldCoder.h>
 
 // C++ include files
 #include <string>
 #include <vector>
-#include <map>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {

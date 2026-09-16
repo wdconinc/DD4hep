@@ -8,7 +8,6 @@
 # For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
 #
 # ==========================================================================
-from __future__ import absolute_import
 import os
 import dddigi
 import logging
@@ -18,6 +17,7 @@ from dddigi import DEBUG, INFO, WARNING, ERROR  # noqa: F401
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+global attenuation
 attenuation = {'Minitel1Hits': 50 * units.ns,
                'Minitel2Hits': 50 * units.ns,
                'Minitel3Hits': 50 * units.ns,
@@ -28,7 +28,6 @@ attenuation = {'Minitel1Hits': 50 * units.ns,
 class Test(dddigi.Digitize):
 
   def __init__(self, geometry=None, process_data=True):
-    global attenuation
     dddigi.Digitize.__init__(self, dddigi.Kernel())
     dddigi.setPrintFormat(str('%-32s %5s %s'))
     dddigi.setPrintLevel(INFO)
@@ -106,7 +105,7 @@ class Test(dddigi.Digitize):
       self.used_inputs = []
     next_source = self.inputs[len(self.used_inputs)]
     self.used_inputs.append(next_source)
-    self.info('Prepariing next input file: ' + str(next_source))
+    self.info('Preparing next input file: ' + str(next_source))
     return next_source
 
   def run_checked(self, num_events=5, num_threads=5, parallel=3):

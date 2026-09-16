@@ -14,10 +14,10 @@
 #define DDG4_GEANT4HITCOLLECTION_H
 
 // Framework include files
-#include "DD4hep/Handle.h"
-#include "DDG4/ComponentUtils.h"
-#include "G4VHitsCollection.hh"
-#include "G4VHit.hh"
+#include <DD4hep/Handle.h>
+#include <DDG4/ComponentUtils.h>
+#include <G4VHitsCollection.hh>
+#include <G4VHit.hh>
 
 // C/C++ include files
 #include <vector>
@@ -314,11 +314,11 @@ namespace dd4hep {
         return m_detector;
       }
       /// Access individual hits
-      virtual G4VHit* GetHit(size_t which) const {
+      virtual G4VHit* GetHit(size_t which) const  override {
         return (G4VHit*) &m_hits.at(which);
       }
       /// Access the collection size
-      virtual size_t GetSize() const {
+      virtual size_t GetSize() const  override {
         return m_hits.size();
       }
       /// Access the hit wrapper

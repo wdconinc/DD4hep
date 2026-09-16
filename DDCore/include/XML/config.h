@@ -17,7 +17,7 @@
 #ifndef XML_CONFIG_H
 #define XML_CONFIG_H
 
-#include "Parsers/config.h"
+#include <Parsers/config.h>
 
 #if      defined(DD4HEP_USE_TINYXML)
 #define  __TIXML__
@@ -25,7 +25,6 @@
 
 // C/C++ include files
 #include <cstdlib>
-#include <cstdint>
 
 #ifndef  __TIXML__
 // This is the absolute minimal include necessary to comply with XercesC

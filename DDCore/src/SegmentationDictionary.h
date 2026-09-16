@@ -20,31 +20,33 @@
 #define __HAVE_DDSEGMENTATION__
 // -------------------------------------------------------------------------
 #ifdef __HAVE_DDSEGMENTATION__
-#include "DDSegmentation/Segmentation.h"
-#include "DDSegmentation/NoSegmentation.h"
-#include "DDSegmentation/CartesianGrid.h"
-#include "DDSegmentation/CartesianGridXY.h"
-#include "DDSegmentation/CartesianGridXYZ.h"
-#include "DDSegmentation/CartesianGridXZ.h"
-#include "DDSegmentation/CartesianGridYZ.h"
-#include "DDSegmentation/CartesianStripX.h"
-#include "DDSegmentation/CartesianStripY.h"
-#include "DDSegmentation/CartesianStripZ.h"
-#include "DDSegmentation/CylindricalSegmentation.h"
-#include "DDSegmentation/GridPhiEta.h"
-#include "DDSegmentation/GridRPhiEta.h"
-#include "DDSegmentation/MegatileLayerGridXY.h"
-#include "DDSegmentation/MultiSegmentation.h"
-#include "DDSegmentation/NoSegmentation.h"
-#include "DDSegmentation/PolarGrid.h"
-#include "DDSegmentation/PolarGridRPhi2.h"
-#include "DDSegmentation/PolarGridRPhi.h"
-#include "DDSegmentation/ProjectiveCylinder.h"
+#include <DDSegmentation/Segmentation.h>
+#include <DDSegmentation/NoSegmentation.h>
+#include <DDSegmentation/CartesianGrid.h>
+#include <DDSegmentation/CartesianGridXY.h>
+#include <DDSegmentation/CartesianGridXYZ.h>
+#include <DDSegmentation/CartesianGridXZ.h>
+#include <DDSegmentation/CartesianGridYZ.h>
+#include <DDSegmentation/CartesianGridUV.h>
+#include <DDSegmentation/CartesianStripX.h>
+#include <DDSegmentation/CartesianStripY.h>
+#include <DDSegmentation/CartesianStripZ.h>
+#include <DDSegmentation/CylindricalSegmentation.h>
+#include <DDSegmentation/CylindricalGridPhiZ.h>
+#include <DDSegmentation/GridPhiEta.h>
+#include <DDSegmentation/GridRPhiEta.h>
+#include <DDSegmentation/MegatileLayerGridXY.h>
+#include <DDSegmentation/MultiSegmentation.h>
+#include <DDSegmentation/NoSegmentation.h>
+#include <DDSegmentation/PolarGrid.h>
+#include <DDSegmentation/PolarGridRPhi2.h>
+#include <DDSegmentation/PolarGridRPhi.h>
+#include <DDSegmentation/ProjectiveCylinder.h>
 
-#include "DDSegmentation/SegmentationParameter.h"
-#include "DDSegmentation/TiledLayerGridXY.h"
-#include "DDSegmentation/TiledLayerSegmentation.h"
-#include "DDSegmentation/WaferGridXY.h"
+#include <DDSegmentation/SegmentationParameter.h>
+#include <DDSegmentation/TiledLayerGridXY.h>
+#include <DDSegmentation/TiledLayerSegmentation.h>
+#include <DDSegmentation/WaferGridXY.h>
 typedef dd4hep::DDSegmentation::VolumeID VolumeID;
 typedef dd4hep::DDSegmentation::CellID CellID;
 
@@ -73,10 +75,12 @@ typedef dd4hep::DDSegmentation::CellID CellID;
 #pragma link C++ class dd4hep::DDSegmentation::CartesianGridXYZ+;
 #pragma link C++ class dd4hep::DDSegmentation::CartesianGridXZ+;
 #pragma link C++ class dd4hep::DDSegmentation::CartesianGridYZ+;
+#pragma link C++ class dd4hep::DDSegmentation::CartesianGridUV+;
 #pragma link C++ class dd4hep::DDSegmentation::CartesianStripX+;
 #pragma link C++ class dd4hep::DDSegmentation::CartesianStripY+;
 #pragma link C++ class dd4hep::DDSegmentation::CartesianStripZ+;
 #pragma link C++ class dd4hep::DDSegmentation::CylindricalSegmentation+;
+#pragma link C++ class dd4hep::DDSegmentation::CylindricalGridPhiZ+;
 #pragma link C++ class dd4hep::DDSegmentation::GridPhiEta+;
 #pragma link C++ class dd4hep::DDSegmentation::GridRPhiEta+;
 #pragma link C++ class dd4hep::DDSegmentation::MegatileLayerGridXY+;

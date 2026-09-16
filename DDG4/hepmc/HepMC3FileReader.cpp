@@ -26,8 +26,8 @@
 
 #include "HepMC3EventReader.h"
 
-#include "DDG4/EventParameters.h"
-#include "DDG4/RunParameters.h"
+#include <DDG4/EventParameters.h>
+#include <DDG4/RunParameters.h>
 
 #include <HepMC3/ReaderFactory.h>
 #include <HepMC3/Version.h>
@@ -113,8 +113,8 @@ namespace dd4hep  {
   }
 }
 
-#include "DD4hep/Printout.h"
-#include "DDG4/Factories.h"
+#include <DD4hep/Printout.h>
+#include <DDG4/Factories.h>
 
 using dd4hep::sim::HEPMC3FileReader;
 using dd4hep::sim::Geant4EventReader;
@@ -129,25 +129,37 @@ HEPMC3FileReader::HEPMC3FileReader(const std::string& nam)
   printout(INFO,"HEPMC3FileReader","Created file reader. Try to open input %s", nam.c_str());
   m_reader = HepMC3::deduce_reader(nam);
 #if HEPMC3_VERSION_CODE >= 3002006
-  // to get the runInfo in the Ascii reader we have to force HepMC to read the first event
-  m_reader->skip(1);
-  // then we get the run info (shared pointer)
-  auto runInfo = m_reader->run_info();
-  // and close the reader
-  m_reader->close();
-  // so we can open the file again from the start
-  m_reader = HepMC3::deduce_reader(nam);
-  // and set the run info object now
-  m_reader->set_run_info(runInfo);
+  // to get the runInfo we have to force HepMC to read the first event
+  HepMC3::GenEvent dummy;
+  m_reader->read_event(dummy);
+
+  // ascii reader needs to be reset while others can skip back
+  if (std::dynamic_pointer_cast<HepMC3::ReaderAscii>(m_reader) != nullptr) {
+    // then we get the run info (shared pointer)
+    auto runInfo = m_reader->run_info();
+    // and deallocate the reader
+    m_reader.reset();
+    // so we can open the file again from the start
+    m_reader = HepMC3::deduce_reader(nam);
+    // and set the run info object now
+    m_reader->set_run_info(std::move(runInfo));
+  } else {
+    m_reader->skip(-1); // reset to first event
+  }
+  
 #endif
   m_directAccess = false;
 }
 
 void HEPMC3FileReader::registerRunParameters() {
   try {
-    auto *parameters = new RunParameters();
+    // get RunParameters or create new if not existent yet
+    auto *parameters = context()->run().extension<RunParameters>(false);
+    if (!parameters) {
+      parameters = new RunParameters();
+      context()->run().addExtension<RunParameters>(parameters);
+    }
     parameters->ingestParameters(*(m_reader->run_info()));
-    context()->run().addExtension<RunParameters>(parameters);
   } catch(std::exception &e) {
     printout(ERROR,"HEPMC3FileReader::registerRunParameters","Failed to register run parameters: %s", e.what());
   }
@@ -182,11 +194,15 @@ HEPMC3FileReader::readGenEvent(int /*event_number*/, HepMC3::GenEvent& genEvent)
     printout(INFO,"HEPMC3FileReader","Read event from file");
     // Create input event parameters context
     try {
+      // get EventParameters or create new if not existent yet
       Geant4Context* ctx = context();
-      EventParameters *parameters = new EventParameters();
+      auto* parameters = ctx->event().extension<EventParameters>(false);
+      if (!parameters) {
+        parameters = new EventParameters();
+        ctx->event().addExtension<EventParameters>(parameters);
+      }
       parameters->setEventNumber(genEvent.event_number());
       parameters->ingestParameters(genEvent);
-      ctx->event().addExtension<EventParameters>(parameters);
     }
     catch(std::exception &)
     {

@@ -16,6 +16,7 @@
 #include <DD4hep/Printout.h>
 #include "DigiIO.h"
 
+
 /// C/C++ include files
 #include <limits>
 
@@ -28,11 +29,19 @@
 #include <edm4hep/SimTrackerHit.h>
 #include <edm4hep/MCParticle.h>
 #include <edm4hep/MCParticleCollection.h>
+#if __has_include("edm4hep/TrackerHitCollection.h")
 #include <edm4hep/TrackerHitCollection.h>
+namespace edm4hep {
+  using TrackerHit3DCollection = edm4hep::TrackerHitCollection;
+}
+#else
+#include <edm4hep/TrackerHit3DCollection.h>
+#endif
 #include <edm4hep/SimTrackerHitCollection.h>
 #include <edm4hep/CalorimeterHitCollection.h>
 #include <edm4hep/SimCalorimeterHitCollection.h>
 #include <edm4hep/EventHeaderCollection.h>
+#include <edm4hep/EDM4hepVersion.h>
 #include <podio/GenericParameters.h>
 
 /// Namespace for the AIDA detector description toolkit
@@ -164,8 +173,13 @@ namespace dd4hep {
       mcp.setCharge(3.0*p.charge);
       mcp.setVertex( _toVectorD(p.start_position) );
       mcp.setEndpoint( _toVectorD(p.end_position) );
+#if EDM4HEP_BUILD_VERSION < EDM4HEP_VERSION(0, 99, 0)
       mcp.setMomentum( _toVectorF(p.momentum) );
       mcp.setMomentumAtEndpoint( _toVectorF(p.momentum) );
+#else
+      mcp.setMomentum( _toVectorD(p.momentum) );
+      mcp.setMomentumAtEndpoint( _toVectorD(p.momentum) );
+#endif
     }
 
     template <> template <>
@@ -194,8 +208,11 @@ namespace dd4hep {
       mcp.setCharge( p.getCharge() );
       mcp.setGeneratorStatus( p.getGeneratorStatus() );
       mcp.setSimulatorStatus( p.getSimulatorStatus() );
+#ifdef EDM4HEP_MCPARTICLE_HAS_HELICITY
+      mcp.setHelicity(p.getHelicity());
+#else
       mcp.setSpin(p.getSpin());
-      mcp.setColorFlow(p.getColorFlow());
+#endif
     }
 
     template <> template <>
@@ -224,7 +241,7 @@ namespace dd4hep {
     template <> template <> 
     void data_io<edm4hep_input>::_to_edm4hep(const std::pair<const CellID, EnergyDeposit>& dep,
 					     const std::array<float, 6>& covMat,
-					     edm4hep::TrackerHitCollection& collection,
+					     edm4hep::TrackerHit3DCollection& collection,
 					     int hit_type)
 
     {
@@ -467,7 +484,7 @@ namespace dd4hep {
                                        const std::vector<sim::Geant4Particle*>& input,
                                        ParticleMapping& particles)
     {
-      Key mkey = key;
+      Key mkey = std::move(key);
       for( auto* part_ptr : input )   {
         std::shared_ptr<sim::Geant4Particle> p(part_ptr);
         Particle part;
@@ -491,18 +508,16 @@ namespace dd4hep {
       Key history_key;
       EnergyDeposit dep { };
       const auto* h = depo.second.get();
-      Position pos = h->position;
-      pos *= 1./dd4hep::mm;
 
       dep.flag = h->flag;
       dep.deposit = h->energyDeposit;
-      dep.position = pos;
+      dep.position = (h->position / dd4hep::mm);
 
       history_key.set_mask(key.mask());
       history_key.set_item(out.size());
       history_key.set_segment(key.segment());
       dep.history.hits.emplace_back(history_key, dep.deposit);
-      add_particle_history(h, history_key, dep.history);
+      add_particle_history(h, std::move(history_key), dep.history);
       out.emplace(depo.first, std::move(dep));
     }
 
@@ -547,8 +562,13 @@ namespace dd4hep {
       const PropertyMask mask(status);
       mcp.setPDG(p.pdgID);
 
+#if EDM4HEP_BUILD_VERSION < EDM4HEP_VERSION(0, 99, 0)
       mcp.setMomentum( _toVectorF( { p.psx, p.psy, p.psz } ) );
       mcp.setMomentumAtEndpoint( _toVectorF( {p.pex, p.pey, p.pez} ) );
+#else
+      mcp.setMomentum( _toVectorD( { p.psx, p.psy, p.psz } ) );
+      mcp.setMomentumAtEndpoint( _toVectorD( {p.pex, p.pey, p.pez} ) );
+#endif
       mcp.setVertex( _toVectorD( { p.vsx, p.vsy, p.vsz } ) );
       mcp.setEndpoint( _toVectorD( { p.vex, p.vey, p.vez } ) );
 
@@ -582,8 +602,11 @@ namespace dd4hep {
       if( mcp.isCreatedInSimulation() )
         mcp.setGeneratorStatus( 0 );
 
+#ifdef EDM4HEP_MCPARTICLE_HAS_HELICITY
+      mcp.setHelicity(p.spin[2]);
+#else
       mcp.setSpin(p.spin);
-      mcp.setColorFlow(p.colorFlow);
+#endif
     }
 
     template <> template <> 

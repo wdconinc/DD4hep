@@ -15,24 +15,24 @@
 #define DD4HEP_DDG4_GEANT4OUTPUT2LCIO_H
 
 // Framework include files
-#include "DD4hep/VolumeManager.h"
-#include "DDG4/Geant4OutputAction.h"
+#include <DD4hep/VolumeManager.h>
+#include <DDG4/Geant4OutputAction.h>
 
-#include "DDG4/EventParameters.h"
-#include "DDG4/RunParameters.h"
+#include <DDG4/EventParameters.h>
+#include <DDG4/RunParameters.h>
 // Geant4 headers
-#include "G4Threading.hh"
-#include "G4AutoLock.hh"
+#include <G4Threading.hh>
+#include <G4AutoLock.hh>
 
-#include "DD4hep/Detector.h"
+#include <DD4hep/Detector.h>
 #include <G4Version.hh>
 
 // lcio include files
-#include "lcio.h"
-#include "IO/LCWriter.h"
-#include "IMPL/LCEventImpl.h"
-#include "IMPL/LCCollectionVec.h"
-#include "EVENT/LCParameters.h"
+#include <lcio.h>
+#include <IO/LCWriter.h>
+#include <IMPL/LCEventImpl.h>
+#include <IMPL/LCCollectionVec.h>
+#include <EVENT/LCParameters.h>
 
 using namespace lcio ;
 
@@ -170,30 +170,30 @@ namespace dd4hep {
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/InstanceCount.h"
-#include "DD4hep/Detector.h"
-#include "DDG4/Geant4HitCollection.h"
-#include "DDG4/Geant4DataConversion.h"
-#include "DDG4/Geant4Context.h"
-#include "DDG4/Geant4Particle.h"
-#include "DDG4/Geant4Data.h"
-#include "DDG4/Geant4Action.h"
+#include <DD4hep/InstanceCount.h>
+#include <DD4hep/Detector.h>
+#include <DDG4/Geant4HitCollection.h>
+#include <DDG4/Geant4DataConversion.h>
+#include <DDG4/Geant4Context.h>
+#include <DDG4/Geant4Particle.h>
+#include <DDG4/Geant4Data.h>
+#include <DDG4/Geant4Action.h>
 
-//#include "DDG4/Geant4Output2LCIO.h"
-#include "G4ParticleDefinition.hh"
-#include "G4VProcess.hh"
-#include "G4Event.hh"
-#include "G4Run.hh"
+//#include <DDG4/Geant4Output2LCIO.h>
+#include <G4ParticleDefinition.hh>
+#include <G4VProcess.hh>
+#include <G4Event.hh>
+#include <G4Run.hh>
 
 // LCIO include files
-#include "IMPL/LCEventImpl.h"
-#include "IMPL/LCRunHeaderImpl.h"
-#include "IMPL/LCCollectionVec.h"
-#include "IMPL/ClusterImpl.h"
-#include "IMPL/SimTrackerHitImpl.h"
-#include "IMPL/SimCalorimeterHitImpl.h"
-#include "IMPL/MCParticleImpl.h"
-#include "UTIL/ILDConf.h"
+#include <IMPL/LCEventImpl.h>
+#include <IMPL/LCRunHeaderImpl.h>
+#include <IMPL/LCCollectionVec.h>
+#include <IMPL/ClusterImpl.h>
+#include <IMPL/SimTrackerHitImpl.h>
+#include <IMPL/SimCalorimeterHitImpl.h>
+#include <IMPL/MCParticleImpl.h>
+#include <UTIL/ILDConf.h>
 
 using namespace dd4hep::sim;
 using namespace dd4hep;
@@ -202,7 +202,7 @@ namespace {
   G4Mutex action_mutex=G4MUTEX_INITIALIZER;
 }
 
-#include "DDG4/Factories.h"
+#include <DDG4/Factories.h>
 DECLARE_GEANT4ACTION(Geant4Output2LCIO)
 
 /// Standard constructor
@@ -328,11 +328,11 @@ lcio::LCCollectionVec* Geant4Output2LCIO::saveParticles(Geant4ParticleMap* parti
         q->setGeneratorStatus( p->genStatus ) ;
       } else {
 
-	if ( mask.isSet(G4PARTICLE_GEN_STABLE) )             q->setGeneratorStatus(1);
-	else if ( mask.isSet(G4PARTICLE_GEN_DECAYED) )       q->setGeneratorStatus(2);
-	else if ( mask.isSet(G4PARTICLE_GEN_DOCUMENTATION) ) q->setGeneratorStatus(3);
-	else if ( mask.isSet(G4PARTICLE_GEN_BEAM) )          q->setGeneratorStatus(4);
-	else if ( mask.isSet(G4PARTICLE_GEN_OTHER) )         q->setGeneratorStatus(9);
+        if ( mask.isSet(G4PARTICLE_GEN_STABLE) )             q->setGeneratorStatus(1);
+        else if ( mask.isSet(G4PARTICLE_GEN_DECAYED) )       q->setGeneratorStatus(2);
+        else if ( mask.isSet(G4PARTICLE_GEN_DOCUMENTATION) ) q->setGeneratorStatus(3);
+        else if ( mask.isSet(G4PARTICLE_GEN_BEAM) )          q->setGeneratorStatus(4);
+        else if ( mask.isSet(G4PARTICLE_GEN_OTHER) )         q->setGeneratorStatus(9);
       }
 //      std::cout << " ********** mcp genstatus : " << q->getGeneratorStatus() << std::endl ;
 
@@ -365,7 +365,7 @@ lcio::LCCollectionVec* Geant4Output2LCIO::saveParticles(Geant4ParticleMap* parti
       const Geant4Particle* p = p_part[i];
       MCParticleImpl* q = p_lcio[i];
       const Geant4Particle::Particles& dau = p->daughters;
-      for(Geant4Particle::Particles::const_iterator j=dau.begin(); j!=dau.end(); ++j)  {
+      for( Geant4Particle::Particles::const_iterator j=dau.begin(); j != dau.end(); ++j )  {
         int idau = *j;
         if ( (k=p_ids.find(idau)) == p_ids.end() )  {  // Error!!!
           printout(FATAL,"Geant4Conversion","+++ Particle %d: FAILED to find daughter with ID:%d",p->id,idau);
@@ -376,15 +376,17 @@ lcio::LCCollectionVec* Geant4Output2LCIO::saveParticles(Geant4ParticleMap* parti
         qdau->addParent(q);
       }
       const Geant4Particle::Particles& par = p->parents;
-      for(Geant4Particle::Particles::const_iterator j=par.begin(); j!=par.end(); ++j)  {
+      for( Geant4Particle::Particles::const_iterator j=par.begin(); j != par.end(); ++j )  {
         int ipar = *j; // A parent ID iof -1 means NO parent, because a base of 0 is perfectly leagal!
-        if ( ipar>=0 && (k=p_ids.find(ipar)) == p_ids.end() )  {  // Error!!!
-          printout(FATAL,"Geant4Conversion","+++ Particle %d: FAILED to find parent with ID:%d",p->id,ipar);
-          continue;
+        if ( ipar >= 0 )   {
+          if( (k=p_ids.find(ipar)) == p_ids.end() )  {  // Error!!!
+            printout(FATAL,"Geant4Conversion","+++ Particle %d: FAILED to find parent with ID:%d",p->id,ipar);
+            continue;
+          }
+          int iqpar = (*k).second;
+          MCParticleImpl* qpar = p_lcio[iqpar];
+          q->addParent(qpar);
         }
-        int iqpar = (*k).second;
-        MCParticleImpl* qpar = p_lcio[iqpar];
-        q->addParent(qpar);
       }
     }
   }

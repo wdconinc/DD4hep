@@ -12,23 +12,24 @@
 //==========================================================================
 
 // Framework include files
-#include "DDEve/CaloLego.h"
-#include "DDEve/Annotation.h"
-#include "DDEve/Factories.h"
-#include "DD4hep/InstanceCount.h"
+#include <DDEve/CaloLego.h>
+#include <DDEve/Annotation.h>
+#include <DDEve/Factories.h>
+#include <DD4hep/InstanceCount.h>
 
 // Root include files
-#include "TH2.h"
-#include "TEveCalo.h"
-#include "TEveTrans.h"
-#include "TEveScene.h"
-#include "TGLViewer.h"
-#include "TGLWidget.h"
-#include "TEveCaloLegoOverlay.h"
-#include "TEveLegoEventHandler.h"
+#include <TH2.h>
+#include <TEveCalo.h>
+#include <TEveTrans.h>
+#include <TEveScene.h>
+#include <TGLViewer.h>
+#include <TGLWidget.h>
+#include <TEveCaloLegoOverlay.h>
+#include <TEveLegoEventHandler.h>
 
+// C/C++ include files
 #include <limits>
-using namespace std;
+
 using namespace dd4hep;
 
 ClassImp(CaloLego)
@@ -67,12 +68,12 @@ void CaloLego::ConfigureGeometry(const DisplayConfiguration::ViewConfig& config)
     DisplayConfiguration::Calodata& cd = calo.config.data.calodata;
     if ( calo.config.use.empty() )  {
       for(int isl = 0; isl<calo.eveHist->GetNSlices(); ++isl)  {
-	int nslice = ctx.eveHist->GetNSlices();
-	TH2F* h = new TH2F(*calo.eveHist->GetHist(isl));
-	ctx.eveHist->AddHistogram(h);
-	ctx.eveHist->RefSliceInfo(nslice).Setup(n,cd.threshold,cd.color,101);
-	Annotation* a = new Annotation(viewer(),n,Annotation::DefaultMargin(),legend_y,cd.color);
-	legend_y += a->GetTextSize();
+        int nslice = ctx.eveHist->GetNSlices();
+        TH2F* h = new TH2F(*calo.eveHist->GetHist(isl));
+        ctx.eveHist->AddHistogram(h);
+        ctx.eveHist->RefSliceInfo(nslice).Setup(n,cd.threshold,cd.color,101);
+        Annotation* a = new Annotation(viewer(),n,Annotation::DefaultMargin(),legend_y,cd.color);
+        legend_y += a->GetTextSize();
       }
     }
   }
@@ -112,10 +113,10 @@ void CaloLego::ConfigureEvent(const DisplayConfiguration::ViewConfig& config)  {
     const Display::CalodataContext& ctx = m_eve->GetCaloHistogram(n);
     if ( ctx.config.use.empty() )  {
       for(int isl = 0; isl<ctx.eveHist->GetNSlices(); ++isl)  {
-	TH2F* global = ctx.eveHist->GetHist(isl);
-	TH2F* local  = m_data.eveHist->GetHist(ihist);
-	*local = *global;
-	ihist++;
+        TH2F* global = ctx.eveHist->GetHist(isl);
+        TH2F* local  = m_data.eveHist->GetHist(ihist);
+        *local = *global;
+        ihist++;
       }
     }
   }
@@ -123,5 +124,5 @@ void CaloLego::ConfigureEvent(const DisplayConfiguration::ViewConfig& config)  {
 }
 
 /// Call to import geometry topics
-void CaloLego::ImportGeoTopics(const string&)   {
+void CaloLego::ImportGeoTopics(const std::string&)   {
 }

@@ -7,21 +7,27 @@ SET_PROPERTY(DIRECTORY . PROPERTY PACKAGE_NAME DD4hep)
 #################
 
 SET( DD4hep_VERSION_MAJOR 1 )
-SET( DD4hep_VERSION_MINOR 26 )
+SET( DD4hep_VERSION_MINOR 37 )
 SET( DD4hep_VERSION_PATCH 0 )
 
 #######################
 # Basic project setup #
 #######################
 
-set ( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake )
+set ( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  SET( CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR} CACHE PATH
+  SET( CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE PATH
        "install prefix path  - overwrite with -D CMAKE_INSTALL_PREFIX = ..."
        FORCE )
  MESSAGE(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX} - overwrite with -D CMAKE_INSTALL_PREFIX" )
 ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
+# When enabling DDG4 on Alma 9 and related, CMAKE_INSTALL_LIBDIR is set to lib64
+# Here, we force it to be lib if unset
+if(NOT CMAKE_INSTALL_LIBDIR)
+  set(CMAKE_INSTALL_LIBDIR lib CACHE STRING "Installation directory for libraries" FORCE)
+endif()
 
 ###############################################
 # Setup the environment for the documentation #
@@ -46,18 +52,16 @@ ENDIF()
 #############################################################
 
 ENABLE_LANGUAGE(CXX)
-ENABLE_LANGUAGE(C)
-
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard used for compiling")
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard used for compiling")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-SET(DD4hep_DIR ${CMAKE_SOURCE_DIR} CACHE STRING "DD4hep directory")
+SET(DD4hep_DIR ${PROJECT_SOURCE_DIR} CACHE STRING "DD4hep directory")
 SET(DD4hep_ROOT ${CMAKE_INSTALL_PREFIX})
 
-IF(${CMAKE_CXX_STANDARD} LESS 14)
-  MESSAGE(FATAL_ERROR "DD4hep requires at least CXX Standard 14 to compile")
+IF(${CMAKE_CXX_STANDARD} LESS 17)
+  MESSAGE(FATAL_ERROR "DD4hep requires at least CXX Standard 17 to compile")
 ENDIF()
 
 ###############################
@@ -77,19 +81,30 @@ option(DD4HEP_USE_GEANT4_UNITS  "Build using Geant4 units throughout"           
 option(DD4HEP_USE_EDM4HEP       "Build edm4hep extensions"                      OFF)
 option(DD4HEP_USE_HEPMC3        "Build hepmc3 extensions"                       OFF)
 option(DD4HEP_USE_TBB           "Build features that require TBB"               OFF)
+option(DD4HEP_USE_G4HEPEM       "Build G4HepEm EM tracking physics plugin"      OFF)
 option(DD4HEP_LOAD_ASSIMP       "Download and build ASSIMP from github"         OFF)
+option(DD4HEP_DISABLE_PACKAGES  "Selectively disable DD4HEP sub-packages [Separate multiples by space]"  OFF)
 option(BUILD_TESTING            "Enable and build tests"                        ON)
 option(BUILD_SHARED_LIBS        "If OFF build STATIC Libraries"                 ON)
 option(DD4HEP_SET_RPATH         "Link libraries with built-in RPATH (run-time search path)" ON)
 option(DD4HEP_RELAX_PYVER       "Do not require exact python version match with ROOT" OFF)
-
+#
+OPTION(DD4HEP_BUILD_EXAMPLES    "Build all the examples"                        OFF)
+OPTION(DD4HEP_DEBUG_CMAKE       "Print debugging information for DD4hep CMAKE"  OFF)
+#
 SET(DD4HEP_BUILD_PACKAGES "DDRec DDDetectors DDCond DDAlign DDCAD DDDigi DDG4 DDEve UtilityApps"
-  CACHE STRING "List of DD4hep packages to build")
+    CACHE STRING "List of DD4hep packages to build")
+#
 SEPARATE_ARGUMENTS(DD4HEP_BUILD_PACKAGES)
+IF( DD4HEP_DISABLE_PACKAGES )
+    STRING(REPLACE " " ";" DISABLED_PACKAGES "${DD4HEP_DISABLE_PACKAGES}" )
+    STRING(REPLACE "," ";" DISABLED_PACKAGES "${DISABLED_PACKAGES}" )
+    FOREACH( PKG ${DISABLED_PACKAGES} )
+      LIST(REMOVE_ITEM DD4HEP_BUILD_PACKAGES ${PKG})
+      MESSAGE(STATUS "Disable package: ${PKG}" )
+    ENDFOREACH()
+ENDIF()
 MESSAGE(STATUS "Will be building these packages: ${DD4HEP_BUILD_PACKAGES}")
-
-OPTION(DD4HEP_BUILD_EXAMPLES "Build all the examples" OFF)
-OPTION(DD4HEP_DEBUG_CMAKE "Print debugging information for DD4hep CMAKE" OFF)
 
 SET(DD4HEP_USE_EXISTING_DD4HEP "" CACHE STRING "Build some parts of DD4hep against an existing installation")
 SET(DD4HEP_HIGH_MEM_POOL_DEPTH "${DD4HEP_HIGH_MEM_POOL_DEPTH}" CACHE STRING "Number of build slots for high memory compile units (DDParsers), Ninja only")
@@ -126,8 +141,17 @@ dd4hep_configure_output( OUTPUT "${PROJECT_BINARY_DIR}" INSTALL "${CMAKE_INSTALL
 # Configure ROOT
 find_package (ROOT 6.08 REQUIRED CONFIG)
 DD4HEP_SETUP_ROOT_TARGETS()
+# ROOT no longer finds nlohmann_json unless we ask for the ROOTEve component, so we ask
+# for the ROOTEve component if the ROOTEve component exists.
+# DDEve and one executable in UtilityApps depend on this
+if(TARGET ROOT::ROOTEve)
+  find_package (ROOT REQUIRED COMPONENTS ROOTEve CONFIG)
+endif()
 
-# Configure BOOST
+# Set when the minimum required CMake version is at least 3.30
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
 find_package(Boost 1.49 REQUIRED)
 DD4HEP_SETUP_BOOST_TARGETS()
 
@@ -137,6 +161,10 @@ if(DD4HEP_USE_GEANT4)
   IF(NOT Geant4_builtin_clhep_FOUND)
     SET(DD4HEP_USE_CLHEP TRUE)
   ENDIF()
+  if(Geant4_CXX_STANDARD MATCHES "[0-9]+" AND Geant4_CXX_STANDARD LESS ${CMAKE_CXX_STANDARD})
+    message(FATAL_ERROR "Geant4 was compiled with C++${Geant4_CXX_STANDARD}, but DD4hep requires C++${CMAKE_CXX_STANDARD}")
+  endif()
+
   DD4HEP_SETUP_GEANT4_TARGETS()
   # Geant4 sets the CLHEP include directory to include_directories, we undo this here
   # we don't do this inside DD4hep_SETUP_GEANT4_TARGETS, because that is also used in
@@ -150,8 +178,20 @@ if(DD4HEP_USE_LCIO)
 endif()
 
 if(DD4HEP_USE_EDM4HEP)
-  find_package(EDM4HEP REQUIRED)
-  find_package(podio 0.16.3 REQUIRED)
+  # EDM4hep is "SameMajorVersion" compatible so we try to find a recent version
+  # first and fall back to a compatible on in case we don't find it
+  find_package(EDM4HEP 1.0)
+  if (NOT EDM4HEP_FOUND)
+    message(STATUS "EDM4HEP 1.0 not found, falling back to at least version 0.10.5")
+    find_package(EDM4HEP 0.10.5 REQUIRED)
+  endif()
+  # we need podio with Frame support (>=0.16.3)
+  # podio is "SameMajorVersion" compatible
+  find_package(podio 1.0)
+  if(NOT podio_FOUND)
+    message(STATUS "podio 1.0 not found, falling back to at least version 0.16.7")
+    find_package(podio 0.16.7 REQUIRED)  # this will not find 1.0 and newer
+  endif()
 #  DD4HEP_SETUP_EDM4HEP_TARGETS()
 endif()
 
@@ -178,6 +218,9 @@ if(DD4HEP_USE_TBB)
   find_package(TBB REQUIRED CONFIG)
 endif()
 
+if(DD4HEP_USE_G4HEPEM)
+  find_package(G4HepEm REQUIRED)
+endif()
 
 ######################
 # Set compiler flags #
@@ -287,7 +330,7 @@ display_std_variables()
 CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/DD4hepConfig.cmake.in
   ${PROJECT_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake @ONLY
   )
-INSTALL(FILES ${PROJECT_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake DESTINATION ./cmake )
+INSTALL(FILES ${PROJECT_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake DESTINATION cmake)
 
 dd4hep_generate_package_configuration_files( ${CMAKE_PROJECT_NAME}Config.cmake )
 

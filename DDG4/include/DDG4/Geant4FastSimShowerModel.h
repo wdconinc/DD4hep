@@ -68,7 +68,7 @@ namespace dd4hep  {
       ParticleConfig m_eMax           { };
       /// Property: Set maximum kinetic energy for particles to be killed
       ParticleConfig m_eKill          { };
-      /// Property: Set minmal kinetic energy for particles to trigger the model
+      /// Property: Set minimal kinetic energy for particles to trigger the model
       ParticleConfig m_eTriggerNames  { };
 
       /// Particle definitions for which this parametrization is applicable
@@ -103,11 +103,11 @@ namespace dd4hep  {
       virtual ~Geant4FastSimShowerModel();
 
       /// Geometry construction callback. Called at "Construct()"
-      virtual void constructGeo(Geant4DetectorConstructionContext* ctxt);
+      virtual void constructGeo(Geant4DetectorConstructionContext* ctxt)  override;
       /// Electromagnetic field construction callback. Called at "ConstructSDandField()"
-      virtual void constructField(Geant4DetectorConstructionContext* ctxt);
+      virtual void constructField(Geant4DetectorConstructionContext* ctxt)  override;
       /// Sensitive detector construction callback. Called at "ConstructSDandField()"
-      virtual void constructSensitives(Geant4DetectorConstructionContext* ctxt);
+      virtual void constructSensitives(Geant4DetectorConstructionContext* ctxt)  override;
 
       /// User callback to determine if the model is applicable for the particle type
       virtual bool check_applicability(const G4ParticleDefinition& particle);

@@ -14,16 +14,16 @@
 #define DDG4_GEANT4TESTACTIONS_H
 
 // Framework include files
-#include "DDG4/Geant4Handle.h"
-#include "DDG4/Geant4Kernel.h"
-#include "DDG4/Geant4GeneratorAction.h"
-#include "DDG4/Geant4RunAction.h"
-#include "DDG4/Geant4EventAction.h"
-#include "DDG4/Geant4TrackingAction.h"
-#include "DDG4/Geant4SteppingAction.h"
-#include "DDG4/Geant4StackingAction.h"
-#include "DDG4/Geant4ActionPhase.h"
-#include "DDG4/Geant4SensDetAction.h"
+#include <DDG4/Geant4Handle.h>
+#include <DDG4/Geant4Kernel.h>
+#include <DDG4/Geant4GeneratorAction.h>
+#include <DDG4/Geant4RunAction.h>
+#include <DDG4/Geant4EventAction.h>
+#include <DDG4/Geant4TrackingAction.h>
+#include <DDG4/Geant4SteppingAction.h>
+#include <DDG4/Geant4StackingAction.h>
+#include <DDG4/Geant4ActionPhase.h>
+#include <DDG4/Geant4SensDetAction.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -66,7 +66,7 @@ namespace dd4hep {
         /// Default destructor
         virtual ~Geant4TestGeneratorAction();
         /// Callback to generate primary particles
-        virtual void operator()(G4Event*);
+        virtual void operator()(G4Event*)  override;
       };
 
       /// Example run action doing nothing, but print
@@ -82,9 +82,9 @@ namespace dd4hep {
         /// Default destructor
         virtual ~Geant4TestRunAction();
         /// begin-of-run callback
-        void begin(const G4Run*);
+        void begin(const G4Run*)  override;
         /// End-of-run callback
-        void end(const G4Run*);
+        void end(const G4Run*)  override;
         /// begin-of-event callback
         void beginEvent(const G4Event*);
         /// End-of-event callback
@@ -104,9 +104,9 @@ namespace dd4hep {
         /// Default destructor
         virtual ~Geant4TestEventAction();
         /// begin-of-event callback
-        virtual void begin(const G4Event*);
+        virtual void begin(const G4Event*)  override;
         /// End-of-event callback
-        virtual void end(const G4Event*);
+        virtual void end(const G4Event*)  override;
         /// begin-of-run callback
         void beginRun(const G4Run*);
         /// End-of-run callback
@@ -146,6 +146,26 @@ namespace dd4hep {
         virtual ~Geant4TestStepAction();
         /// User stepping callback
         void operator()(const G4Step*, G4SteppingManager*)  override;
+      };
+
+      /// Example stacking action doing nothing, but print
+      /**
+       *  \author  M.Frank
+       *  \version 1.0
+       *  \ingroup DD4HEP_SIMULATION
+       */
+      class Geant4TestStackAction: public Geant4StackingAction, public Geant4TestBase {
+      public:
+        /// Standard constructor with initializing arguments
+        Geant4TestStackAction(Geant4Context* c, const std::string& n);
+        /// Default destructor
+        virtual ~Geant4TestStackAction();
+        /// New-stage callback
+        virtual void newStage(G4StackManager*)  override;
+        /// Preparation callback
+        virtual void prepare(G4StackManager*)  override;
+        /// Return TrackClassification with enum G4ClassificationOfNewTrack or NoTrackClassification
+        virtual TrackClassification classifyNewTrack(G4StackManager*, const G4Track*)  override;
       };
 
       /// Example sensitve detector action doing nothing, but print

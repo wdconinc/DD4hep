@@ -12,20 +12,20 @@
 //==========================================================================
 
 // Framework include files
-#include "Exceptions.h"
-#include "IMPL/LCCollectionVec.h"
-#include "IMPL/SimTrackerHitImpl.h"
-#include "IMPL/SimCalorimeterHitImpl.h"
-#include "IMPL/MCParticleImpl.h"
-#include "UTIL/Operators.h"
-#include "UTIL/ILDConf.h"
+#include <Exceptions.h>
+#include <IMPL/LCCollectionVec.h>
+#include <IMPL/SimTrackerHitImpl.h>
+#include <IMPL/SimCalorimeterHitImpl.h>
+#include <IMPL/MCParticleImpl.h>
+#include <UTIL/Operators.h>
+#include <UTIL/ILDConf.h>
 
-#include "DDG4/Geant4SensDetAction.h"
-#include "DDG4/Geant4Data.h"
-#include "DDG4/Geant4StepHandler.h"
+#include <DDG4/Geant4SensDetAction.h>
+#include <DDG4/Geant4Data.h>
+#include <DDG4/Geant4StepHandler.h>
 
-#include "DD4hep/Printout.h"
-#include "DD4hep/InstanceCount.h"
+#include <DD4hep/Printout.h>
+#include <DD4hep/InstanceCount.h>
 
 using namespace dd4hep::sim;
 using namespace dd4hep;
@@ -65,7 +65,7 @@ namespace  Tests {
     }
     /// Define collections created by this sensitivie action object
     virtual void defineCollections()   override   {}
-    /// G4VSensitiveDetector interface: Method invoked at the begining of each event.
+    /// G4VSensitiveDetector interface: Method invoked at the beginning of each event.
     virtual void begin(G4HCofThisEvent* hce)   override   {
       Base::begin(hce);
     }
@@ -149,7 +149,7 @@ namespace  Tests {
   /// Method for generating hit(s) using the information of G4Step object.
   template <> bool 
   Geant4SensitiveAction<LcioTestTracker>::processFastSim(const Geant4FastSimSpot*  /* spot */,
-							 G4TouchableHistory* /*hist*/ )
+                                                         G4TouchableHistory* /*hist*/ )
   {
     except("Not implemented");
     return true;
@@ -159,5 +159,5 @@ namespace  Tests {
   typedef Geant4SensitiveAction<LcioTestTracker> LcioTestTrackerAction;
 } // namespace
 
-#include "DDG4/Factories.h"
+#include <DDG4/Factories.h>
 DECLARE_GEANT4SENSITIVE_NS(Tests,LcioTestTrackerAction)

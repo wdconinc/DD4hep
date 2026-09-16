@@ -1,20 +1,25 @@
 name: coverity
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   schedule:
     - cron:  '2 0 * * *'
+  workflow_dispatch:
 
 jobs:
   run-coverity:
     runs-on: ubuntu-latest
     if: github.repository == 'AIDASoft/DD4hep'
     steps:
-    - uses: actions/checkout@v3
-    - uses: cvmfs-contrib/github-action-cvmfs@v3
-    - uses: aidasoft/run-lcg-view@v3
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - uses: cvmfs-contrib/github-action-cvmfs@10197e000cc0add8e54ac4fb73d3ed44e2de72b4
+    - uses: aidasoft/run-lcg-view@d8db17c61216548c9192889942d46ff2d7c3a3b6
       with:
         coverity-cmake-command: 'cmake -DDD4HEP_USE_GEANT4=ON -DBoost_NO_BOOST_CMAKE=ON -DDD4HEP_USE_LCIO=ON -DDD4HEP_USE_EDM4HEP=OFF -DDD4HEP_USE_TBB=ON -DDD4HEP_USE_HEPMC3=ON -DDD4HEP_BUILD_DEBUG=OFF -DBUILD_TESTING=ON -DDD4HEP_DEBUG_CMAKE=ON -DDD4HEP_USE_XERCESC=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 ..'
         coverity-project: 'AIDASoft%2FDD4hep'
         coverity-project-token: ${{ secrets.DD4HEP_COVERITY_TOKEN  }}
         github-pat: ${{ secrets.READ_COVERITY_IMAGE }}
-        release-platform: "LCG_102b/x86_64-centos7-gcc11-opt"
+        release-platform: "LCG_104a/x86_64-el9-gcc13-opt"

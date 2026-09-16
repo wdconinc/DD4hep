@@ -12,22 +12,17 @@
 //==========================================================================
 
 // Framework includes
-#include "DD4hep/IOV.h"
-#include "DD4hep/Printout.h"
-#include "DD4hep/Primitives.h"
+#include <DD4hep/IOV.h>
+#include <DD4hep/Printout.h>
+#include <DD4hep/Primitives.h>
 
 // C/C++ include files
 #include <climits>
-#include <iomanip>
 #include <cstring>
+#include <ctime>
 
-using namespace std;
 using namespace dd4hep;
 
-#if __cplusplus == 201402
-const IOV::Key_value_type IOV::MIN_KEY;
-const IOV::Key_value_type IOV::MAX_KEY;
-#endif
 
 #if 0
 /// Assignment operator
@@ -139,7 +134,7 @@ void IOV::move(IOV& from)   {
 }
 
 /// Create string representation of the IOV
-string IOV::str()  const  {
+std::string IOV::str()  const  {
   char text[256];
   if ( iovType )  {
     /// Need the long(x) casts for compatibility with Apple MAC
@@ -152,8 +147,8 @@ string IOV::str()  const  {
       char c_since[64], c_until[64];
       static constexpr const Key_value_type nil = 0;
       static const Key_value_type max_time = detail::makeTime(2099,12,31,24,59,59);
-      time_t since = std::min(std::max(keyData.first, nil), max_time);
-      time_t until = std::min(std::max(keyData.second,nil), max_time);
+      std::time_t since = std::min(std::max(keyData.first, nil), max_time);
+      std::time_t until = std::min(std::max(keyData.second,nil), max_time);
       struct tm* tm_since = ::gmtime_r(&since,&time_buff);
       struct tm* tm_until = ::gmtime_r(&until,&time_buff);
       if ( nullptr == tm_since || nullptr == tm_until )    {
@@ -164,7 +159,7 @@ string IOV::str()  const  {
       ::strftime(c_until,sizeof(c_until),"%d-%m-%Y %H:%M:%S", tm_until);
       ::snprintf(text,sizeof(text),"%s(%u):[%s - %s]",
                  iovType->name.c_str(), iovType->type,
-		 c_since, c_until);
+                 c_since, c_until);
     }
     else   {
       ::snprintf(text,sizeof(text),"%s(%u):[%ld-%ld]",

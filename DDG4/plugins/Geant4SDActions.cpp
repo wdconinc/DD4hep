@@ -12,11 +12,11 @@
 //==========================================================================
 
 // Framework include files
-#include "DDG4/Geant4SensDetAction.inl"
-#include "DDG4/Geant4FastSimHandler.h"
-#include "DDG4/Geant4EventAction.h"
-#include "G4OpticalPhoton.hh"
-#include "G4VProcess.hh"
+#include <DDG4/Geant4SensDetAction.inl>
+#include <DDG4/Geant4FastSimHandler.h>
+#include <DDG4/Geant4EventAction.h>
+#include <G4OpticalPhoton.hh>
+#include <G4VProcess.hh>
 
 
 /// Namespace for the AIDA detector description toolkit
@@ -27,7 +27,65 @@ namespace dd4hep {
 
     namespace {
       struct Geant4VoidSensitive {};
+
+      /// Common code to handle the creation of a calorimeter hit.
+      template <class HANDLER>
+      void handleCalorimeterHit (VolumeID cell,
+                                 const HitContribution& contrib,
+                                 Geant4HitCollection& coll,
+                                 const HANDLER& h,
+                                 const Geant4Sensitive& sd,
+                                 const Segmentation& segmentation)
+      {
+        typedef Geant4Calorimeter::Hit Hit;
+        Hit* hit = coll.findByKey<Hit>(cell);
+        if( !hit ) {
+          DDSegmentation::Vector3D pos;
+          Position global;
+          /// No volume manager
+          if( !sd.useVolumeManager() || !segmentation.isValid() )  {
+            pos    = h.avgPosition();
+            global = h.localToGlobal(pos);
+          }
+          else if( !segmentation.cellsSpanVolumes() ) {
+            // Convert the position relative to the local readout volume
+            // to a global position.
+            pos = segmentation.position(cell);
+            global = h.localToGlobal(pos);
+          }
+          else {
+            // The segmentation can gang together multiple volumes.
+            // In this case, we can't use the transformation we get from
+            // the step --- the volume that actually contains the hit
+            // may not be the same volume that the segmentation uses
+            // for the local coordinate system.  We need to get the
+            // actual volID used from the segmentation and then look
+            // it up the volume manager to get the proper transformation.
+            VolumeID volID = segmentation.volumeID(cell);
+            VolumeManager vman_glob = VolumeManager::getVolumeManager(sd.detectorDescription());
+            VolumeManager vman = vman_glob.subdetector(sd.id());
+            VolumeManagerContext* vc = vman.lookupContext(volID);
+            // explicit unit conversion; h.localToGlobal does it internally already
+            pos = segmentation.position(cell);
+            global = vc->localToWorld(Position(pos)) / dd4hep::mm;
+          }
+          hit = new Hit(global);
+          hit->cellID = cell;
+          coll.add(cell, hit);
+          Geant4TouchableHandler handler(h.touchable());
+          sd.printM2("%s> CREATE hit with deposit:%e MeV  Pos:%8.2f %8.2f %8.2f  %s  [%s]",
+                     sd.c_name(),contrib.deposit,pos.X,pos.Y,pos.Z,handler.path().c_str(),
+                     coll.GetName().c_str());
+          if ( 0 == hit->cellID )  { // for debugging only!
+            hit->cellID = cell;
+            sd.except("+++ Invalid CELL ID for hit!");
+          }
+        }
+        hit->truth.emplace_back(contrib);
+        hit->energyDeposit += contrib.deposit;
+      }
     }
+
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //               Geant4SensitiveAction<Geant4VoidSensitive>
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -49,14 +107,14 @@ namespace dd4hep {
     /// G4VSensitiveDetector interface: Method for generating hit(s) using the information of G4Step object.
     template <> bool
     Geant4SensitiveAction<Geant4VoidSensitive>::process(const G4Step*       /* step */,
-							G4TouchableHistory* /* hist */) {
+                                                        G4TouchableHistory* /* hist */) {
       return true;
     }
     
     /// GFLASH/FastSim interface: Method for generating hit(s) using the information of G4Step object.
     template <> bool
     Geant4SensitiveAction<Geant4VoidSensitive>::processFastSim(const Geant4FastSimSpot* /* spot */,
-							       G4TouchableHistory*      /* hist */) {
+                                                               G4TouchableHistory*      /* hist */) {
       return true;
     }
     typedef Geant4SensitiveAction<Geant4VoidSensitive> Geant4VoidSensitiveAction;
@@ -107,7 +165,7 @@ namespace dd4hep {
     /// GFlash/FastSim interface: Method for generating hit(s) using the information of Geant4FastSimSpot object.
     template <> bool
     Geant4SensitiveAction<Geant4Tracker>::processFastSim(const Geant4FastSimSpot* spot,
-							 G4TouchableHistory* /* hist */)
+                                                         G4TouchableHistory* /* hist */)
     {
       typedef Geant4Tracker::Hit Hit;
       Geant4FastSimHandler h(spot);
@@ -163,12 +221,12 @@ namespace dd4hep {
       double    hit_deposit  = contrib.deposit;
       Hit* hit = new Hit(contrib, hit_momentum, hit_deposit);
 
-      if (h.trackDef() != G4OpticalPhoton::OpticalPhotonDefinition()) {
+      if (h.trackDef() == G4OpticalPhoton::OpticalPhotonDefinition()) {
         step->GetTrack()->SetTrackStatus(fStopAndKill);
       }
       hit->cellID = cellID(step);
       if ( 0 == hit->cellID )  {
-        hit->cellID      = volumeID( step ) ;
+        hit->cellID = volumeID( step ) ;
         except("+++ Invalid CELL ID for hit!");
       }
       collection(m_collectionID)->add(hit);
@@ -183,7 +241,7 @@ namespace dd4hep {
     /// GFlash/FastSim interface: Method for generating hit(s) using the information of G4Step object.
     template <> bool
     Geant4SensitiveAction<Geant4OpticalTracker>::processFastSim(const Geant4FastSimSpot* spot,
-							        G4TouchableHistory* /* hist */)
+                                                                G4TouchableHistory* /* hist */)
     {
       typedef Geant4Tracker::Hit Hit;
       Geant4FastSimHandler h(spot);
@@ -250,32 +308,14 @@ namespace dd4hep {
         return true;
       }
 
-      //Hit* hit = coll->find<Hit>(CellIDCompare<Hit>(cell));
-      Hit* hit = coll->findByKey<Hit>(cell);
-      if ( !hit ) {
-        Geant4TouchableHandler handler(step);
-        DDSegmentation::Vector3D pos = m_segmentation.position(cell);
-        Position global = h.localToGlobal(pos);
-        hit = new Hit(global);
-        hit->cellID = cell;
-        coll->add(cell, hit);
-        printM2("%s> CREATE hit with deposit:%e MeV  Pos:%8.2f %8.2f %8.2f  %s  [%s]",
-                c_name(),contrib.deposit,pos.X,pos.Y,pos.Z,handler.path().c_str(),
-                coll->GetName().c_str());
-        if ( 0 == hit->cellID )  { // for debugging only!
-          hit->cellID = cellID(step);
-          except("+++ Invalid CELL ID for hit!");
-        }
-      }
-      hit->truth.emplace_back(contrib);
-      hit->energyDeposit += contrib.deposit;
+      handleCalorimeterHit(cell, contrib, *coll, h, *this, m_segmentation);
       mark(h.track);
       return true;
     }
     /// GFlash/FastSim interface: Method for generating hit(s) using the information of Geant4FastSimSpot object.
     template <> bool
     Geant4SensitiveAction<Geant4Calorimeter>::processFastSim(const Geant4FastSimSpot* spot,
-							     G4TouchableHistory* /* hist */)
+                                                             G4TouchableHistory* /* hist */)
     {
       typedef Geant4Calorimeter::Hit Hit;
       Geant4FastSimHandler h(spot);
@@ -294,24 +334,7 @@ namespace dd4hep {
         std::cout << out.str();
         return true;
       }
-      Hit* hit = coll->findByKey<Hit>(cell);
-      if ( !hit ) {
-	Geant4TouchableHandler   handler(h.touchable());
-        DDSegmentation::Vector3D pos = m_segmentation.position(cell);
-        Position global = h.localToGlobal(pos);
-        hit = new Hit(global);
-        hit->cellID = cell;
-        coll->add(cell, hit);
-        printM2("%s> CREATE hit with deposit:%e MeV  Pos:%8.2f %8.2f %8.2f  %s  [%s]",
-                c_name(),contrib.deposit,pos.X,pos.Y,pos.Z,handler.path().c_str(),
-                coll->GetName().c_str());
-        if ( 0 == hit->cellID )  { // for debugging only!
-          hit->cellID = cellID(h.touchable(), h.avgPositionG4());
-          except("+++ Invalid CELL ID for hit!");
-        }
-      }
-      hit->truth.emplace_back(contrib);
-      hit->energyDeposit += contrib.deposit;
+      handleCalorimeterHit(cell, contrib, *coll, h, *this, m_segmentation);
       mark(h.track);
       return true;
     }
@@ -380,7 +403,7 @@ namespace dd4hep {
     /// GFlash/FastSim interface: Method for generating hit(s) using the information of Geant4FastSimSpot object.
     template <> bool
     Geant4SensitiveAction<Geant4OpticalCalorimeter>::processFastSim(const Geant4FastSimSpot* spot,
-								    G4TouchableHistory* /* hist */)
+                                                                    G4TouchableHistory* /* hist */)
     {
       typedef Geant4Calorimeter::Hit Hit;
       Geant4FastSimHandler   h(spot);
@@ -462,23 +485,7 @@ namespace dd4hep {
         std::cout << out.str();
         return true;
       }
-      Hit* hit = coll->findByKey<Hit>(cell);
-      if ( !hit ) {
-        Geant4TouchableHandler handler(step);
-        DDSegmentation::Vector3D pos = m_segmentation.position(cell);
-        Position global = h.localToGlobal(pos);
-        hit = new Hit(global);
-        hit->cellID = cell;
-        coll->add(cell, hit);
-        printM2("CREATE hit with deposit:%e MeV  Pos:%8.2f %8.2f %8.2f  %s",
-                contrib.deposit,pos.X,pos.Y,pos.Z,handler.path().c_str());
-        if ( 0 == hit->cellID )  { // for debugging only!
-          hit->cellID = cellID(step);
-          except("+++ Invalid CELL ID for hit!");
-        }
-      }
-      hit->truth.emplace_back(contrib);
-      hit->energyDeposit += contrib.deposit;
+      handleCalorimeterHit(cell, contrib, *coll, h, *this, m_segmentation);
       mark(h.track);
       return true;
     }
@@ -486,7 +493,7 @@ namespace dd4hep {
     /// GFlash/FastSim interface: Method for generating hit(s) using the information of Geant4FastSimSpot object.
     template <> bool
     Geant4SensitiveAction<Geant4ScintillatorCalorimeter>::processFastSim(const Geant4FastSimSpot* spot,
-									 G4TouchableHistory* /* hist */)
+                                                                         G4TouchableHistory* /* hist */)
     {
       typedef Geant4Calorimeter::Hit Hit;
       Geant4FastSimHandler h(spot);
@@ -505,23 +512,7 @@ namespace dd4hep {
         std::cout << out.str();
         return true;
       }
-      Hit* hit = coll->findByKey<Hit>(cell);
-      if ( !hit ) {
-	Geant4TouchableHandler   handler(h.touchable());
-        DDSegmentation::Vector3D pos = m_segmentation.position(cell);
-        Position global = h.localToGlobal(pos);
-        hit = new Hit(global);
-        hit->cellID = cell;
-        coll->add(cell, hit);
-        printM2("CREATE hit with deposit:%e MeV  Pos:%8.2f %8.2f %8.2f  %s",
-                contrib.deposit,pos.X,pos.Y,pos.Z,handler.path().c_str());
-        if ( 0 == hit->cellID )  { // for debugging only!
-          hit->cellID = cellID(h.touchable(), h.avgPositionG4());
-          except("+++ Invalid CELL ID for hit!");
-        }
-      }
-      hit->truth.emplace_back(contrib);
-      hit->energyDeposit += contrib.deposit;
+      handleCalorimeterHit(cell, contrib, *coll, h, *this, m_segmentation);
       mark(h.track);
       return true;
     }
@@ -577,13 +568,13 @@ namespace dd4hep {
       }
       void start(const G4Step* step, const G4StepPoint* point)   {
         pre.storePoint(step,point);
-	start_collecting(step->GetTrack());
-	firstSpotVolume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
+        start_collecting(step->GetTrack());
+        firstSpotVolume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
       }
       void start(const Geant4FastSimSpot* spot)   {
         pre.storePoint(spot);
-	start_collecting(spot->primary);
-	firstSpotVolume = spot->volume();
+        start_collecting(spot->primary);
+        firstSpotVolume = spot->volume();
       }
 
       /// Update energy and track information during hit info accumulation
@@ -604,11 +595,11 @@ namespace dd4hep {
       }
       void update(const Geant4StepHandler& h) {
         post.storePoint(h.step, h.post);
-	update_collected_hit(h.preTouchable(), h.avgPositionG4()); // Compute cellID
+        update_collected_hit(h.preTouchable(), h.avgPositionG4()); // Compute cellID
       }
       void update(const Geant4FastSimHandler& h)   {
         post.storePoint(h.spot);
-	update_collected_hit(h.touchable(), h.avgPositionG4());       // Compute cellID
+        update_collected_hit(h.touchable(), h.avgPositionG4());       // Compute cellID
       }
 
       /// Clear collected information and restart for new hit
@@ -620,7 +611,7 @@ namespace dd4hep {
         current = -1;
         combined = 0;
         cell = 0;
-	firstSpotVolume = nullptr;
+        firstSpotVolume = nullptr;
       }
 
       /// Helper function to decide if the hit has to be extracted and saved in the collection
@@ -653,10 +644,8 @@ namespace dd4hep {
       /// Method for generating hit(s) using the information of G4Step object.
       G4bool process(const G4Step* step, G4TouchableHistory* ) {
         Geant4StepHandler h(step);
-
-	// std::cout << " process called - pre pos: " << h.prePos() << " post pos " << h.postPos() 
-	// 	  << " edep: " << h.deposit() << std::endl ;
-
+        // std::cout << " process called - pre pos: " << h.prePos() << " post pos " << h.postPos() 
+        //           << " edep: " << h.deposit() << std::endl ;
         void *prePV = h.volume(h.pre), *postPV = h.volume(h.post);
 
         Geant4HitCollection* coll = sensitive->collection(0);
@@ -689,7 +678,7 @@ namespace dd4hep {
 
       /// Method for generating hit(s) using the information of fast simulation spot object.
       G4bool process(const Geant4FastSimSpot* spot, G4TouchableHistory* ) {
-	Geant4FastSimHandler h(spot);
+        Geant4FastSimHandler h(spot);
         G4VPhysicalVolume*   prePV = firstSpotVolume, *postPV = h.volume();
         Geant4HitCollection* coll  = sensitive->collection(0);
         /// If we are handling a new track, then store the content of the previous one.
@@ -716,7 +705,7 @@ namespace dd4hep {
         else if ( h.track->GetTrackStatus() == fStopAndKill ) {
           extractHit(coll);
         }
-	return true;
+        return true;
       }
 
       /// Post-event action callback
@@ -760,7 +749,7 @@ namespace dd4hep {
     /// GFlash/FastSim interface: Method for generating hit(s) using the information of Geant4FastSimSpot object.
     template <> bool
     Geant4SensitiveAction<TrackerCombine>::processFastSim(const Geant4FastSimSpot* spot,
-							  G4TouchableHistory*      history)    {
+                                                          G4TouchableHistory*      history)    {
       return m_userData.process(spot, history);
     }
 
@@ -773,7 +762,7 @@ namespace dd4hep {
 
 using namespace dd4hep::sim;
 
-#include "DDG4/Factories.h"
+#include <DDG4/Factories.h>
 // Special void entry point
 DECLARE_GEANT4SENSITIVE(Geant4VoidSensitiveAction)
 // Standard factories used for simulation

@@ -1,13 +1,22 @@
-/*
- * CartesianGrid.cpp
- *
- *  Created on: Jun 28, 2013
- *      Author: Christian Grefe, CERN
- */
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//  Created: Jun 28, 2013
+//  Author:  Christian Grefe, CERN
+//
+//==========================================================================
 
-#include "DDSegmentation/CartesianGrid.h"
+/// Framework include files
+#include <DDSegmentation/CartesianGrid.h>
 
 namespace dd4hep {
+  
   namespace DDSegmentation {
 
     /// Default constructor used by derived classes passing the encoding string

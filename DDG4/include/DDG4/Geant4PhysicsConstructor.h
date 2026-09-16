@@ -17,11 +17,11 @@
 
 
 // Framework include files
-#include "DDG4/Geant4PhysicsList.h"
+#include <DDG4/Geant4PhysicsList.h>
 
 // Geant4 include files
-#include "G4ParticleTable.hh"
-#include "G4VPhysicsConstructor.hh"
+#include <G4ParticleTable.hh>
+#include <G4VPhysicsConstructor.hh>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -40,7 +40,7 @@ namespace dd4hep {
      * Geant4 does not like the G4VPhysicsConstructor constructor
      * to be called before a physics list is attached to the
      * G4RunManager. We overcome this problem through the delayed
-     * instantiation of a helper object made availible to the client.
+     * instantiation of a helper object made available to the client.
      *
      *  \author  M.Frank
      *  \version 1.0
@@ -78,7 +78,7 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4PhysicsConstructor();
       /// constructPhysics callback
-      virtual void constructPhysics(G4VModularPhysicsList* physics);
+      virtual void constructPhysics(G4VModularPhysicsList* physics)  override;
       /// Callback to construct processes (uses the G4 particle table)
       virtual void constructProcess(Constructor& ctor);
       /// Callback to construct particles

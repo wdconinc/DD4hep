@@ -1,3 +1,13 @@
+//==========================================================================
+//  AIDA Detector description implementation 
+//--------------------------------------------------------------------------
+// Copyright (C) Organisation europeenne pour la Recherche nucleaire (CERN)
+// All rights reserved.
+//
+// For the licensing terms see $DD4hepINSTALL/LICENSE.
+// For the list of contributors see $DD4hepINSTALL/doc/CREDITS.
+//
+//==========================================================================
 /*
  * PolarGridRPhi.cpp
  *
@@ -5,7 +15,7 @@
  *      Author: Marko Petric
  */
 
-#include "DDSegmentation/PolarGridRPhi.h"
+#include <DDSegmentation/PolarGridRPhi.h>
 
 namespace dd4hep {
 namespace DDSegmentation {
@@ -71,20 +81,10 @@ Vector3D PolarGridRPhi::position(const CellID& cID) const {
 
 std::vector<double> PolarGridRPhi::cellDimensions(const CellID& cID) const {
   const double rPhiSize = binToPosition(_decoder->get(cID,_rId), _gridSizeR, _offsetR)*_gridSizePhi;
-#if __cplusplus >= 201103L
   return {_gridSizeR, rPhiSize};
-#else
-  std::vector<double> cellDims(2,0.0);
-  cellDims[0] = _gridSizeR;
-  cellDims[1] = rPhiSize;
-  return cellDims;
-#endif
 }
 
 
 } /* namespace DDSegmentation */
 } /* namespace dd4hep */
 
-// This is done DDCore/src/plugins/ReadoutSegmentations.cpp so the plugin is not part of libDDCore
-// needs also #include "DD4hep/Factories.h"
-// DECLARE_SEGMENTATION(PolarGridRPhi,create_segmentation<dd4hep::DDSegmentation::PolarGridRPhi>)

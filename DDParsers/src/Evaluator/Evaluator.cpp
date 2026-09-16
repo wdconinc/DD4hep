@@ -29,16 +29,6 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
-// fallthrough only exists from c++17
-#if defined __has_cpp_attribute
-    #if __has_cpp_attribute(fallthrough)
-        #define ATTR_FALLTHROUGH [[fallthrough]]
-    #else
-        #define ATTR_FALLTHROUGH
-    #endif
-#else
-    #define ATTR_FALLTHROUGH
-#endif
 
 //---------------------------------------------------------------------------
 #define EVAL dd4hep::tools::Evaluator
@@ -54,7 +44,7 @@ namespace  {
 
     explicit Item()              : what(UNKNOWN),   variable(0),expression(), function(0) {}
     explicit Item(double x)      : what(VARIABLE),  variable(x),expression(), function(0) {}
-    explicit Item(std::string x) : what(EXPRESSION),variable(0),expression(x),function(0) {}
+    explicit Item(std::string x) : what(EXPRESSION),variable(0),expression(std::move(x)),function(0) {}
     explicit Item(void  *x)      : what(FUNCTION),  variable(0),expression(), function(x) {}
   };
 
@@ -410,7 +400,7 @@ static int maker(int op, std::stack<double> & val)
     errno = 0;
     val.top() = pow(val1,val2);
     if (errno == 0) return EVAL::OK;
-    ATTR_FALLTHROUGH;
+    [[fallthrough]];
   default:
     return EVAL::ERROR_CALCULATION_ERROR;
   }
@@ -545,7 +535,7 @@ static int engine(char const* begin, char const* end, double & result,
     iWhat = SyntaxTable[iPrev][iCur];
     iPrev = iCur;
     switch (iWhat) {
-    case 0:                             // systax error
+    case 0:                             // syntax error
       EVAL_EXIT( EVAL::ERROR_SYNTAX_ERROR, pointer );
     case 1:                             // operand: number, variable, function
       EVAL_STATUS = operand(pointer, end, value, pointer, dictionary);
@@ -659,7 +649,7 @@ static int setItem(const char * prefix, const char * name,
     os << prefix << "invalid name : " << opt;
     return;
   case EVAL::ERROR_SYNTAX_ERROR:
-    os << prefix << "systax error"        ;
+    os << prefix << "syntax error"        ;
     return;
   case EVAL::ERROR_UNPAIRED_PARENTHESIS:
     os << prefix << "unpaired parenthesis";
@@ -757,14 +747,14 @@ int Evaluator::Object::setEnviron(const char* name, const char* value)  {
   item.variable = 0;
   dic_type::iterator iter = imp->theDictionary.find(item_name);
   if (iter != imp->theDictionary.end()) {
-    iter->second = item;
+    iter->second = std::move(item);
     if (item_name == name) {
       return EVAL::WARNING_EXISTING_VARIABLE;
     }else{
       return EVAL::WARNING_EXISTING_FUNCTION;
     }
   }else{
-    imp->theDictionary[item_name] = item;
+    imp->theDictionary[item_name] = std::move(item);
     return EVAL::OK;
   }
 }
@@ -807,8 +797,7 @@ int Evaluator::Object::setVariable(const char * name, const char * expression)  
 
 void Evaluator::Object::setVariableNoLock(const char * name, double value)  {
   std::string item_name = name;
-  Item item(value);
-  imp->theDictionary[item_name] = item;
+  imp->theDictionary[item_name] = Item(value);
 }
 
 int Evaluator::Object::setFunction(const char * name,double (*fun)())   {
@@ -837,14 +826,12 @@ int Evaluator::Object::setFunction(const char * name, double (*fun)(double,doubl
 
 void Evaluator::Object::setFunctionNoLock(const char * name,double (*fun)(double))   {
   std::string item_name = "1"+std::string(name);
-  Item item(FCN(fun).ptr);
-  imp->theDictionary[item_name] = item;
+  imp->theDictionary[item_name] = Item(FCN(fun).ptr);
 }
 
 void Evaluator::Object::setFunctionNoLock(const char * name, double (*fun)(double,double))  {
   std::string item_name = "2"+std::string(name);
-  Item item(FCN(fun).ptr);
-  imp->theDictionary[item_name] = item;
+  imp->theDictionary[item_name] = Item(FCN(fun).ptr);
 }
 
 

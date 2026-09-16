@@ -16,13 +16,14 @@
 #define DD4HEP_CARTESIANSTRIPZ_H 1
 
 // Framework include files
-#include "DD4hep/Segmentations.h"
+#include <DD4hep/Segmentations.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
+
 /// Namespace for base segmentations
 namespace DDSegmentation {
-class CartesianStripZ;
+  class CartesianStripZ;
 }
 
 /// We need some abbreviation to make the code more readable.
@@ -42,7 +43,7 @@ typedef Handle<SegmentationWrapper<DDSegmentation::CartesianStripZ> > CartesianS
  *  fiddled with the handled object directly.....
  *
  *  Note:
- *  The handle base corrsponding to this object in for
+ *  The handle base corresponding to this object in for
  *  conveniance reasons instantiated in dd4hep/src/Segmentations.cpp.
  *
  *  \author  M.Frank
@@ -87,7 +88,7 @@ class CartesianStripZ : public CartesianStripZHandle {
         Returns a vector of the cellDimensions of the given cell ID
         \param cellID is ignored as all cells have the same dimension
         \return std::vector<double> size 1:
-        -# size in x
+        -# size in z
     */
     std::vector<double> cellDimensions(const CellID& cellID) const;
 };

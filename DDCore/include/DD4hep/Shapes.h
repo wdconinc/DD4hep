@@ -21,6 +21,7 @@
 
 // C/C++ include files
 #include <vector>
+#include <string>
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -46,9 +47,7 @@
 #include <TGeoCompositeShape.h>
 #include <TGeoShapeAssembly.h>
 #include <TGeoPara.h>
-#if ROOT_VERSION_CODE > ROOT_VERSION(6,21,0)
 #include <TGeoTessellated.h>
-#endif
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -154,7 +153,7 @@ namespace dd4hep {
     /// Direct assignment using the implementation pointer
     Solid_type(T* p) : Handle<T>(p) {  }
     /// Move Constructor from handle
-    Solid_type(Handle<T>&& e) : Handle<T>(e) {  }
+    Solid_type(Handle<T>&& e) : Handle<T>(std::move(e)) {  }
     /// Copy Constructor from handle
     Solid_type(const Handle<T>& e) : Handle<T>(e) {  }
     /// Constructor to be used when passing an already created object: need to check pointers
@@ -767,7 +766,7 @@ namespace dd4hep {
   
   /// Class describing a truncated tube shape (CMS'ism)
   /**
-   *   No real correspondance to TGeo. In principle it's a boolean Solid based on a tube.
+   *   No real correspondence to TGeo. In principle it's a boolean Solid based on a tube.
    *   \see http://cmssdt.cern.ch/lxr/source/DetectorDescription/Core/src/TruncTubs.h
    *
    *   The Solid::dimension() and Solid::setDimension() calls for the TruncatedTube
@@ -951,11 +950,6 @@ namespace dd4hep {
                 double zneg, double zpos, int nsegments, double totphi)
     {  this->make(nam, twist_angle, rmin, rmax, zneg, zpos, nsegments, totphi);  }
 
-    /// Constructor to create a new identified tube object with attribute initialization
-    template <typename A, typename B, typename DZ>
-    TwistedTube(const std::string& nam, const A& a, const B& b, const DZ& dz)
-    {  this->make(nam, _toDouble(a), _toDouble(b), _toDouble(dz));   }
-
     /// Move Assignment operator
     TwistedTube& operator=(TwistedTube&& copy) = default;
     /// Copy Assignment operator
@@ -1048,7 +1042,7 @@ namespace dd4hep {
 
   /// Class describing a pseudo trap shape (CMS'ism)
   /**
-   *   No real correspondance to TGeo. In principle it's a boolean Solid based on a tube.
+   *   No real correspondence to TGeo. In principle it's a boolean Solid based on a tube.
    *   \see http://cmssdt.cern.ch/lxr/source/DetectorDescription/Core/src/PseudoTrap.h
    *
    *   The Solid::dimension() and Solid::setDimension() calls for the PseudoTrap
@@ -1762,7 +1756,6 @@ namespace dd4hep {
     }
   };
 
-#if ROOT_VERSION_CODE > ROOT_VERSION(6,21,0)
   /// Class describing a tessellated shape
   /**
    *   For any further documentation please see the following ROOT documentation:
@@ -1833,7 +1826,6 @@ namespace dd4hep {
     /// Access a single vertex from the shape
     const Vertex& vertex(int index)    const;
   };
-#endif
   
   /// Base class describing boolean (=union,intersection,subtraction) solids
   /**
@@ -2012,6 +2004,5 @@ namespace dd4hep {
     /// Copy Assignment operator
     IntersectionSolid& operator=(const IntersectionSolid& copy) = default;
   };
-
-}         /* End namespace dd4hep             */
+}      /* End namespace dd4hep             */
 #endif // DD4HEP_SHAPES_H

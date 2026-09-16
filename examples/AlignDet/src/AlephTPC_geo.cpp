@@ -12,8 +12,11 @@
 //==========================================================================
 
 // Framework include files
-#include "DD4hep/DetFactoryHelper.h"
-#include "TGeoArb8.h"
+#include <DD4hep/DetFactoryHelper.h>
+#include <DD4hep/DD4hepUnits.h>
+#include <TGeoArb8.h>
+
+// C/C++ include files
 #include <iomanip>
 
 using namespace std;
@@ -43,6 +46,7 @@ static Ref_t create_element(Detector& description, xml_h e, SensitiveDetector se
   xml_comp_t  x_outer     = x_det.child(_Unicode(outer_wall));
   xml_comp_t  x_gas       = x_det.child(_Unicode(gas));
   xml_comp_t  x_cathode   = x_det.child(_Unicode(cathode));
+  xml_comp_t  x_sens      = x_det.child(_Unicode(sensitive), false);
   
   PlacedVolume pv;
 
@@ -50,10 +54,12 @@ static Ref_t create_element(Detector& description, xml_h e, SensitiveDetector se
   cylinder_t env        = { x_envelope.inner_r(), x_envelope.outer_r(), x_envelope.zhalf() };
   cylinder_t inner_wall = { x_inner.inner_r(), x_inner.inner_r()+x_inner.thickness(), env.zhalf };
   cylinder_t outer_wall = { x_outer.outer_r()-x_outer.thickness(), x_outer.outer_r(), env.zhalf };
-  cylinder_t gas        = { inner_wall.outer, outer_wall.inner, x_gas.zhalf() };
+  cylinder_t gas        = { inner_wall.outer+5*dd4hep::cm, outer_wall.inner-5*dd4hep::cm, x_gas.zhalf()-5*dd4hep::cm };
 
   // TPC sensitive detector
-  sens_det.setType("tracker");
+  string sens_typ = x_sens.ptr() ? x_sens.typeStr("tracker") : string("tracker");
+  sens_det.setType(sens_typ);
+  cout << "Detector: " << name << " id: " << x_det.id() << " Sensitive type: " << sens_typ << endl;
 
   // the TPC mother volume
   //Tube    envTub(env.inner,env.outer,env.zhalf);
@@ -80,16 +86,15 @@ static Ref_t create_element(Detector& description, xml_h e, SensitiveDetector se
   outerVol.setVisAttributes(description.visAttributes(x_outer.visStr()));
   envVol.placeVolume(outerVol);
 
-#if 0
   // TPC gas chamber envelope
   Material gasMat = description.material(x_gas.materialStr());
   Tube     gasTub(gas.inner,gas.outer,gas.zhalf);
   Volume   gasVol(name+"_chamber",gasTub,gasMat);
   gasVol.setVisAttributes(description.visAttributes(x_gas.visStr()));
-  //gasVol.setVisAttributes(description.invisible());
-  envVol.placeVolume(gasVol);
-#endif
-  
+  gasVol.setSensitiveDetector(sens_det);
+  pv = envVol.placeVolume(gasVol);
+  pv.addPhysVolID("layer", 10);
+
   // TPC HV plane
   Tube    hvTub(gas.inner,gas.outer,x_cathode.thickness()/2);
   Volume  hvVol(name+"_cathode",hvTub,description.material(x_cathode.materialStr()));
@@ -133,7 +138,7 @@ static Ref_t create_element(Detector& description, xml_h e, SensitiveDetector se
   DetElement detB(sdet,name+"_SideB",2);
   detB.setPlacement(pv);
 
-  //envVol.setVisAttributes(description.invisible());
+  envVol.setVisAttributes(description.visAttributes(x_det.visStr()));
 
   int sector_count = 0;
   for(xml_coll_t c(x_sectors,_Unicode(sector)); c; ++c)  {
@@ -144,158 +149,161 @@ static Ref_t create_element(Detector& description, xml_h e, SensitiveDetector se
     //const int  padrows = x_sector.attr<int>(_Unicode(padrows));
     //const int  trgrows = x_sector.attr<int>(_Unicode(trgrows));
     //const int  nwires  = x_sector.attr<int>(_Unicode(numwires));
-    const int  num_sectors = sector_type == 'K' ? 6 : 12;
-    const double shift     = sector_type == 'K' ? 0 : M_PI/num_sectors;
-    const double dphi      = 2*M_PI/double(num_sectors);
-    string sector_vis      = x_sector.visStr();
+    const int    num_sectors = sector_type == 'K' ? 6 : 12;
+    const double shift       = sector_type == 'K' ? 0 : M_PI/num_sectors;
+    const double dphi        = 2*M_PI/double(num_sectors);
+    string sector_vis        = x_sector.visStr();
     Solid tm;
     double z_start = 0.0;
     Assembly sector(name+"_sector_"+sector_type);
     int i_layer = 0;
-    for(xml_coll_t l(x_sectors.child(_Unicode(layers)),_Unicode(layer)); l; ++l, ++i_layer)  {
+    for( xml_coll_t l(x_sectors.child(_Unicode(layers)),_Unicode(layer)); l; ++l, ++i_layer)  {
       xml_comp_t x_layer = l;
       double layer_thickness = x_layer.thickness();
       string layer_vis = x_layer.visStr();
       string layer_mat = x_layer.materialStr();
-      double gap_half = 1;
-      double rmin = rmin0;
-      double rmax = rmax0;
+      double gap_half  = 1;
+      double rmin      = rmin0;
+      double rmax      = rmax0;
 
       if ( layer_vis.empty() ) layer_vis = sector_vis;
 
       if ( sector_type == 'K' )  {
-	double angle = M_PI/12.0;
-	double angle1 = std::tan(angle);
-	double v[8][2];
-	v[0][0] = rmin;
-	v[0][1] = 0;
-	v[1][0] = rmin;
-	v[1][1] = rmin*angle1;
-	v[2][0] = rmax;
-	v[2][1] = rmax*angle1;
-	v[3][0] = rmax;
-	v[3][1] = 0;
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
-	EightPointSolid upper(layer_thickness/2,&v[0][0]);
+        double angle = M_PI/12.0;
+        double angle1 = std::tan(angle);
+        double v[8][2];
+        v[0][0] = rmin;
+        v[0][1] = 0;
+        v[1][0] = rmin;
+        v[1][1] = rmin*angle1;
+        v[2][0] = rmax;
+        v[2][1] = rmax*angle1;
+        v[3][0] = rmax;
+        v[3][1] = 0;
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        EightPointSolid upper(layer_thickness/2,&v[0][0]);
 
-	v[0][0] = rmin;
-	v[0][1] = 0;
-	v[1][0] = rmax;
-	v[1][1] = 0;
-	v[2][0] = rmax;
-	v[2][1] = -rmax*angle1;
-	v[3][0] = rmin;
-	v[3][1] = -rmin*angle1;
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
-	EightPointSolid lower(layer_thickness/2,&v[0][0]);
+        v[0][0] = rmin;
+        v[0][1] = 0;
+        v[1][0] = rmax;
+        v[1][1] = 0;
+        v[2][0] = rmax;
+        v[2][1] = -rmax*angle1;
+        v[3][0] = rmin;
+        v[3][1] = -rmin*angle1;
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        EightPointSolid lower(layer_thickness/2,&v[0][0]);
 
-	v[0][0] = rmin;
-	v[0][1] = gap_half;
-	v[1][0] = rmin;
-	v[1][1] = rmin*angle1;
-	v[2][0] = rmax;
-	v[2][1] = rmax*angle1;
-	v[3][0] = rmax;
-	v[3][1] = gap_half;
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
-	EightPointSolid top(layer_thickness/2,&v[0][0]);
+        v[0][0] = rmin;
+        v[0][1] = gap_half;
+        v[1][0] = rmin;
+        v[1][1] = rmin*angle1;
+        v[2][0] = rmax;
+        v[2][1] = rmax*angle1;
+        v[3][0] = rmax;
+        v[3][1] = gap_half;
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        EightPointSolid top(layer_thickness/2,&v[0][0]);
 
-	v[0][0] = rmin;
-	v[0][1] = -gap_half;
-	v[1][0] = rmax;
-	v[1][1] = -gap_half;
-	v[2][0] = rmax;
-	v[2][1] = -rmax*angle1;
-	v[3][0] = rmin;
-	v[3][1] = -rmin*angle1;
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
-	EightPointSolid bottom(layer_thickness/2,&v[0][0]);
+        v[0][0] = rmin;
+        v[0][1] = -gap_half;
+        v[1][0] = rmax;
+        v[1][1] = -gap_half;
+        v[2][0] = rmax;
+        v[2][1] = -rmax*angle1;
+        v[3][0] = rmin;
+        v[3][1] = -rmin*angle1;
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        EightPointSolid bottom(layer_thickness/2,&v[0][0]);
 
-	UnionSolid u(UnionSolid(upper,lower),top,Rotation3D(RotationZ(2*(angle))));
-	tm = UnionSolid(u,bottom,Rotation3D(RotationZ(-2*(angle))));
+        UnionSolid u(UnionSolid(upper,lower),top,Rotation3D(RotationZ(2*(angle))));
+        tm = UnionSolid(u,bottom,Rotation3D(RotationZ(-2*(angle))));
       }
       else   {
-	double overlap = sector_type=='W' ? 20 : -20;
-	double angle  = M_PI/12.0;
-	double angle1 = std::tan(angle);
-	double v[8][2], dr = 0;
+        double overlap = sector_type=='W' ? 20 : -20;
+        double angle  = M_PI/12.0;
+        double angle1 = std::tan(angle);
+        double v[8][2], dr = 0;
 
-	if ( sector_type == 'W' )  {
-	  rmax += overlap*std::tan(angle/2);
-	  dr    = overlap*std::tan(angle/2);
-	}
+        if ( sector_type == 'W' )  {
+          rmax += overlap*std::tan(angle/2);
+          dr    = overlap*std::tan(angle/2);
+        }
 
-	v[0][0] = rmin;
-	v[0][1] = -rmin*angle1+gap_half;
-	v[1][0] = rmin;
-	v[1][1] = rmin*angle1-gap_half;
-	v[2][0] = rmax;
-	v[2][1] = rmax*angle1-gap_half;
-	v[3][0] = rmax;
-	v[3][1] = -rmax*angle1+gap_half;
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
-	printCoordinates(sector_type,"t2:",v);
-	EightPointSolid sectorSolid(layer_thickness/2,&v[0][0]);
+        v[0][0] = rmin;
+        v[0][1] = -rmin*angle1+gap_half;
+        v[1][0] = rmin;
+        v[1][1] = rmin*angle1-gap_half;
+        v[2][0] = rmax;
+        v[2][1] = rmax*angle1-gap_half;
+        v[3][0] = rmax;
+        v[3][1] = -rmax*angle1+gap_half;
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        printCoordinates(sector_type,"t2:",v);
+        EightPointSolid sectorSolid(layer_thickness/2,&v[0][0]);
 
-	if ( sector_type=='W' )  {
-	  v[0][0] = (rmax+rmin)/2-dr;
-	  v[0][1] = (rmax+rmin)/2*angle1-gap_half;
-	  v[1][0] = rmax+0.0001;
-	  v[1][1] = rmax*angle1-gap_half;
-	  v[2][0] = rmax+0.0001;
-	  v[2][1] = (rmax-overlap)*angle1-gap_half;
-	  v[3][0] = (rmax+rmin)/2-dr;
-	  v[3][1] = (rmax+rmin-overlap)/2*angle1-gap_half;
-	}
-	else  {
-	  v[0][0] = (rmax+rmin)/2-dr;
-	  v[0][1] = (rmax+rmin)/2*angle1-gap_half;
-	  v[3][0] = rmax+0.0001;
-	  v[3][1] = rmax*angle1-gap_half;
-	  v[2][0] = rmax+0.0001;
-	  v[2][1] = (rmax-overlap)*angle1-gap_half;
-	  v[1][0] = (rmax+rmin)/2-dr;
-	  v[1][1] = (rmax+rmin-overlap)/2*angle1-gap_half;
-	}
-	printCoordinates(sector_type,"upper_boolean:",v);
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
-	EightPointSolid upper_boolean((sector_type == 'W' ? 1.1 : 1.0) * layer_thickness/2,&v[0][0]);
+        if ( sector_type=='W' )  {
+          v[0][0] = (rmax+rmin)/2-dr;
+          v[0][1] = (rmax+rmin)/2*angle1-gap_half;
+          v[1][0] = rmax+0.0001;
+          v[1][1] = rmax*angle1-gap_half;
+          v[2][0] = rmax+0.0001;
+          v[2][1] = (rmax-overlap)*angle1-gap_half;
+          v[3][0] = (rmax+rmin)/2-dr;
+          v[3][1] = (rmax+rmin-overlap)/2*angle1-gap_half;
+        }
+        else  {
+          v[0][0] = (rmax+rmin)/2-dr;
+          v[0][1] = (rmax+rmin)/2*angle1-gap_half;
+          v[3][0] = rmax+0.0001;
+          v[3][1] = rmax*angle1-gap_half;
+          v[2][0] = rmax+0.0001;
+          v[2][1] = (rmax-overlap)*angle1-gap_half;
+          v[1][0] = (rmax+rmin)/2-dr;
+          v[1][1] = (rmax+rmin-overlap)/2*angle1-gap_half;
+        }
+        printCoordinates(sector_type,"upper_boolean:",v);
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        EightPointSolid upper_boolean((sector_type == 'W' ? 1.1 : 1.0) * layer_thickness/2,&v[0][0]);
 
-	if ( sector_type=='W' )  {
-	  v[0][0] = (rmax+rmin)/2-dr;
-	  v[0][1] = -((rmax+rmin)/2*angle1-gap_half);
-	  v[1][0] = (rmax+rmin)/2-dr;
-	  v[1][1] = -((rmax+rmin-overlap)/2*angle1-gap_half);
-	  v[2][0] = rmax+0.0001;
-	  v[2][1] = -((rmax-overlap)*angle1-gap_half);
-	  v[3][0] = rmax+0.0001;
-	  v[3][1] = -(rmax*angle1-gap_half);
-	}
-	else  {
-	  v[0][0] = (rmax+rmin)/2-dr;
-	  v[0][1] = -((rmax+rmin)/2*angle1-gap_half);
-	  v[3][0] = (rmax+rmin)/2-dr;
-	  v[3][1] = -((rmax+rmin-overlap)/2*angle1-gap_half);
-	  v[2][0] = rmax+0.0001;
-	  v[2][1] = -((rmax-overlap)*angle1-gap_half);
-	  v[1][0] = rmax+0.0001;
-	  v[1][1] = -(rmax*angle1-gap_half);
-	}
-	printCoordinates(sector_type,"lower_boolean:",v);
-	::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
+        if ( sector_type=='W' )  {
+          v[0][0] = (rmax+rmin)/2-dr;
+          v[0][1] = -((rmax+rmin)/2*angle1-gap_half);
+          v[1][0] = (rmax+rmin)/2-dr;
+          v[1][1] = -((rmax+rmin-overlap)/2*angle1-gap_half);
+          v[2][0] = rmax+0.0001;
+          v[2][1] = -((rmax-overlap)*angle1-gap_half);
+          v[3][0] = rmax+0.0001;
+          v[3][1] = -(rmax*angle1-gap_half);
+        }
+        else  {
+          v[0][0] = (rmax+rmin)/2-dr;
+          v[0][1] = -((rmax+rmin)/2*angle1-gap_half);
+          v[3][0] = (rmax+rmin)/2-dr;
+          v[3][1] = -((rmax+rmin-overlap)/2*angle1-gap_half);
+          v[2][0] = rmax+0.0001;
+          v[2][1] = -((rmax-overlap)*angle1-gap_half);
+          v[1][0] = rmax+0.0001;
+          v[1][1] = -(rmax*angle1-gap_half);
+        }
+        printCoordinates(sector_type,"lower_boolean:",v);
+        ::memcpy(&v[4][0],&v[0][0],8*sizeof(double));
 
-	// For W sectors make the subtraction solid slightly thicker to ensure everything is cut off
-	// and no left-overs from numerical precision are left.
-	EightPointSolid lower_boolean((sector_type == 'W' ? 1.1 : 1.0) * layer_thickness/2,&v[0][0]);
-	if ( sector_type == 'W' )
-	  tm = SubtractionSolid(SubtractionSolid(sectorSolid,upper_boolean),lower_boolean);
-	else
-	  tm = UnionSolid(UnionSolid(sectorSolid,upper_boolean),lower_boolean);
+        // For W sectors make the subtraction solid slightly thicker to ensure everything is cut off
+        // and no left-overs from numerical precision are left.
+        EightPointSolid lower_boolean((sector_type == 'W' ? 1.1 : 1.0) * layer_thickness/2,&v[0][0]);
+        if ( sector_type == 'W' )
+          tm = SubtractionSolid(SubtractionSolid(sectorSolid,upper_boolean),lower_boolean);
+        else
+          tm = UnionSolid(UnionSolid(sectorSolid,upper_boolean),lower_boolean);
       }
-
-      Volume secVol(name+"_sector_"+sector_type+_toString(i_layer,"_layer%d"),tm,description.material(layer_mat));
-      secVol.setVisAttributes(description.visAttributes(layer_vis));
-      if ( x_layer.isSensitive() ) secVol.setSensitiveDetector(sens_det);
+      Material lmat = description.material(layer_mat);
+      Volume secVol( name+"_sector_"+sector_type+_toString(i_layer, "_layer%d"), tm, lmat );
+      secVol.setVisAttributes( description.visAttributes(layer_vis) );
+      if ( x_layer.isSensitive() )  {
+        secVol.setSensitiveDetector(sens_det);
+        pv.addPhysVolID("layer", i_layer+1);
+      }
 
       sector.placeVolume(secVol,Position(0,0,z_start+layer_thickness/2));
       z_start += layer_thickness;
@@ -304,22 +312,22 @@ static Ref_t create_element(Detector& description, xml_h e, SensitiveDetector se
       int j = i + (sector_type=='W' ? 1 : 0);
       double phi = dphi*j+shift + (sector_type=='K' ? 0 : M_PI/12.0);
       if ( sector_type == 'K' || (i%2)==0 ) {
-	Transform3D trA(RotationZYX(phi,0,0),Position(0,0,0.00001));
-	Transform3D trB(RotationZYX(phi,0,0),Position(0,0,0.00001));
+        Transform3D trA( RotationZYX(phi,0,0), Position(0,0,0.00001) );
+        Transform3D trB( RotationZYX(phi,0,0), Position(0,0,0.00001) );
 
-	pv = endCapAVol.placeVolume(sector,trA);
-	pv.addPhysVolID("type", sector_type=='K' ? 1 : sector_type=='M' ? 2 : 3);
-	pv.addPhysVolID("sector",j);
-	DetElement sectorA(detA,detA.name()+_toString(sector_count,"_sector%02d"),1);
-	sectorA.setPlacement(pv);
+        pv = endCapAVol.placeVolume( sector, trA );
+        pv.addPhysVolID( "type", sector_type=='K' ? 1 : sector_type=='M' ? 2 : 3 );
+        pv.addPhysVolID( "sector", j );
+        DetElement sectorA( detA, detA.name()+_toString(sector_count,"_sector%02d"),1 );
+        sectorA.setPlacement(pv);
 
-	pv = endCapBVol.placeVolume(sector,trB);
-	pv.addPhysVolID("type", sector_type=='K' ? 1 : sector_type=='M' ? 2 : 3);
-	pv.addPhysVolID("sector",j);
-	DetElement sectorB(detB,detB.name()+_toString(sector_count,"_sector%02d"),1);
-	sectorB.setPlacement(pv);
-	cout << "Placed " << sector_type << " sector at phi=" << phi << endl;
-	++sector_count;
+        pv = endCapBVol.placeVolume( sector, trB );
+        pv.addPhysVolID( "type", sector_type=='K' ? 1 : sector_type=='M' ? 2 : 3 );
+        pv.addPhysVolID( "sector",j );
+        DetElement sectorB(detB, detB.name()+_toString(sector_count,"_sector%02d"), 1 );
+        sectorB.setPlacement(pv);
+        cout << "Placed " << sector_type << " sector at phi=" << phi << endl;
+        ++sector_count;
       }
     }
   }

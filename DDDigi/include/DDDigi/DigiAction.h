@@ -15,12 +15,15 @@
 
 // Framework include files
 #include <DD4hep/Printout.h>
+#include <DD4hep/ExtensionEntry.h>
 #include <DD4hep/ComponentProperties.h>
 #include <DDDigi/DigiContext.h>
 
 // C/C++ include files
 #include <string>
+#include <memory>
 #include <cstdarg>
+#include <cstdint>
 
 #if defined(G__ROOT) || defined(__CLING__) || defined(__ROOTCLING__)
 #define DDDIGI_DEFINE_ACTION_DEFAULT_CTOR(action)  public: action() = default;
@@ -44,6 +47,9 @@
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
 
+  /// Forward declarations
+  class ExtensionEntry;
+  
   /// Namespace for the Digitization part of the AIDA detector description toolkit
   namespace digi {
 
@@ -53,18 +59,20 @@ namespace dd4hep {
      *  \version 1.0
      *  \ingroup DD4HEP_DIGITIZATION
      */
-    class TypeName : public std::pair<std::string, std::string> {
+    class TypeName {
     public:
+      std::string first;
+      std::string second;
       /// Default constructor
       TypeName() = default;
       /// Copy constructor
       TypeName(const TypeName& copy) = default;
       /// Copy constructor from pair
       TypeName(const std::pair<std::string, std::string>& c)
-        : std::pair<std::string, std::string>(c) {      }
+        : first(c.first), second(c.second) { }
       /// Initializing constructor
       TypeName(const std::string& typ, const std::string& nam)
-        : std::pair<std::string, std::string>(typ, nam) {      }
+        : first(typ), second(nam) { }
       /// Assignment operator
       TypeName& operator=(const TypeName& copy) = default;
       /// Split string pair according to default delimiter ('/')
@@ -87,10 +95,38 @@ namespace dd4hep {
       friend class DigiKernel;
 
     public:
-      using context_t = DigiContext;
-      using kernel_t  = DigiKernel;
+      using context_t    = DigiContext;
+      using kernel_t     = DigiKernel;
+      using extensions_t = std::map<uint64_t, std::unique_ptr<ExtensionEntry> >;
 
     protected:
+      template <typename T> struct Extension : public ExtensionEntry {
+        T* ptr = 0;
+        
+        /// Inhibit default constructor
+        Extension() = delete;
+        /// Typed objects constructor
+        Extension(T* p) : ptr(p) { }
+        /// Copy constructor
+        Extension(const Extension& copy) = delete;
+        /// Assignment operator
+        Extension& operator=(const Extension& copy) = delete;
+        /// Copy constructor
+        Extension(Extension&& copy) = delete;
+        /// Assignment operator
+        Extension& operator=(Extension&& copy) = delete;
+        /// Default destructor
+        virtual ~Extension() = default;
+        /// Wrapper for the object destruction
+        virtual void* object()  const override    { return ptr;  }
+        /// Wrapper for the object destruction
+        virtual void  destruct()  const override  { delete ptr;  }
+        virtual void* copy(void*) const override  { invalidCall("copy"); return nullptr; }
+        virtual ExtensionEntry* clone(void*) const override  { invalidCall("clone"); return nullptr; }
+        virtual unsigned long long int hash64() const override  { return uint64_t(ptr); }
+      };
+
+
       /// Reference to the Digi context
 #if defined(G__ROOT) || defined(__CLING__) || defined(__ROOTCLING__)
       const kernel_t*  m_kernel;
@@ -108,12 +144,12 @@ namespace dd4hep {
       std::string        m_name;
       /// Property pool
       PropertyManager    m_properties;
+      /// Object extensions if used
+      extensions_t       m_extensions;
       /// Reference count. Initial value: 1
       long               m_refCount    = 1;
       /// Default property: Output level
       int                m_outputLevel = 3;
-      ///
-      std::vector<void*> m_opt_properties;
       
     protected:
       /// Define standard assignments and constructors
@@ -180,6 +216,18 @@ namespace dd4hep {
       /// Adopt named tool to delegate actions
       virtual void adopt_tool(DigiAction* action, const std::string& typ);
 
+      /// Add an extension object to the detector element
+      uint64_t addExtension(uint64_t key, std::unique_ptr<ExtensionEntry>&& e);
+
+      /// Access an existing extension object from the detector element
+      void* extension(uint64_t key);
+
+      /// Extend the detector element with an arbitrary structure accessible by the type
+      template <typename T> uint64_t addExtension(T* c)  {
+        std::unique_ptr<ExtensionEntry> e = std::make_unique<Extension<T> >(c);
+        return this->addExtension(uint64_t(c), std::move(e));
+      }
+      
       /** Support for output messages       */
       /// Support for messages with variable output level using output level
       void print(const char* fmt, ...) const;
@@ -205,21 +253,21 @@ namespace dd4hep {
 
     /// Declare property
     template <typename T> DigiAction& DigiAction::declareProperty(const std::string& nam, T& val) {
-      m_properties.add(nam, val);
+      this->m_properties.add(nam, val);
       return *this;
     }
 
     /// Declare property
     template <typename T> DigiAction& DigiAction::declareProperty(const char* nam, T& val) {
-      m_properties.add(nam, val);
+      this->m_properties.add(nam, val);
       return *this;
     }
     /// Declare property
     template <typename T> DigiAction& DigiAction::addProperty(const std::string& nam, T& val) {
       void* ptr = ::operator new(sizeof(T));
       T* prop = new(ptr) T(val);
-      m_properties.add(nam, *prop);
-      m_opt_properties.emplace_back(ptr);
+      this->m_properties.add(nam, *prop);
+      this->addExtension(prop);
       return *this;
     }
 
@@ -227,8 +275,8 @@ namespace dd4hep {
     template <typename T> DigiAction& DigiAction::addProperty(const char* nam, T& val) {
       void* ptr = ::operator new(sizeof(T));
       T* prop = new(ptr) T(val);
-      m_properties.add(nam, *prop);
-      m_opt_properties.emplace_back(ptr);
+      this->m_properties.add(nam, *prop);
+      this->addExtension(prop);
       return *this;
     }
   }    // End namespace digi

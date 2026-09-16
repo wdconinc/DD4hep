@@ -14,8 +14,8 @@
 #define DDG4_GEANT4UIMANAGER_H
 
 // Framework include files
-#include "DDG4/Geant4Call.h"
-#include "DDG4/Geant4Action.h"
+#include <DDG4/Geant4Call.h>
+#include <DDG4/Geant4Action.h>
 
 /// Forward declarations
 class G4VisManager;
@@ -64,6 +64,8 @@ namespace dd4hep {
       std::vector<std::string> m_initializeCommands;
       /// Property: List of commands to be executed when the Geant4Kernel gets terminated
       std::vector<std::string> m_terminateCommands;
+      /// Property: List of commands steering the run execution themselves (e.g. /run/beamOn)
+      std::vector<std::string> m_commands;
       /// Property: List of commands to be executed BEFORE running
       std::vector<std::string> m_preRunCommands;
       /// Property: List of commands to be executed AFTER running
@@ -77,9 +79,9 @@ namespace dd4hep {
       /// Property: Flag to instantiate UI (default=true)
       bool        m_haveUI;
       /// Reference to Geant4 visualtion manager
-      G4VisManager* m_vis;
+      G4VisManager*       m_vis        { nullptr };
       /// Reference to Geant4 UI manager
-      G4UIExecutive*  m_ui;
+      G4UIExecutive*      m_ui         { nullptr };
 
     public:
       /// Initializing constructor
@@ -110,6 +112,8 @@ namespace dd4hep {
       void regularExit();
       /// Apply single command
       void applyCommand(const std::string& command);
+      /// Apply DD4hep plugin call from Geant4 prompt
+      long runPlugin(const char* plugin);
       /// Run UI
       virtual void operator()(void* param);
     };

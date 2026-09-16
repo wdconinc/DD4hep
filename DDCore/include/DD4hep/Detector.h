@@ -34,7 +34,6 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <cstdio>
 #include <memory>
 
 // Forward declarations
@@ -112,7 +111,9 @@ namespace dd4hep {
     /// Initialize geometry
     virtual void init() = 0;
     /// Finalize the geometry
-    virtual void endDocument(bool close_geometry=true) = 0;
+    virtual void endDocument(bool close_geometry = true) = 0;
+    /// Finalize the geometry
+    virtual void endDocument(const char* option) = 0;
 
     /// Access the state of the geometry
     virtual State state()  const = 0;
@@ -194,7 +195,7 @@ namespace dd4hep {
        is not present. Otherwise an empty detector container is returned.
     */
     virtual const std::vector<DetElement>& detectors(const std::string& type,
-                                                     bool throw_exc=false) = 0;
+                                                     bool throw_exc=false) const = 0;
 
     /// Access a set of subdetectors according to several sensitive types.
     virtual std::vector<DetElement> detectors(const std::string& type1,
@@ -203,7 +204,7 @@ namespace dd4hep {
                                               const std::string& type4="",
                                               const std::string& type5="" ) = 0;
 
-    /// Access the availible detector types
+    /// Access the available detector types
     virtual std::vector<std::string> detectorTypes() const = 0;
 
 
@@ -214,14 +215,14 @@ namespace dd4hep {
                                               unsigned int excludeFlag=0 ) const = 0 ;
 #endif
 
-    /** Miscaneleous accessors to the detexctor description  */
+    /** Miscaneleous accessors to the detector description  */
 
     /// Register new parent detector using the detector name.
     /** Volumes must be registered/declared PRIOR to be picked up!
      *  Once registered, Detector::pickMotherVolume(detector) will automatically return the
      *  proper parent volume!
      * 
-     *  The method throws an exception if another volume was already declared for this subdetector
+     *  The method throws an exception if another volume was already declared for this subdetector.
      *  The method throws an exception if the volume to be registered is invalid.
      */
     virtual void   declareParent(const std::string& detector_name, const DetElement& det) = 0;
@@ -302,13 +303,15 @@ namespace dd4hep {
     virtual Detector& addField(const Handle<NamedObject>& field) = 0;
     
     /// Deprecated call (use fromXML): Read compact geometry description or alignment file
-    virtual void fromCompact(const std::string& fname, DetectorBuildType type = BUILD_DEFAULT) = 0;
+    virtual void fromCompact(const std::string& fname,
+                             DetectorBuildType type = BUILD_DEFAULT) = 0;
     /// Read any geometry description or alignment file
-    virtual void fromXML(const std::string& fname, DetectorBuildType type = BUILD_DEFAULT) = 0;
+    virtual void fromXML    (const std::string& fname,
+                             DetectorBuildType type = BUILD_DEFAULT) = 0;
     /// Read any geometry description or alignment file with external XML entity resolution
-    virtual void fromXML(const std::string& fname,
-                         xml::UriReader* entity_resolver,
-                         DetectorBuildType type = BUILD_DEFAULT) = 0;
+    virtual void fromXML    (const std::string& fname,
+                             xml::UriReader* entity_resolver,
+                             DetectorBuildType type = BUILD_DEFAULT) = 0;
 
     /// Stupid legacy method
     virtual void dump() const = 0;

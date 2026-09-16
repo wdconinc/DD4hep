@@ -15,8 +15,8 @@
 #define DDG4_GEANT4CONTEXT_H
 
 // Framework incloude files
-#include "DD4hep/Primitives.h"
-#include "DD4hep/ObjectExtensions.h"
+#include <DD4hep/Primitives.h>
+#include <DD4hep/ObjectExtensions.h>
 
 // Forward declarations
 class G4Run;
@@ -68,7 +68,7 @@ namespace dd4hep {
      */
     class  Geant4Run : public ObjectExtensions  {
       /// Reference to the original Geant4 run object
-      const G4Run* m_run;
+      const G4Run* m_run { nullptr };
     protected:
 
     public:
@@ -120,9 +120,9 @@ namespace dd4hep {
      */
     class  Geant4Event : public ObjectExtensions  {
       /// Reference to the original Geant4 event object
-      const G4Event* m_event;
+      const G4Event* m_event  { nullptr };
       /// Reference to the main random number generator
-      Geant4Random* m_random;
+      Geant4Random* m_random  { nullptr };
 
     public:
       /// Intializing constructor

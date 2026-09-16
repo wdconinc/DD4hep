@@ -47,21 +47,28 @@ dd4hep::sim::Geant4PlacementParameterisation::Geant4PlacementParameterisation(Pl
     m_have_rotation |= !dim.back().delta.getRotation().isIdentity();
     m_num_cells     *= m_params.trafo3D.second;
   }
+  // Set axis for pure 1D translation along a single Cartesian axis
+  if ( !m_have_rotation && dim.size() == 1 ) {
+    const G4ThreeVector& t = dim[0].translation;
+    if      ( t.x() != 0.0 && t.y() == 0.0 && t.z() == 0.0 )  m_axis = kXAxis;
+    else if ( t.x() == 0.0 && t.y() != 0.0 && t.z() == 0.0 )  m_axis = kYAxis;
+    else if ( t.x() == 0.0 && t.y() == 0.0 && t.z() != 0.0 )  m_axis = kZAxis;
+  }
   if ( m_have_rotation )    {
     auto callback = std::bind(&Geant4PlacementParameterisation::operator(),
-			      this, std::placeholders::_1);
+                              this, std::placeholders::_1);
     if ( dim.size() == 1 )
       generate_placements(m_start.delta,
-			  dim[0].delta, dim[0].count, callback);
+                          dim[0].delta, dim[0].count, callback);
     else if ( dim.size() == 2 )
       generate_placements(m_start.delta,
-			  dim[0].delta, dim[0].count,
-			  dim[1].delta, dim[1].count, callback);
+                          dim[0].delta, dim[0].count,
+                          dim[1].delta, dim[1].count, callback);
     else if ( dim.size() == 3 )
       generate_placements(m_start.delta,
-			  dim[0].delta, dim[0].count,
-			  dim[1].delta, dim[1].count,
-			  dim[2].delta, dim[2].count, callback);
+                          dim[0].delta, dim[0].count,
+                          dim[1].delta, dim[1].count,
+                          dim[2].delta, dim[2].count, callback);
   }
 }
 
@@ -86,15 +93,20 @@ void dd4hep::sim::Geant4PlacementParameterisation::ComputeTransformation(const G
   if ( !m_have_rotation )    {
     G4ThreeVector tra = m_start.translation;
     if ( nd >= 1 )   {
-      std::size_t d1 = (nd == 1) ? copy : (nd >= 2 ? copy%dim[1].count : 0);
+      std::size_t d1 = 0;
+      if (nd == 1) d1 = copy;
+      else if (nd >= 2) d1 = copy%dim[1].count;
       tra = tra + (dim[0].translation * d1);
     }
     if ( nd >= 2 )   {
-      std::size_t d2 = (nd == 2) ? copy / dim[0].count : (nd >= 3 ? copy%dim[2].count / dim[0].count : 0);
+      std::size_t d2 = 0;
+      if (nd == 2) d2 = copy / dim[0].count;
+      else if (nd >= 3 ) d2 = copy%dim[2].count / dim[0].count;
       tra = tra + (dim[1].translation * d2);
     }
     if ( nd >= 3 )   {
-      std::size_t d3 = (nd == 3) ? copy / (dim[0].count*dim[1].count) : 0;
+      std::size_t d3 = 0;
+      if ( nd == 3 ) d3 = copy / (dim[0].count*dim[1].count);
       tra = tra + (dim[2].translation * d3);
     }
     pv->SetTranslation(tra);

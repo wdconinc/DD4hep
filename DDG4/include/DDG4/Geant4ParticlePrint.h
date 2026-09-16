@@ -15,9 +15,9 @@
 #define DDG4_GEANT4PARTICLEPRINT_H
 
 // Framework include files
-#include "DDG4/Geant4EventAction.h"
-#include "DDG4/Geant4GeneratorAction.h"
-#include "DDG4/Geant4Particle.h"
+#include <DDG4/Geant4EventAction.h>
+#include <DDG4/Geant4GeneratorAction.h>
+#include <DDG4/Geant4Particle.h>
 
 // Forward declarations
 class G4Event;
@@ -69,9 +69,9 @@ namespace dd4hep {
       /// Default destructor
       virtual ~Geant4ParticlePrint();
       /// Pre-event action callback
-      virtual void begin(const G4Event* event);
+      virtual void begin(const G4Event* event)  override;
       /// Post-event action callback
-      virtual void end(const G4Event* event);
+      virtual void end(const G4Event* event)  override;
       /// Generation action callback
       virtual void operator()(G4Event* event);
 

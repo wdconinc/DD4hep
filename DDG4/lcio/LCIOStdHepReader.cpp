@@ -25,7 +25,7 @@
 #define DD4HEP_DDG4_LCIOSTDHEPREADER_H
 
 // LCIO include files
-#include "UTIL/LCStdHepRdr.h"
+#include <UTIL/LCStdHepRdr.h>
 
 // Framework include files
 #include "LCIOEventReader.h"
@@ -53,9 +53,10 @@ namespace dd4hep  {
       /// Default destructor
       virtual ~LCIOStdHepReader();
       /// Read an event and fill a vector of MCParticles.
-      virtual EventReaderStatus readParticleCollection(int event_number, EVENT::LCCollection** particles);
-      virtual EventReaderStatus moveToEvent(int event_number);
-      virtual EventReaderStatus skipEvent() { return EVENT_READER_OK; }
+      virtual EventReaderStatus readParticleCollection(int event_number,
+                                                       CollectionOwner& particles)  override;
+      virtual EventReaderStatus moveToEvent(int event_number)  override;
+      virtual EventReaderStatus skipEvent()  override { return EVENT_READER_OK; }
 
     };
   }     /* End namespace lcio   */
@@ -76,7 +77,7 @@ namespace dd4hep  {
 //==========================================================================
 
 // Framework include files
-#include "DDG4/Factories.h"
+#include <DDG4/Factories.h>
 
 // Factory entry
 DECLARE_GEANT4_EVENT_READER_NS(dd4hep::sim,LCIOStdHepReader)
@@ -114,11 +115,11 @@ LCIOStdHepReader::moveToEvent(int event_number) {
 
 /// Read an event and fill a vector of MCParticles.
 Geant4EventReader::EventReaderStatus
-LCIOStdHepReader::readParticleCollection(int /*event_number*/, EVENT::LCCollection** particles)  {
+LCIOStdHepReader::readParticleCollection(int /*event_number*/, LCIOEventReader::CollectionOwner& particles)  {
 
-  *particles = m_reader->readEvent();
+  particles = LCIOEventReader::CollectionOwner(m_reader->readEvent(), [](EVENT::LCCollection* p){ delete p; });
   ++m_currEvent;
 
-  if ( 0 == *particles ) return EVENT_READER_EOF;
+  if ( !particles ) return EVENT_READER_EOF;
   return EVENT_READER_OK;
 }

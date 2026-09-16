@@ -14,9 +14,9 @@
 #define DD4HEP_ALIGNMENTSCALCULATOR_H
 
 // Framework include files
-#include "DD4hep/Alignments.h"
-#include "DD4hep/AlignmentData.h"
-#include "DD4hep/ConditionsMap.h"
+#include <DD4hep/Alignments.h>
+#include <DD4hep/AlignmentData.h>
+#include <DD4hep/ConditionsMap.h>
 
 /// Namespace for the AIDA detector description toolkit
 namespace dd4hep {
@@ -46,7 +46,7 @@ namespace dd4hep {
       public:
         size_t computed = 0;
         size_t missing  = 0;
-	size_t multiply = 0;
+        size_t multiply = 0;
         Result() = default;
         /// Copy constructor
         Result(const Result& result) = default;
@@ -155,7 +155,7 @@ namespace dd4hep {
       /** If the extraction context is empty, it shall be filled.
        *  On every subsequent call the existing context is used and 
        *  the Delta-conditions are extracted directly using a linear scan 
-       *  of the conditions map. Depending on the size of the conditons map
+       *  of the conditions map. Depending on the size of the conditions map
        *  this can lead to significant speed improvements.
        */
       size_t extract_deltas(cond::ConditionUpdateContext& context,

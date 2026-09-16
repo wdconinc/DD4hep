@@ -1,3 +1,1420 @@
+# v01-37
+
+* 2026-04-27 Juan Miguel Carceller ([PR#1621](https://github.com/aidasoft/dd4hep/pull/1621))
+  - ddsim: Allow passing `batch` as runType for G4Gun and G4GPS
+
+* 2026-04-24 Markus Frank ([PR#1620](https://github.com/aidasoft/dd4hep/pull/1620))
+  - Improve the interface to access material properties from materials if used:
+  ```
+      /// Access the number of properties attached to the material (if any)
+      std::size_t numProperties()  const;
+      /// Access to tabular properties of the material by index
+      Property    property(std::size_t index)  const;
+      /// Access to tabular properties of the material by name
+      Property    property(const char* name)  const;
+      /// Access to tabular properties of the material by name
+      Property    property(const std::string& name)  const;
+      /// Access string property value from the material table
+      std::string propertyRef(const std::string& name, const std::string& default_value="");
+      /// Access the number of const properties attached to the material (if any)
+      std::size_t numConstProperties()  const;
+      /// Access to const properties of the material by index
+      double      constProperty(std::size_t index)  const;
+      /// Access to tabular properties of the material
+      double      constProperty(const std::string& name)  const;
+      /// Access string property value from the material table
+      std::string constPropertyRef(const std::string& name, const std::string& default_value="");
+  ```
+  See for examples the area: examples/ClientTests/src/MaterialTester_geo.cpp
+  
+  - In Geant4 special tags are used if the properties should be treated in a special way by Geant4:
+    (see examples/OpticalSurfaces/compact/ReadMaterialProperties.xml)
+    -- the tag `Geant4-ignore` hides the material property entirely from the Geant4 materials
+    -- the tag `Geant4-custom` injects the property into the  Geant4 material. It may be used in user code 
+       and accessed from regular Geant4 materials.
+    -- the tag `Geant4-plugin` hides the property from Geant4 and allows the usage inside Geant4 plugins.
+  
+  Users are e.g. RICH reconstruction and Channeling experiments. [Request from W,Pokorski]
+
+* 2026-04-22 Juan Miguel Carceller ([PR#1615](https://github.com/aidasoft/dd4hep/pull/1615))
+  - Remove checks for nullptrs before deleting, since deleting nullptr is a no-op
+
+* 2026-04-20 Markus Frank ([PR#1618](https://github.com/aidasoft/dd4hep/pull/1618))
+  - Protect the usage of NON-Geant4 properties against usage (and exceptions) when converting geometries to Geant4.
+  
+  Since Geant4 version 11 the check of for an accepted material property throws a fatal exception, which forces Geant4 to call exit. This MR fixes this behavior by checking the possibility upfront by checking the property names rather than a returned negative index.
+  Issue reported by W.Pokorski.
+
+* 2026-04-15 sss ([PR#1608](https://github.com/aidasoft/dd4hep/pull/1608))
+  - SDActions: Fix possible issues in looking up volumes by IDs in the case where VolumeIDs may be duplicated across subdetectors.
+
+* 2026-04-14 sss ([PR#1611](https://github.com/aidasoft/dd4hep/pull/1611))
+  - Change DetectorSelector to take a const Detector reference.
+
+* 2026-04-14 sss ([PR#1610](https://github.com/aidasoft/dd4hep/pull/1610))
+  - Tweak script permissions so that they work when installed as symlinks (CMAKE_INSTALL_MODE=ABS_SYMLINK).
+
+* 2026-04-14 Wouter Deconinck ([PR#1602](https://github.com/aidasoft/dd4hep/pull/1602))
+  - add Halton sequences support to isotrope generator
+
+* 2026-04-13 sss ([PR#1609](https://github.com/aidasoft/dd4hep/pull/1609))
+  - Fix typo in error message.
+
+* 2026-04-13 Juan Miguel Carceller ([PR#1607](https://github.com/aidasoft/dd4hep/pull/1607))
+  - CI: Update the checkout action since v4 uses a deprecated version of Node.js
+
+* 2026-04-13 Juan Miguel Carceller ([PR#1605](https://github.com/aidasoft/dd4hep/pull/1605))
+  - BitFieldCoder: Fix undefined behaviour if width is 32 (or greater) and the bitfield is unsigned. Then `1 << width` is undefined behaviour.
+
+* 2026-03-31 Arthur Hennequin ([PR#1603](https://github.com/aidasoft/dd4hep/pull/1603))
+  * Shapes.h: Remove unused template function calling non existing function. (fix nvcc build)
+
+* 2026-03-26 Markus Frank ([PR#1600](https://github.com/aidasoft/dd4hep/pull/1600))
+  - Remove LCDD Geometry conversion. The LCDD was never used in D4hep, since DD4hep was not adopted by Slic.
+    In any case, the GDML conversion either from Geant4 of from TGeo offers very similar functionality.
+    See also issue  https://github.com/AIDASoft/DD4hep/issues/1597
+  - Keep the extraction of visualization attributes.
+  - Remove all examples testing the conversion to LCDD.
+
+* 2026-03-23 Thomas Madlener ([PR#1582](https://github.com/aidasoft/dd4hep/pull/1582))
+  - Set the fast simulation flag for MCParticles (in EDM4hep version 1.0.1) for which at least one contribution to a calorimeter hit has been created by fast simulation.
+  - Set the step length for contributions that are created by fast simulation to `-1` to clearly distinguish them from those created by ordinary simulation as those by definition have a step length that is `>= 0`. **This will only be effective if the detailed shower mode is enabled.**
+
+# v01-36
+
+* 2026-03-20 Juan Miguel Carceller ([PR#1599](https://github.com/aidasoft/dd4hep/pull/1599))
+  - Fix a few typos and remove unused includes that are not being used in the current file
+
+* 2026-03-20 Wouter Deconinck ([PR#1598](https://github.com/aidasoft/dd4hep/pull/1598))
+  - fix: Geant4ParticleGenerator: randomize non-zero polarization in optical photon gun
+
+* 2026-03-18 Juan Miguel Carceller ([PR#1586](https://github.com/aidasoft/dd4hep/pull/1586))
+  - `LCIOEventReader` and friends: make sure to release the collection returned by `readParticleCollection` when needed (`LCIOStdhepReader`) since we are the owners of it. Change the interface of the readers to use a `std::unique_ptr` with a deleter that it's either a no-op when we are not the owners or a deletion when we are the owners of the collection.
+  - `LCDDConverter.cpp`: Use a `DocumentHolder` to make sure the document created will be released
+  - Several tests: Use `std::unique_ptr` for objects that need to be deleted, call `Detector::destroyInstance()`, also remove a few unused includes flagged by clangd.
+
+* 2026-03-17 Andre Sailer ([PR#1596](https://github.com/aidasoft/dd4hep/pull/1596))
+  - EDM4hepInput: fix reading of input file parameters for MCParticleCollectionName, add edm4hep.mcParticleCollectionName Parameter to ddsim
+  - EDM4hepInput: add edm4hep.eventHeaderCollectionName Parameter to ddsim
+
+* 2026-03-13 Andre Sailer ([PR#1595](https://github.com/aidasoft/dd4hep/pull/1595))
+  - Geant4UserParticleHandler: keep particles in the MCRecord if they start in the calo, leave a hit in the tracker and then end up in the calo again.  Belongs to #471
+
+* 2026-03-13 Andre Sailer ([PR#1593](https://github.com/aidasoft/dd4hep/pull/1593))
+  - Tests: ignore pseudotrap on aarch64, relax condition for voxelisationtest
+
+* 2026-03-13 Markus Frank ([PR#1592](https://github.com/aidasoft/dd4hep/pull/1592))
+  - Geant4ParticleHandler: Keep particles back-scattered from calorimeters to tracker devices
+    If a particle gets back-scattered from a calorimeter (aka starts in a calorimeter or has calorimeter hits) and ends in a tracking device, a new MCParticle is created for the handling of deposits in the entered tracker.
+  For details also see issue: https://github.com/AIDASoft/DD4hep/issues/471
+
+* 2026-03-13 Wouter Deconinck ([PR#1580](https://github.com/aidasoft/dd4hep/pull/1580))
+  - fix: allow improved G4ParameterisedNavigation for pure 1D translation case
+
+* 2026-03-09 Markus Frank ([PR#1591](https://github.com/aidasoft/dd4hep/pull/1591))
+  - Implement overlayed constant field type limited to a given shape
+  See issue https://github.com/AIDASoft/DD4hep/issues/1585 for details.
+  - Backwards compatibility is preserved. If no shape is supplied for the validity of the constant field,
+    the field by definition is valid for the entire world volume. 
+  - Implement overlayed constant field types for the compact xml notation.
+  Usage:
+  ```
+    <fields>
+      <!-- Constant magnetic field without boundaries valid for the entire world volume -->
+      <field name="ConstantMagneticField" type="ConstantField" field="magnetic">
+        <strength x="0*tesla" y="0*tesla" z="0.5*tesla"/>
+      </field>
+      <!-- Constant electric field without boundaries valid for the entire world volume -->
+      <field name="ConstantElectricField" type="ConstantField" field="electric">
+        <strength x="1000*V/m" y="1000*V/m" z="0*V/m"/>
+      </field>
+      <!-- Constant magnetic field valid for the solid defined by "shape" at position "position" -->
+      <field name="LocalMagneticField" type="ConstantField" field="magnetic">
+        <strength x="0*tesla" y="0*tesla" z="1.5*tesla"/>
+        <shape type="Box" dx="10*cm" dy="10*cm" dz="25*cm">
+          <position x="0*cm" y="0*cm" z="-50*cm"/>
+        </shape>
+      </field>
+      <!-- Constant electric field valid for the solid defined by "shape" at position "position" -->
+      <field name="LocalElectricField" type="ConstantField" field="electric">
+        <strength x="0*V/m" y="0*V/m" z="5000*V/m"/>
+        <shape type="Box" dx="10*cm" dy="10*cm" dz="25*cm">
+          <position x="0*cm" y="0*cm" z="-50*cm"/>
+        </shape>
+      </field>
+    </fields>
+  ```
+  Combined field strength at various points in `z` according to the above definition:
+  ```
+  PrintField             +++ =========================================================
+  PrintField             +++ Electro-magnetic field strength at selected points from ../../DD4hep/examples/ClientTests/compact/ConstantField_points.xml
+  PrintField             +++ =========================================================
+  PrintField             +++ Position:    0.00    0.00 -100.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -90.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -80.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -70.00 [cm] electric field: 1.00e+03 1.00e+03 5.00e+03 [V/m] magnetic field: 0.00e+00 0.00e+00 2.00e+00 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -60.00 [cm] electric field: 1.00e+03 1.00e+03 5.00e+03 [V/m] magnetic field: 0.00e+00 0.00e+00 2.00e+00 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -50.00 [cm] electric field: 1.00e+03 1.00e+03 5.00e+03 [V/m] magnetic field: 0.00e+00 0.00e+00 2.00e+00 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -40.00 [cm] electric field: 1.00e+03 1.00e+03 5.00e+03 [V/m] magnetic field: 0.00e+00 0.00e+00 2.00e+00 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -30.00 [cm] electric field: 1.00e+03 1.00e+03 5.00e+03 [V/m] magnetic field: 0.00e+00 0.00e+00 2.00e+00 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -20.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00  -10.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00    0.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   10.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   20.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   30.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   40.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   50.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   60.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   70.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   80.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00   90.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  PrintField             +++ Position:    0.00    0.00  100.00 [cm] electric field: 1.00e+03 1.00e+03 0.00e+00 [V/m] magnetic field: 0.00e+00 0.00e+00 5.00e-01 [tesla]
+  ```
+  - The above printout is generated by the accompanying test `t_ClientTests_constant_overlayed_field`.
+  - Creation of utility to print any electric and magnetic field at various space points.
+    See factory `DD4hep_PrintField` in `examples/ClientTests/src/PrintField.cpp` for details.
+
+* 2026-03-09 Wouter Deconinck ([PR#1584](https://github.com/aidasoft/dd4hep/pull/1584))
+  - feat: use axis-aligned bounding box to pre-filter MultipoleField calls
+
+* 2026-03-06 Juan Miguel Carceller ([PR#1589](https://github.com/aidasoft/dd4hep/pull/1589))
+  - Clean up checks since the minimum C++ standard is 17 (https://github.com/AIDASoft/DD4hep/pull/1557), use `std::any` when possible, use `[[fallthrough]]` where `ATTR_FALLTHROUGH` was defined
+
+* 2026-03-05 Thomas Madlener ([PR#1583](https://github.com/aidasoft/dd4hep/pull/1583))
+  - Rename `defaultKeepParticle` to `defaultDropParticle` and `keepParticle` to `dropParticle` to match their names to what they are actually doing in their implementation.
+
+* 2026-02-26 sss ([PR#1579](https://github.com/aidasoft/dd4hep/pull/1579))
+  - Fix unused variable warnings seen with gcc16.
+
+* 2026-02-26 sss ([PR#1578](https://github.com/aidasoft/dd4hep/pull/1578))
+  - dd4hep::xml::setDetectorTypeFlag: Do not use exceptions to test for the presence of an attribute
+
+* 2026-02-26 Wouter Deconinck ([PR#1577](https://github.com/aidasoft/dd4hep/pull/1577))
+  - fix: consistently use dimensionless G4FieldManager epsilon min/max (`eps_min`, `eps_max`) in configuration files and examples
+
+* 2026-02-25 Markus Frank ([PR#1576](https://github.com/aidasoft/dd4hep/pull/1576))
+  - Remove some typos, improve printout in DDAlign.
+
+* 2026-02-23 Andre Sailer ([PR#1574](https://github.com/aidasoft/dd4hep/pull/1574))
+  - Geant4ParticleHandler: fix logic to keep secondary particles. All non-primary particles were removed from the event record unless keepAllParticles was set.
+
+* 2026-02-23 Andre Sailer ([PR#1572](https://github.com/aidasoft/dd4hep/pull/1572))
+  - Replace location of compact.xsd since the old location is no longer accessible: https://dd4hep.web.cern.ch/org/lcsim/schemas/compact/1.0/compact.xsd
+
+* 2026-02-21 ruse-traveler ([PR#1573](https://github.com/aidasoft/dd4hep/pull/1573))
+  -  Add `BACKWARD`, `FAR` enums to `dd4hep::DetType`  (see #1544)
+
+* 2026-02-16 Juan Miguel Carceller ([PR#1571](https://github.com/aidasoft/dd4hep/pull/1571))
+  - Use Clang 19 instead of 16 in CI, since these builds are going to be removed
+
+* 2026-02-16 Juan Miguel Carceller ([PR#1566](https://github.com/aidasoft/dd4hep/pull/1566))
+  -  Use the generic `podio::Reader` and `podio::Writer` when podio is new enough to read and write EDM4hep files
+  -  Add a new parameter for ddsim: `--OutputConfig.useRNTuple` to overwrite the default behaviour of the Writer
+
+* 2026-02-10 Markus Frank ([PR#1567](https://github.com/aidasoft/dd4hep/pull/1567))
+  - Global reformatting: Replace TAB by spaces
+  - Script to remove tabs in source files(.cpp) and headers (.h)  [remove_tabs.sh](https://github.com/MarkusFrankATcernch/DD4hep/blob/master/etc/remove_tabs.sh)
+  - Add utility script: [run_test_in_loop.sh](https://github.com/MarkusFrankATcernch/DD4hep/blob/master/etc/run_test_in_loop.sh). Run tests in a loop for stability debugging tests (Expert only)
+
+* 2026-02-03 Markus Frank ([PR#1564](https://github.com/aidasoft/dd4hep/pull/1564))
+  - Implement optional printout of hit VolumeIDs from Geant4Sensitive.
+  - Add example to use the feature: t_CLICSiD_sim_DDG4_print_volids_LONGTEST
+  
+  Helper for debugging Cell IDs of hits (See issue https://github.com/AIDASoft/DD4hep/issues/1535 for details where such a feature could help). 
+  To enable printouts use:
+  ```
+  DDG4.Geant4.setupDetector(self, name, action, debug_volid=True)
+  ```
+  or
+  ```
+  DDG4.Geant4.setupTracker(..., debug_volid=True)
+  DDG4.Geant4.setupCalorimeter(..., debug_volid=True)
+  ```
+  Produced output fragment:
+  ```
+  ParticlePrint              INFO  +++     0 +----------------------> ID:      0     geantino     -1/0          YES NO      0 YES +1.000e+03  YES  YES     NO       0  [Primary] .SD.
+  ParticlePrint              INFO  +++ MC Particles #Tracks:      1 ParticleType Parent/Geant4 Primary Secondary Energy in [MeV] Calo Tracker Process/Par Details
+  ParticlePrint              INFO  +++ MC Particle Track ID:      0     geantino     -1/0          YES NO      0 YES +1.000e+03  YES  YES     NO       0  [Primary] .SD.
+  ParticlePrint              INFO  +++ MC Particles #Tracks:      1 ParticleType Parent/Geant4 Primary Secondary Energy          Calo Tracker Process/Par
+  ParticlePrint              INFO  +++ MC Particle Summary:                             1          0       1        1              1     0      0
+  ParticleHandler            INFO  +++ Event 2 Begin event action. Access event related information.
+  SiVertexBarrelHandler            Volume ID: 0000000020090801 -> system:0001 barrel:0000 layer:0001 module:0012 sensor:0001 side:0000 strip:0000
+  SiVertexBarrelHandler            Volume ID: 0000000020091001 -> system:0001 barrel:0000 layer:0002 module:0012 sensor:0001 side:0000 strip:0000
+  SiVertexBarrelHandler            Volume ID: 0000000020009801 -> system:0001 barrel:0000 layer:0003 module:0001 sensor:0001 side:0000 strip:0000
+  SiVertexBarrelHandler            Volume ID: 00000000200F2001 -> system:0001 barrel:0000 layer:0004 module:001e sensor:0001 side:0000 strip:0000
+  SiVertexBarrelHandler            Volume ID: 000000002000A801 -> system:0001 barrel:0000 layer:0005 module:0001 sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 0000000020038803 -> system:0003 barrel:0000 layer:0001 module:0007 sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 00000000213F1003 -> system:0003 barrel:0000 layer:0002 module:027e sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 0000000020049003 -> system:0003 barrel:0000 layer:0002 module:0009 sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 0000000022959803 -> system:0003 barrel:0000 layer:0003 module:052b sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 0000000020061803 -> system:0003 barrel:0000 layer:0003 module:000c sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 0000000024812003 -> system:0003 barrel:0000 layer:0004 module:0902 sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 000000002007A003 -> system:0003 barrel:0000 layer:0004 module:000f sensor:0001 side:0000 strip:0000
+  SiTrackerBarrelHandler           Volume ID: 0000000020092803 -> system:0003 barrel:0000 layer:0005 module:0012 sensor:0001 side:0000 strip:0000
+  EcalBarrelHandler                Volume ID: 000000000020D806 -> system:0006 barrel:0000 module:000b layer:0001 slice:0001 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 0000000000615806 -> system:0006 barrel:0000 module:000b layer:0002 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 000000000061D806 -> system:0006 barrel:0000 module:000b layer:0003 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 0000000000625806 -> system:0006 barrel:0000 module:000b layer:0004 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 000000000062D806 -> system:0006 barrel:0000 module:000b layer:0005 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 0000000000635806 -> system:0006 barrel:0000 module:000b layer:0006 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 000000000063D806 -> system:0006 barrel:0000 module:000b layer:0007 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 0000000000645806 -> system:0006 barrel:0000 module:000b layer:0008 slice:0003 x:0000 y:0000
+  EcalBarrelHandler                Volume ID: 000000000064D806 -> system:0006 barrel:0000 module:000b layer:0009 slice:0003 x:0000 y:0000
+  ```
+
+# v01-35
+
+* 2026-01-27 Andre Sailer ([PR#1562](https://github.com/aidasoft/dd4hep/pull/1562))
+  - Geant4TrackerWeighted: use pre momentum for pre step and post momentum for post step configuration
+
+* 2026-01-27 Andre Sailer ([PR#1548](https://github.com/aidasoft/dd4hep/pull/1548))
+  - Geant4InputHandling: Add Phys.DecayByGeant option to DDSim to let one configure for which particles the decay time should be randomly chosen by Geant4 according to the configured life-time instead of using the pre-assigned decay time. Fixes #1543.
+
+* 2026-01-22 Markus Frank ([PR#1560](https://github.com/aidasoft/dd4hep/pull/1560))
+  Update to the original PR https://github.com/AIDASoft/DD4hep/pull/1555
+  
+  Do not pass a reference to the sensitive action sequence when marking a track. A track may be marked outside the callbacks of a sensitive actions and hence, the sensitive action sequence may not be valid if the volume the track is in
+  is not not sensitive.
+  
+  This should now also allow to mark a `G4Track/dd4hep::sim::Particle` from 
+  - Tracking actions,
+  - Stepping actions,
+  - Sensitive actions.
+  
+  See here: https://github.com/AIDASoft/DD4hep/pull/1559 for a further discussion of the subject.
+
+* 2026-01-21 Markus Frank ([PR#1558](https://github.com/aidasoft/dd4hep/pull/1558))
+  Sometimes it is very useful to directly manipulate Geant4 class instances from python within DDG4. 
+  Such a feature helps e.g. when enhancing physics lists etc.
+  
+  This PR allows to take advantage of this feature:
+  ```
+  $ > python
+  Python 3.12.3 (main, Jan  8 2026, 11:30:50) [GCC 13.3.0] on linux
+  Type "help", "copyright", "credits" or "license" for more information.
+  >>> import DDG4
+  >>> physics_constructor = DDG4.geant4.G4StoppingPhysics()
+  +++ Successfully imported Geant4 class G4StoppingPhysics from header G4StoppingPhysics.hh
+  >>> dir(physics_constructor)
+  ['ConstructParticle', 'ConstructProcess', 'GetInstanceID', 'GetPhysicsName', 'GetPhysicsType', 'GetSubInstanceManager', 'GetVerboseLevel', 'SetMuonMinusCapture', 'SetPhysicsName', 'SetPhysicsType', 'SetVerboseLevel', 'TerminateWorker', '__add__', '__assign__', '__bool__', '__class__', '__delattr__', '__destruct__', '__dict__', '__dir__', '__dispatch__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__invert__', '__le__', '__lt__', '__module__', '__mul__', '__ne__', '__neg__', '__new__', '__pos__', '__python_owns__', '__radd__', '__reduce__', '__reduce_ex__', '__repr__', '__reshape__', '__rmul__', '__rsub__', '__rtruediv__', '__setattr__', '__sizeof__', '__smartptr__', '__str__', '__sub__', '__subclasshook__', '__truediv__', '__weakref__']
+  >>> 
+  ```
+
+* 2026-01-21 Andre Sailer ([PR#1557](https://github.com/aidasoft/dd4hep/pull/1557))
+  - CMake: change minimal required c++ standard to 17. Implicitly this was already required by some of the c++ code.
+
+* 2026-01-20 Markus Frank ([PR#1556](https://github.com/aidasoft/dd4hep/pull/1556))
+  Implement the deployment of specialized physics constructors in DDG4.
+  This feature was so far not supported by DDG4. The additional requirement is that specialized physics constructors (aka physics constructors, which can be configured by calling setters) have a ROOT dictionary, which exposes the functionality to python.
+  
+  The basic calls to use such physics constructors are these:
+  ```
+    import DDG4
+    ...
+    kernel = DDG4.Kernel()
+    ....
+    phys = kernel.physicsList()
+    phys.enableUI()
+    # Add customizable Geant4PhysicsList to Geant4PhysicsListActionSequence
+    # with G4VModularPhysicsList FTP_BERT
+    phys_list = DDG4.PhysicsList(kernel, 'MyPhysics')
+    phys_list.enableUI()
+    phys.adopt(phys_list)
+    #
+    # Add G4StepLimiterPhysics constructor to the Geant4PhysicsList.
+    # Will be registered to the G4VModularPhysicsList later
+    limiter_physics = phys_list.addPhysicsConstructorType('G4StepLimiterPhysics')
+    limiter_physics.SetApplyToAll(True)
+  ```
+  
+  - An example using G4StepLimiterPhysics can be found here: examples/ClientTests/scripts/MiniTel_steplimiter.py.
+  - See DDG4/CmakeLists.txt how to create a dictionary for specialized physics constructors.
+  - PR fixes issue: https://github.com/AIDASoft/DD4hep/issues/1515
+  
+  Special feature:
+  It is not mandatory to load compiled dictionaries of Geant4 classes as said above for the `G4StepLimiterPhysics` constructor. If on-the-fly linking after importing `DDG4` is possible, any class from `Geant4` can be imported and directly used in the python setup scripts of `dd4hep`:
+  ```
+  $ > python
+  Python 3.12.3 (main, Jan  8 2026, 11:30:50) [GCC 13.3.0] on linux
+  Type "help", "copyright", "credits" or "license" for more information.
+  >>> import DDG4
+  >>> from ROOT import gInterpreter
+  >>> gInterpreter.ProcessLine('#include <G4StoppingPhysics.hh>')
+  0
+  >>> from ROOT import G4StoppingPhysics
+  >>> phys=G4StoppingPhysics()
+  >>> dir(phys)
+  ['ConstructParticle', 'ConstructProcess', 'GetInstanceID', 'GetPhysicsName', 'GetPhysicsType', 'GetSubInstanceManager', 'GetVerboseLevel', 'SetMuonMinusCapture', 'SetPhysicsName', 'SetPhysicsType', 'SetVerboseLevel', 'TerminateWorker', '__add__', '__assign__', '__bool__', '__class__', '__delattr__', '__destruct__', '__dict__', '__dir__', '__dispatch__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__invert__', '__le__', '__lt__', '__module__', '__mul__', '__ne__', '__neg__', '__new__', '__pos__', '__python_owns__', '__radd__', '__reduce__', '__reduce_ex__', '__repr__', '__reshape__', '__rmul__', '__rsub__', '__rtruediv__', '__setattr__', '__sizeof__', '__smartptr__', '__str__', '__sub__', '__subclasshook__', '__truediv__', '__weakref__']
+  >>> phys.SetVerboseLevel(1)
+  >>> phys.GetVerboseLevel()
+  1
+  >>> phys.SetVerboseLevel(2)
+  >>> phys.GetVerboseLevel()
+  2
+  >>> 
+  ```
+  or
+  ```
+  >>> gInterpreter.ProcessLine('#include <G4SteppingManager.hh>')
+  0
+  >>> from ROOT import  G4SteppingManager
+  >>> mgr= G4SteppingManager()
+  >>> dir(mgr)
+  ['GetCorrectedStep', 'GetFirstStep', 'GetGeometricalStep', 'GetMAXofAlongStepLoops', 'GetMAXofAtRestLoops', 'GetMAXofPostStepLoops', 'GetMass', 'GetPhysicalStep', 'GetPreStepPointIsGeom', 'GetProcessNumber', 'GetSecondary', 'GetStep', 'GetStepControlFlag', 'GetTempInitVelocity', 'GetTempVelocity', 'GetTouchableHandle', 'GetTrack', 'GetUserAction', 'GetcurrentMinimumStep', 'GetfAlongStepDoItProcTriggered', 'GetfAlongStepDoItVector', 'GetfAlongStepGetPhysIntVector', 'GetfAtRestDoItProcTriggered', 'GetfAtRestDoItVector', 'GetfAtRestGetPhysIntVector', 'GetfCondition', 'GetfCurrentProcess', 'GetfCurrentVolume', 'GetfGPILSelection', 'GetfN2ndariesAlongStepDoIt', 'GetfN2ndariesAtRestDoIt', 'GetfN2ndariesPostStepDoIt', 'GetfNavigator', 'GetfParticleChange', 'GetfPostStepDoItProcTriggered', 'GetfPostStepDoItVector', 'GetfPostStepGetPhysIntVector', 'GetfPostStepPoint', 'GetfPreStepPoint', 'GetfPreviousStepSize', 'GetfSecondary', 'GetfSelectedAlongStepDoItVector', 'GetfSelectedAtRestDoItVector', 'GetfSelectedPostStepDoItVector', 'GetfSensitive', 'GetfStep', 'GetfStepStatus', 'GetfTrack', 'GetnumberOfInteractionLengthLeft', 'GetphysIntLength', 'GetsumEnergyChange', 'GetverboseLevel', 'SetInitialStep', 'SetNavigator', 'SetUserAction', 'SetVerbose', 'SetVerboseLevel', 'Stepping', '__add__', '__assign__', '__bool__', '__class__', '__delattr__', '__destruct__', '__dict__', '__dir__', '__dispatch__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__invert__', '__le__', '__lt__', '__module__', '__mul__', '__ne__', '__neg__', '__new__', '__pos__', '__python_owns__', '__radd__', '__reduce__', '__reduce_ex__', '__repr__', '__reshape__', '__rmul__', '__rsub__', '__rtruediv__', '__setattr__', '__sizeof__', '__smartptr__', '__str__', '__sub__', '__subclasshook__', '__truediv__', '__weakref__']
+  ```
+
+* 2026-01-19 Markus Frank ([PR#1555](https://github.com/aidasoft/dd4hep/pull/1555))
+  The Geant4ParticleHandler to propagate Monte-Carlo information to the DDG4 output record has the deficiency that
+  it is difficult for users to enhance the functionality. Effectively there is only one single user action possible and typically
+  set to the `Geant4TCUserParticleHandler`.
+  In this PR we allow to extend the functionality to a sequence of user actions. This functioanlity should enable the handling
+  of a usage which was pointed out in PR https://github.com/AIDASoft/DD4hep/pull/1503.
+  
+  In the AlephTPC example we show an example how to enhance the `Geant4UserParticleHandler` functionality.
+  Execute:
+  ```
+  $> python ../../DD4hep/examples/AlignDet/scripts/AlephTPC.py -mask
+  ```
+  to execute an example. See the python script `DD4hep/examples/AlignDet/scripts/AlephTPC.py` for the setup of such enhancements.
+
+* 2026-01-19 Markus Frank ([PR#1551](https://github.com/aidasoft/dd4hep/pull/1551))
+  1) The simulation of misaligned geometries requires the geometry translation to Geant4 after global misalignments were 
+  applied using DDAlign. To use DD4hep e.g. in the processing of simulated energy deposits in the sensitive detectors of DDG4,
+  it is necessary to propagate the re-aligned placed volumes (aka TGeoNodes) stored as placements of the DetElement structures.
+  These updates were not performed completely: All detector elements in the volume path to be re-aligned must be updated.
+  This fix is intended to fully update the DetElement pathes. The existing approach only updated DetElements of 
+  higher granularity.
+  The problem did only manifest itself if the subdetector DetElement was attached to a DetElement leaf not directly connected 
+  to /world. Hence for all so far known detector constructs the problem did not manifest itself.
+  
+  2) The AlephTPC alignment detector was modified so that the TPC is part of a `CentralRegion` element to model the 
+  above described behavior and a corresponding example named `AlignDet_sim_AlephTPC_global_alignment` was
+  created to illustrate the required behavior.
+  
+  3) Lower printout level when overwriting header structures while parsing compact files to INFO. Complaints came because FCC software often overwrites headers and the many warning messages were inconvenient.
+
+* 2026-01-16 Thomas Madlener ([PR#1552](https://github.com/aidasoft/dd4hep/pull/1552))
+  - Ensure DD4hep still configures with EDM4hep 1.0
+  - Make sure to communicate the EDM4hep dependency also to DD4hep dependencies if `DD4HEP_USE_EDM4HEP` is true
+
+* 2026-01-08 Seth R Johnson ([PR#1550](https://github.com/aidasoft/dd4hep/pull/1550))
+  - CMake: `dd4hep_add_plugin`: Preserve `(LD|DYLD|ROOT)_LIBRARY_PATH` with `DD4HEP`-prefixed CMake variables to prevent environment changes from breaking builds when reconfiguring.
+
+* 2026-01-07 Seth R Johnson ([PR#1545](https://github.com/aidasoft/dd4hep/pull/1545))
+  - CMake: `add_dd4hep_plugin`: Preserve the `ROOT_LIBRARY_PATH` environment variable from the configuration stage to the build stage. This helps in cases where the configuration environment is not preserved.
+
+* 2026-01-05 Wouter Deconinck ([PR#1547](https://github.com/aidasoft/dd4hep/pull/1547))
+  - cmake: install python files into free-threaded python3.??t/site-packages prefix
+
+* 2025-12-17 Markus Frank ([PR#1542](https://github.com/aidasoft/dd4hep/pull/1542))
+  Sometimes it is necessary to execute a plugin when setting up DDG4. These changes allow to call such plugins from the python steering file:
+  ```
+  def run():
+    args = DDG4.CommandLine()
+    kernel = DDG4.Kernel()
+    install_dir = os.environ['DD4hepExamplesINSTALL']
+    kernel.loadGeometry(str("file:" + install_dir + "/examples/AlignDet/compact/AlephTPC.xml"))
+    if args.align:
+      kernel.runPlugin('DD4hep_GlobalAlignmentInstall', [])
+      kernel.loadXML(str("file:" + install_dir + "/examples/AlignDet/compact/AlephTPC_alignment.xml"))
+  ```
+  or from the command prompt:
+  ```
+  Idle> ls /ddg4/UI
+  ....
+     run_plugin * Execute DD4hep plugin of the form <plugin-name>("arg1", "arg2", "arg3",....)
+  ```
+  to call:
+  ```
+  Idle> /ddg4/UI/run_plugin DD4hep_GlobalAlignmentInstall()
+  UI                     Calling dd4hep plugin DD4hep_GlobalAlignmentInstall with arguments: ()
+  ```
+
+* 2025-12-15 Markus Frank ([PR#1541](https://github.com/aidasoft/dd4hep/pull/1541))
+  Implement the necessary changes to use regular expressions to assign the sensitivity of volumes of a subdetector within ddsim.
+  
+  Please take note, that the typical sensitive detector constructs provided by dd4hep are only limited suited for this approach, because they require the presence of the volume manager to determine the hit's cellID. This by construction cannot be provided by this approach, because the instantiation of the volume manager and it's Geant4 counter-part require too much
+  resources. The basic approach simply uses the subdetector ID as a cellID and stores the global coordinates from the Geant4Step. This behaviour may be implemented and overridden by specific user defined implementations.
+  
+  This implementation only allows to cast out the usage of the volume manager to not cause problems while processing Geant4 energy deposits.
+
+* 2025-12-15 simonge ([PR#1540](https://github.com/aidasoft/dd4hep/pull/1540))
+  - HepMC3Reader: Following #1495 the run metadata from the HepMC3 input files was not being read from root tree files. This fixes the loading of the metadata while not requiring the root file be reset and reopened.
+
+# v01-34
+
+* 2025-12-09 Thomas Madlener ([PR#1536](https://github.com/aidasoft/DD4hep/pull/1536))
+  - Remove an unnecessary check in reading EDM4hep files
+
+* 2025-12-09 Juan Miguel Carceller ([PR#1532](https://github.com/aidasoft/DD4hep/pull/1532))
+  - Delay creating surfaces with the SurfaceManager plugin until they are actually needed by getting the map of surfaces with `SurfaceManager::map()`
+
+* 2025-12-05 Ben Couturier ([PR#1534](https://github.com/aidasoft/DD4hep/pull/1534))
+  - Fix to handle case where volume is created by its own constructor
+
+* 2025-12-04 Markus Frank ([PR#1533](https://github.com/aidasoft/DD4hep/pull/1533))
+  - Fix assembly handling in VolumeBuilder according to LHCb XML syntax: Logic is as follows:
+   if `<volume/>` has a child (or attribute) of type `<shape/>` or `<solid/>` it is a true volume with a shape.
+   if `<volume/>` has a child (or attribute) of type `<assembly/>` it is assumed to be an assembly.
+  If both conditions match, the description is assumed to be inconsistent, the assembly branch wins and
+  an error message is issued. See also PR https://github.com/AIDASoft/DD4hep/pull/1525
+
+* 2025-12-04 Juan Miguel Carceller ([PR#1531](https://github.com/aidasoft/DD4hep/pull/1531))
+  - DDEcalEndcapAlgo: Remove unused variable to prevent a compiler warning
+
+* 2025-12-04 Juan Miguel Carceller ([PR#1530](https://github.com/aidasoft/DD4hep/pull/1530))
+  - EDM4hep reader: Prepare for podio frame.get to throw an exception if a collection is not found
+
+* 2025-11-26 Markus Frank ([PR#1528](https://github.com/aidasoft/DD4hep/pull/1528))
+  Badly designed, not well balanced geometries require lots of resources during the voxelization step when
+  closing the geometry. This can now be steered using an option tag in the steering element of the compact xml.
+  
+  Example:
+  ```
+    <geometry close="true" option="nv"/>
+  or
+    <geometry option="closenv"/>
+  
+  or (close=true is the default)
+    <geometry option="nv"/>
+  ```
+  The options `nv` and `i` are directly routed to the call to `TGeoManager::CloseGeometry(option)`.
+
+* 2025-11-19 Juan Miguel Carceller ([PR#1526](https://github.com/aidasoft/DD4hep/pull/1526))
+  - ddsim: Add a `--gdb` argument to run ddsim inside gdb (debugger)
+
+* 2025-11-14 Juan Miguel Carceller ([PR#1522](https://github.com/aidasoft/DD4hep/pull/1522))
+  - Remove from .gitignore folders in the repository, in DDCore and DDG4
+
+* 2025-11-14 Juan Miguel Carceller ([PR#1521](https://github.com/aidasoft/DD4hep/pull/1521))
+  - Remove `from __future__ import` since we are using Python 3
+
+* 2025-11-14 Stefano Fanchellucci ([PR#1519](https://github.com/aidasoft/DD4hep/pull/1519))
+  - ddsim: UI commands passed as CLI arguments are now split by `;`, so that Geant4 commands requiring multiple arguments can be used in the CLI.
+
+* 2025-11-14 Juan Miguel Carceller ([PR#1518](https://github.com/aidasoft/DD4hep/pull/1518))
+  - Fix configure warnings about [CMP0167](https://cmake.org/cmake/help/latest/policy/CMP0167.html) and [CMP0177](https://cmake.org/cmake/help/latest/policy/CMP0177.html). CMP0167 makes `find_package(Boost)` to use the Config.cmake file provided by Boost instead of the `FindBoost.cmake` provided by CMake. CMP0177 complains about using relative paths in install. With this change, the cmake files do not go anymore to the `cmake` folder in the source directory but are installed directly from the build tree to the install tree.
+
+* 2025-11-14 Juan Miguel Carceller ([PR#1498](https://github.com/aidasoft/DD4hep/pull/1498))
+  - Modernize code related to Surfaces and the SurfaceManager. Simplify for loops, define default destructors with `=default`, pass arguments by const reference when possible
+  - Make `DetectorSurfaces` not inherit from `DetElement` since it is not used nor needed
+
+* 2025-11-13 Markus Frank ([PR#1525](https://github.com/aidasoft/DD4hep/pull/1525))
+  - In #1478 VolumeBuilder.cpp a boolean variable was wrongly initialized.  This deficiency is corrected with this merge request. Fixes #1524
+
+# v01-33
+
+* 2025-10-28 Juan Miguel Carceller ([PR#1517](https://github.com/aidasoft/DD4hep/pull/1517))
+  - Add a new EDM4hep file after the changes to generator-related information in https://github.com/key4hep/EDM4hep/pull/446. The existing file is not readable. Change missing from https://github.com/AIDASoft/DD4hep/pull/1499.
+
+* 2025-10-28 Juan Miguel Carceller ([PR#1516](https://github.com/aidasoft/DD4hep/pull/1516))
+  - Fix a deprecation warning in EDM4hepFileReader.cpp by changing `collection.isValid()` to `collection.hasID()`.
+
+* 2025-10-15 Juan Miguel Carceller ([PR#1507](https://github.com/aidasoft/DD4hep/pull/1507))
+  - (1) Do not install twice (if `CMAKE_INSTALL_LIBDIR` is different from `lib`) some examples
+  - (2) Do not install twice (if `CMAKE_INSTALL_LIBDIR` is different from `lib`) some plugins
+  - (3) Use `CMAKE_INSTALL_LIBDIR` instead of hardcoding `lib`. However, if `CMAKE_INSTALL_LIBDIR` is unset, set it to `lib` to prevent it to be set when enabling `DDG4`.
+
+* 2025-10-13 Juan Miguel Carceller ([PR#1512](https://github.com/aidasoft/DD4hep/pull/1512))
+  - GeoWebDisplay: Add option "-maxnodes" for increasing the number of drawn nodes, Add a warning, if number of nodes is larger than the default number of displayed nodes, fixes #1505
+
+* 2025-10-10 Andre Sailer ([PR#1510](https://github.com/aidasoft/DD4hep/pull/1510))
+  - Geant4VolumeManager: in function volumeID: change INFO to DEBUG for message about Bad Path that also is insensitive, fixes #1506
+
+* 2025-10-08 Thomas Madlener ([PR#1499](https://github.com/aidasoft/DD4hep/pull/1499))
+  - EDM4hep Input / Output: Add the passing through of generator event information for EDM4hep, fixes #1373
+
+* 2025-10-07 Juan Miguel Carceller ([PR#1508](https://github.com/aidasoft/DD4hep/pull/1508))
+  - Fix two compiler warnings about an unqualified move and an unused var
+
+* 2025-10-02 Juan Miguel Carceller ([PR#1500](https://github.com/aidasoft/DD4hep/pull/1500))
+  - Add a [[maybe_unused]] to prevent a warning in ConditionExampleObjects.cpp
+
+* 2025-10-02 Juan Miguel Carceller ([PR#1497](https://github.com/aidasoft/DD4hep/pull/1497))
+  - Increase tolerance of a test to avoid failures
+
+* 2025-09-07 Wouter Deconinck ([PR#1495](https://github.com/aidasoft/DD4hep/pull/1495))
+  - HEPMC3FileReader : Remove double type deduce/open to avoid spurious errors with ROOT 6.36
+
+* 2025-09-06 Wouter Deconinck ([PR#1496](https://github.com/aidasoft/DD4hep/pull/1496))
+  - Remove logging of constants in checkOverlaps
+
+* 2025-09-02 Andre Sailer ([PR#1494](https://github.com/aidasoft/DD4hep/pull/1494))
+  - CI: mac: drop cmake, already installed
+
+* 2025-09-02 Markus Frank ([PR#1493](https://github.com/aidasoft/DD4hep/pull/1493))
+  if tessellated shapes are encountered ROOT material scans are unreliable, because tessellated shapes do not 
+  participate in tracking. For the graphical scan a warning message is issued to warn the user that the scan
+  results are not reliable.
+  This was mentioned in Issue https://github.com/AIDASoft/DD4hep/issues/1490 but there nothing 
+  we can do about in dd4hep, because this is a deficiency, which must be resolved in the ROOT geometry package.
+
+* 2025-09-02 Juan Miguel Carceller ([PR#1491](https://github.com/aidasoft/DD4hep/pull/1491))
+  - Examples: Remove the inclusion of `./include` for ClientTests since this folder doesn't exist
+
+* 2025-08-15 Thomas Madlener ([PR#1488](https://github.com/aidasoft/DD4hep/pull/1488))
+  - EDM4hep input and output: Use `edm4hep::MCParticle::helicity` once it is available instead of the potentially dangerous `spin`. See [key4hep/EDM4hep#404](https://github.com/key4hep/EDM4hep/pull/404) for the corresponding upstream changes
+
+* 2025-08-12 Brieuc Francois ([PR#1486](https://github.com/aidasoft/DD4hep/pull/1486))
+  - DDSim: State in the helper message that the physicsList argument is deprecated
+
+* 2025-08-12 Juan Miguel Carceller ([PR#1485](https://github.com/aidasoft/DD4hep/pull/1485))
+  - Testing: t_RICH_sim_number_of_hits: Increase the deviation of the number of hits to avoid test failures in the test.
+
+* 2025-08-12 jmcarcell ([PR#1484](https://github.com/aidasoft/DD4hep/pull/1484))
+  - DetectorImp.cpp: Clean up and modernize: Remove the unused struct TypePreserve, avoid calling find and then emplace in maps and call only emplace instead, use nullptr instead of 0, do not check pointers before deleting since deleting nullptr is a no-op, and simplify when possible.
+
+* 2025-08-12 jmcarcell ([PR#1483](https://github.com/aidasoft/DD4hep/pull/1483))
+  - Remove unused function in Geant4VolumeManager.cpp
+    - Fix the C++ includes (including what is used in each file)
+
+* 2025-08-04 Andre Sailer ([PR#1482](https://github.com/aidasoft/DD4hep/pull/1482))
+  - Tests: make some tests that need pytest only run when pytest is available
+  - Geant4Output2EDM4hep: fix type categorisation for EventParameters, previously all parameters ended up in the string parameter section.
+
+* 2025-08-04 Sakib Rahman ([PR#1460](https://github.com/aidasoft/DD4hep/pull/1460))
+  - Geant4Output2EDM4Hep: Add --meta.runParameters option to add run level metadata to edm4hep output files
+
+* 2025-07-29 jmcarcell ([PR#1480](https://github.com/aidasoft/DD4hep/pull/1480))
+  - Geant4Output2EDM4hep: Use . instead of -> for EDM4hep objects that are not pointers
+
+* 2025-07-23 jmcarcell ([PR#1479](https://github.com/aidasoft/DD4hep/pull/1479))
+  - Remove `from __future__ import` since we are using Python 3
+
+* 2025-07-23 Andre Sailer ([PR#1476](https://github.com/aidasoft/DD4hep/pull/1476))
+  - DDG4: Add possibility to call G4PrimaryTransformer::SetKETolerance to silence warnings about differences in dynamic particle masses from MC Generators. Fixes #1475
+
+* 2025-07-21 Markus Frank ([PR#1478](https://github.com/aidasoft/DD4hep/pull/1478))
+  - Compact parser:
+    When a `<info>` tag is detected, do not always recreate a new header object, but rather update 
+    a possibly existing object. In addition also print a warning.
+  
+  - When creating assemblies using the factory method a `TGeoAssemblyShape` was created and attached to the   
+    `TGeoAssemblyVolume`. This leaves on shape object orphaned and hence leads to a memory leak.
+    Instead if a assembly volume is created, first create the volume and then register the implicitly created shape.
+
+* 2025-07-21 jmcarcell ([PR#1477](https://github.com/aidasoft/DD4hep/pull/1477))
+  - Remove a few empty files
+
+* 2025-07-16 Andre Sailer ([PR#1474](https://github.com/aidasoft/DD4hep/pull/1474))
+  - DDSim: longer docstring for Physics.PDGFile mentioning secondary vertices and pre-assigned decays.
+
+* 2025-07-16 jmcarcell ([PR#1470](https://github.com/aidasoft/DD4hep/pull/1470))
+  - Fix many typos in code comments
+
+* 2025-07-15 Markus Frank ([PR#1471](https://github.com/aidasoft/DD4hep/pull/1471))
+  Exit process with exit-code (128 + signal number) instead of NULL on non-recoverable signals.
+  See https://github.com/AIDASoft/DD4hep/issues/1468 for details
+
+* 2025-06-20 Thomas Madlener ([PR#1466](https://github.com/aidasoft/DD4hep/pull/1466))
+  - Geant4Output2EDM4hep: Set the `stepLength` for the `CaloHitContribution`s in once it becomes possible (EDM4hep 0.99.3).
+
+* 2025-06-19 jmcarcell ([PR#1465](https://github.com/aidasoft/DD4hep/pull/1465))
+  - CI: Improve the Linux workflows:
+    - Add scripts with the common build options to avoid repetitions
+    - Display ccache stats to see if it's working
+    - Use nproc instead of hardcoding the number of jobs
+
+* 2025-06-18 jmcarcell ([PR#1464](https://github.com/aidasoft/DD4hep/pull/1464))
+  - Add concurrency to the CI workflows, to stop previous runs if there are new commits
+
+* 2025-06-16 Sebastien Ponce ([PR#1463](https://github.com/aidasoft/DD4hep/pull/1463))
+  - Fixed destroyHandle usage for DetElement
+  - Made sure once gets a compilation error in case destroyHandle is used when the underlying object type is not complete
+
+* 2025-06-13 BrieucF ([PR#1462](https://github.com/aidasoft/DD4hep/pull/1462))
+  - DDSim: Explicitly mention in the help message that the EDM4hep format is a supported input
+
+* 2025-06-03 armin-ilg ([PR#1455](https://github.com/aidasoft/DD4hep/pull/1455))
+  - Enable surfaces of TGeoTrd1 with normal vectors that are not pointing in y direction
+
+* 2025-05-27 Dmitry Kalinkin ([PR#1456](https://github.com/aidasoft/DD4hep/pull/1456))
+  - Wrap calls to grep in thisdd4hep.sh to make it source'able in scripts with `set -e`
+
+# v01-32-01
+
+* 2025-05-20 Andre Sailer ([PR#1453](https://github.com/aidasoft/dd4hep/pull/1453))
+  - Checksum: fix assertions on vector length during checksum calculations in debug mode, fixes #1451
+  - OpaqueData: fix return value for non-void function `template <typename T> inline T& OpaqueDataBlock::bind(T&& obj)`
+
+* 2025-05-19 Andre Sailer ([PR#1450](https://github.com/aidasoft/dd4hep/pull/1450))
+  - Objects: change printout for color creation from WARNING to INFO (fixup for #1449)
+  - OpaqueData: fix compilation error with c++23 and gcc15.
+
+* 2025-05-16 Dmitry Kalinkin ([PR#1449](https://github.com/aidasoft/dd4hep/pull/1449))
+  - Fix a regression with certain colors not saved to .root files when using ROOT 6.32.0+.
+
+# v01-32
+
+* 2025-05-07 Andre Sailer ([PR#1447](https://github.com/aidasoft/dd4hep/pull/1447))
+  - ddsim: add physics.alternativeStableStatus option to allow defining alternative stable status of MCParticles meant to be treated by Geant4, fixes #1446
+
+* 2025-05-06 Wouter Deconinck ([PR#1445](https://github.com/aidasoft/dd4hep/pull/1445))
+  - DDG4: Allow event readers to work with pre-existing (Event,Run)Parameters, written by other plugins.
+
+* 2025-04-15 Thomas Madlener ([PR#1444](https://github.com/aidasoft/dd4hep/pull/1444))
+  - CI: Switch to `run-lcg-view` action `v5` and inject `ccache` as compiler launcher via cmake to speed up CI builds.
+
+* 2025-04-08 Wouter Deconinck ([PR#1440](https://github.com/aidasoft/dd4hep/pull/1440))
+  - adopt properties of underlying Geant4GeneratorAction in Geant4SharedGeneratorAction
+
+* 2025-04-07 Andre Sailer ([PR#1442](https://github.com/aidasoft/dd4hep/pull/1442))
+  - WebDisplay: fix building against current ROOT master, need further FIXME
+
+* 2025-04-04 Andre Sailer ([PR#1441](https://github.com/aidasoft/dd4hep/pull/1441))
+  - CMake: drop use of ROOT:ROOTHistDraw
+
+* 2025-04-02 Alvaro Tolosa Delgado ([PR#1439](https://github.com/aidasoft/dd4hep/pull/1439))
+  - Modification of `Geant4Sensitive::cellID` base class function to handle properly the cases when the step corresponds to an optical photon and the option InvokeSD is enable, so only post-step information is used to calculate the volume/cell ID.
+
+* 2025-03-28 Alvaro Tolosa Delgado ([PR#1438](https://github.com/aidasoft/dd4hep/pull/1438))
+  - g4GraphicalScan: add option `-t` `--timeout` to make timeout configurable, fixes #1435
+
+* 2025-03-27 Andre Sailer ([PR#1437](https://github.com/aidasoft/dd4hep/pull/1437))
+  - Geant4TVUserParticleHandler: fix wrong contains check through unit conversion. Fixes #1434
+
+* 2025-03-26 Andre Sailer ([PR#1433](https://github.com/aidasoft/dd4hep/pull/1433))
+  - Geant4ParticleHandler: prevent the vertexIsNotEndpointOfParent bit set for particles that were not simulated by Geant4 for some reason.
+
+* 2025-03-25 jmcarcell ([PR#1432](https://github.com/aidasoft/dd4hep/pull/1432))
+  - Remove headers that are not being used in the current file and add headers that are being used.
+
+* 2025-03-21 Andre Sailer ([PR#1429](https://github.com/aidasoft/dd4hep/pull/1429))
+  - Cmake: UtilityApps: move G__eve dictionary to when we have ROOT::Eve, otherwise there is an installation error. Fixes #1424
+
+* 2025-03-20 Andre Sailer ([PR#1428](https://github.com/aidasoft/dd4hep/pull/1428))
+  - CMake: do not build DDEve if ROOT::Eve does not exist. Fixes #1424
+
+* 2025-03-20 jmcarcell ([PR#1427](https://github.com/aidasoft/dd4hep/pull/1427))
+  - Remove C++ preprocessor checks for a standard before C++14
+
+* 2025-03-19 leggett ([PR#1426](https://github.com/aidasoft/dd4hep/pull/1426))
+  - CMake: Suppress building of UtilityApps components that require ROOT::Eve if it's not available (e.g. if ROOT was built without X11 support)
+
+* 2025-03-19 jmcarcell ([PR#1425](https://github.com/aidasoft/dd4hep/pull/1425))
+  - Fix typos and other minor changes
+  - Fix a few usage messages that were outdated or wrong
+
+* 2025-03-18 jmcarcell ([PR#1422](https://github.com/aidasoft/dd4hep/pull/1422))
+  - Remove checks for the C compiler when configuring
+  - Remove `ENABLE_LANGUAGE` which is redundant when called after `PROJECT`
+
+* 2025-03-17 leggett ([PR#1421](https://github.com/aidasoft/dd4hep/pull/1421))
+  fix typo in CMakeLists.txt so that DD4HEP_DISABLE_PACKAGES list is properly parsed
+
+* 2025-03-17 Markus Frank ([PR#1420](https://github.com/aidasoft/dd4hep/pull/1420))
+  - Fix for issue https://github.com/AIDASoft/DD4hep/issues/1418.
+    Individual DD4HEP sub-packages can be disable from the cmake command line:
+    ```
+    $> cmake <other options> -DDD4HEP_DISABLE_PACKAGES="DDRec DDEve DDDigi"  ../DD4hep
+    ```
+    This will disable the sub-packages DDRec,DDEve,DDDigi:
+    ```
+    $> cmake -DDD4HEP_DISABLE_PACKAGES="DDRec DDEve DDDigi"  ../DD4hep
+         -- Could NOT find LATEX (missing: LATEX_COMPILER) 
+         -- No LaTeX/Biber found, cannot compile user manual.
+         -- Disable package: DDEve
+         -- Disable package: DDDigi
+         -- Disable package: DDRec
+         -- Will be building these packages: DDDetectors;DDCond;DDAlign;DDCAD;DDG4;UtilityApps
+         -- Including DD4hepBuild.cmake
+    ```
+     Clearly no prevision can be done concerning package dependencies. This is up to the user.
+     For example `DDG4` cannot be disabled if `DDDigi` should be kept.
+
+* 2025-03-13 Wouter Deconinck ([PR#1417](https://github.com/aidasoft/dd4hep/pull/1417))
+  - Support multithreading in Geant4EDM4hepOutput plugin
+
+* 2025-03-13 jmcarcell ([PR#1414](https://github.com/aidasoft/dd4hep/pull/1414))
+  - Fix the result of `innerMaterial()` and `outerMaterial()` depending on if the other is called first
+  - Add a test that fails without this fix and passes with the fix
+
+* 2025-03-12 Markus Frank ([PR#1416](https://github.com/aidasoft/dd4hep/pull/1416))
+  - Improve the response of geoDisplay when invoked for help.
+  - This PR fixes issue: https://github.com/AIDASoft/DD4hep/issues/1409
+  - Now geoDisplay -h / -help / --help gives the following output:
+  ```
+  $ geoDisplay -h
+  PersistencyIO    INFO  +++ Set Streamer to dd4hep::OpaqueDataBlock
+  DD4hep           INFO  ++ Using globally Geant4 unit system (mm,ns,MeV)
+  Info in <TGeoManager>: Changing system of units to Geant4 units (mm, ns, MeV).
+  Info in <TGeoManager::TGeoManager>: Geometry default, Detector Geometry created
+  Info in <TGeoNavigator::BuildCache>: --- Maximum geometry depth set to 100
+  geoPluginRun: No geometry input supplied. No geometry will be loaded.
+     ------------------------------------------------------------------
+    | Welcome to ROOT 6.35.01                        https://root.cern |
+    | (c) 1995-2024, The ROOT Team; conception: R. Brun, F. Rademakers |
+    | Built for linuxx8664gcc on Jan 20 2025, 14:50:44                 |
+    | From heads/master@v6-31-01-4781-gce5f87d2f4                      |
+    | With g++-12 (Ubuntu 12.3.0-17ubuntu1) 12.3.0                     |
+    | Try '.help'/'.?', '.demo', '.license', '.credits', '.quit'/'.q'  |
+     ------------------------------------------------------------------
+  
+  Usage: -plugin DD4hep_GeometryDisplay  -arg [-arg]                                
+  
+       Invoke the ROOT geometry display using the factory mechanism.                
+  
+       -detector <string> Top level DetElement path. Default: '/world'                
+       -option   <string> ROOT Draw option.    Default: 'ogl'                         
+       -level    <number> Visualization level  [TGeoManager::SetVisLevel]  Default: 4 
+       -visopt   <number> Visualization option [TGeoManager::SetVisOption] Default: 1
+       -load              Only load the geometry. Do not invoke the display          
+       -help              Print this help output  
+       Arguments given: -help
+  
+  ```
+  - Unfortunately we were not really following the linux rules concerning options:
+    - one letter options:     `-<letter> <value>` or
+    - multi letter options:  `--<options>=<value>`
+   - maybe we should at some time make an effort to homogenize the behavior.
+
+* 2025-03-10 Markus Frank ([PR#1415](https://github.com/aidasoft/dd4hep/pull/1415))
+  - Several transparent changes, which should improve the deficiencies of the coverity scans.
+
+* 2025-03-07 Andre Sailer ([PR#1412](https://github.com/aidasoft/dd4hep/pull/1412))
+  - HTML User Docs: remove margin from sectionToc, online this squashes the Toc lines more than offline for some reason
+
+* 2025-03-07 Andre Sailer ([PR#1411](https://github.com/aidasoft/dd4hep/pull/1411))
+  - HTML User Docs: move Table of Content toc to absolute position at 150% of page width. Let's table of content scroll along with the page.
+
+* 2025-03-07 Andre Sailer ([PR#1410](https://github.com/aidasoft/dd4hep/pull/1410))
+  - Documentation: fix relative location of CSS files in html user manuals
+
+* 2025-03-05 Dmitry Kalinkin ([PR#1408](https://github.com/aidasoft/dd4hep/pull/1408))
+  - `ROOT_LIBRARY_PATH` will now be updated by thisdd4hep.sh. This is needed to instruct Cling to prefer a particular dd4hep path. see https://github.com/root-project/root/blob/a588ea2cbc286afcc5e2b06dfdcae139b470da96/README/ReleaseNotes/v624/index.md?plain=1#L76
+
+* 2025-02-18 Markus Frank ([PR#1405](https://github.com/aidasoft/dd4hep/pull/1405))
+  Enable random seed printout to debug flaky BoxOfStraws example
+
+* 2025-02-17 Markus Frank ([PR#1404](https://github.com/aidasoft/dd4hep/pull/1404))
+  - Remove compiler warnings for MacOS
+
+* 2025-02-17 Markus Frank ([PR#1403](https://github.com/aidasoft/dd4hep/pull/1403))
+  - All tests in the examples directory using geant4 simulation and dependencies of these tests have the following convention:
+    `<test-directory>_sim_<other unique name>`, where `test_directory` is `CLICSiD, ClientTests, DDDigi, DDG4, MySensDet, etc`.
+  - This allows to consistently exclude all tests which require simulation as an input by running:
+    `$> ctest -E _sim_`
+
+* 2025-02-12 Daniel Jeans ([PR#1401](https://github.com/aidasoft/dd4hep/pull/1401))
+  - Fixes incorrect assumption in g4GraphicalScan.py when parsing output of Geant4MaterialScanner.
+
+* 2025-02-10 Daniel Jeans ([PR#1398](https://github.com/aidasoft/dd4hep/pull/1398))
+  - this PR improves robustness of g4GraphicalScan tool
+  -- run short pilot job with timeout, to catch mal-defined models which cause ddsim to hang
+  -- remove assumption about the edge of world volume
+  -- deal with case when requested point is outside world volume
+
+* 2025-02-07 Daniel Jeans ([PR#1397](https://github.com/aidasoft/dd4hep/pull/1397))
+  - add python utility g4GraphicalScan.py to produce 2-d scan of a detector model
+     - similar to graphicalScan, but directly reads the g4 geometry (rather than the DDRec geometry used by graphicalScan)
+     - this can therefore cope with CAD-based elements ( see https://github.com/AIDASoft/DD4hep/issues/1322 )
+
+# v01-31
+
+* 2025-01-27 Andrii Verbytskyi ([PR#1378](https://github.com/aidasoft/DD4hep/pull/1378))
+  - Use standard locations if the LD_LIBRARY_PATH or ROOTSYS are empty, i.e. /usr/lib,usr/lib64, etc.
+
+* 2025-01-25 Markus Frank ([PR#1390](https://github.com/aidasoft/DD4hep/pull/1390))
+  -  Optimize the Geant4VolumeManager. Instead of mapping the Geant4 pathes as vectors of pointers,
+      hash64 the pointers of the path and lookup pathes from the touchable history using this key.
+  -  Relevant changes are in the files DDG4/Geant4GeometryInfo.h and src/Geant4VolumeManager.cpp.
+      Everything else is only cosmetics.
+
+* 2025-01-22 Dmitry Kalinkin ([PR#1376](https://github.com/aidasoft/DD4hep/pull/1376))
+  - DDSim: Steering files can now omit instantiating a new `SIM = DD4hepSimulation()`, and instead use a pre-defined variable with name `SIM`. This allows for steering files that preserve the existing state of `DD4hepSimulation` that a custom user code had set prior to the `parseOptions()` call.
+
+* 2025-01-21 Markus Frank ([PR#1387](https://github.com/aidasoft/DD4hep/pull/1387))
+  Update the reference files for the Pseudotrap shape checks after mesh creation updates in ROOT.
+  Pseudotrap tests are disabled for G4 units due to numerical discrepancies when using G4 units vs. TGeo units.
+
+* 2025-01-20 Andre Sailer ([PR#1371](https://github.com/aidasoft/DD4hep/pull/1371))
+  - DDSim: add a reader for EDM4hep files, fixes #1369 
+    - DDSim can now read EDM4hep files in root format.
+
+* 2025-01-16 sss ([PR#1384](https://github.com/aidasoft/DD4hep/pull/1384))
+  - DD4hep::Segmentations: add cellsSpanVolumes function to mark segmentations that that can have cells that span multiple volumes, such as the Allegro ECal.
+
+* 2025-01-16 jmcarcell ([PR#1380](https://github.com/aidasoft/DD4hep/pull/1380))
+  - Revert some of the changes of https://github.com/AIDASoft/DD4hep/pull/1375 to build a vector of floats instead of doubles since the necessary constructor doesn't exist in 0.10.X.
+  - Use `edm4hep::labels::CellIDEncoding` only when they are available (starting at version 0.99)
+
+* 2025-01-13 sss ([PR#1386](https://github.com/aidasoft/DD4hep/pull/1386))
+  - Fix potential use of dangling temporary in exampe.
+
+* 2025-01-13 scott snyder ([PR#1385](https://github.com/aidasoft/DD4hep/pull/1385))
+  - DDSim.ACtion: Fix a wrong variable in a docstring.
+
+* 2025-01-09 jmcarcell ([PR#1374](https://github.com/aidasoft/DD4hep/pull/1374))
+  - Do not set or read the color flow for MCParticles from EDM4hep, 
+  needed after https://github.com/key4hep/EDM4hep/pull/389
+
+* 2025-01-06 jmcarcell ([PR#1375](https://github.com/aidasoft/DD4hep/pull/1375))
+  - Fix a few compiler warnings (clang 18) about:
+    - Set but unused variables and unused variables or declarations
+    - Deprecated constructor for a Vector3d from a Vector3f from EDM4hep
+    - Missing override
+    - Having a space after `operator""` is deprecated
+
+* 2024-12-10 Andre Sailer ([PR#1368](https://github.com/aidasoft/DD4hep/pull/1368))
+  - HitTupleAction: change how the tree is written and filled, because that caused segfaults in LCG stack runs of dd4hep example tests.
+
+* 2024-12-10 Markus Frank ([PR#1367](https://github.com/aidasoft/DD4hep/pull/1367))
+  - If memory is an issue, the Geant4 memory consumption can be reduced using the smartless option of
+    G4LogicalVolume entities. This MR exposes this feature of Geant4 to dd4hep.
+    Example fragment of the code:
+    ```
+      Volume vol = ....;
+      // 2 is the Geant4 voxelization default. 0 means no voxelization,
+      // values bigger than 2 will need more memory.
+      int value =  0 .... 5; 
+      vol.setSmartlessValue(value);
+    ```
+    Fixes #1361
+    - An example (+test) is supplied as well: 
+      - ClientTests/compact/DriftChamber.xml
+      - ClientTests/scripts/DriftChamber.py
+      where the voxelization is reduced.
+
+* 2024-12-10 Andre Sailer ([PR#1366](https://github.com/aidasoft/DD4hep/pull/1366))
+  - DDSim: Clarify that event processing includes Initialisation time, fixes #1364
+
+* 2024-12-09 ybedfer ([PR#1365](https://github.com/aidasoft/DD4hep/pull/1365))
+  - Adding a `CartesianGridUV` segmentation class, providing for a stereo readout, *i.e.* a readout at an angle w.r.t. the axes of the sensitive volume. 
+  - The class is a straightforward derivation of `CartesianGridXY`, with only few extras needed to register the _angle_ parameter and execute the rotation.
+
+* 2024-12-05 Andre Sailer ([PR#1362](https://github.com/aidasoft/DD4hep/pull/1362))
+  - Geant4AssemblyVolume: use the same copy ID for the Geant4 Volume as was set in DD4hep geometry construction, fixes #1360 .
+
+* 2024-11-28 BrieucF ([PR#1359](https://github.com/aidasoft/DD4hep/pull/1359))
+  - Increased the limit on the maximum number of particles one can provide with the hepevt format from 1 to 50 M, fixes #1356
+
+* 2024-11-22 Alvaro Tolosa Delgado ([PR#1358](https://github.com/aidasoft/DD4hep/pull/1358))
+  - Drift chamber data extension `DCH_info_struct` has been extended with functions to calculate the projection of a point into a wire
+
+* 2024-11-21 ybedfer ([PR#1357](https://github.com/aidasoft/DD4hep/pull/1357))
+  Bug fix in `CylindricalGridPhiZ`:
+     - In the `cellId` member method, one now refrains from reducing the phi parameter modulo 2pi when its IDdescriptor is signed.
+     - When the offset is null, this means that the phi range is now [-pi,pi], instead of the previously [0,2pi] which is not appropriate for a signed quantity.
+
+* 2024-11-19 Andre Sailer ([PR#1355](https://github.com/aidasoft/DD4hep/pull/1355))
+  - CMake: fix for using Geant4 with internal CLHEP, fix linking error where -lG4clhep was not found. Fixes #1354
+
+* 2024-11-11 Andre Sailer ([PR#1352](https://github.com/aidasoft/DD4hep/pull/1352))
+  - DDG4: add possibility to control verbosity for physics constructors
+  - DDSim: add new `--output.physics` parameter to control output level for physics constructors, fixes #1351
+
+* 2024-11-07 Andre Sailer ([PR#1349](https://github.com/aidasoft/DD4hep/pull/1349))
+  - PythonPlugin: replace deprecated Eval with Exec (root 6.36 need)
+
+* 2024-11-07 Alvaro Tolosa Delgado ([PR#1348](https://github.com/aidasoft/DD4hep/pull/1348))
+  - DDRec/DCH_info.h: make inline definition of insertion operator of DCH_info class. This fixes 'multiple definition' compilation error when header is included more than once.
+
+* 2024-11-04 Markus Frank ([PR#1347](https://github.com/aidasoft/DD4hep/pull/1347))
+  - Remove plenty of override warnings from DDG4 compilation
+  - Spotted by accidence when checking LHCb nightly builds.
+
+* 2024-10-24 Andre Sailer ([PR#1342](https://github.com/aidasoft/DD4hep/pull/1342))
+  - DDSim: add SignalHandler, add disableSignalHandler flag to turn it off (cf. #1330)
+  - Examples: make RICH depend on DDG4 for the test
+  - DDCad: make two tests depend on DDG4
+
+* 2024-10-22 Markus Frank ([PR#1341](https://github.com/aidasoft/DD4hep/pull/1341))
+  - Addendum to MR https://github.com/AIDASoft/DD4hep/pull/1300.
+
+* 2024-10-21 Markus Frank ([PR#1339](https://github.com/aidasoft/DD4hep/pull/1339))
+  - Addendum to MR https://github.com/AIDASoft/DD4hep/pull/1336 which fixes a compilation error on MACOS.
+
+* 2024-10-21 Andre Sailer ([PR#1338](https://github.com/aidasoft/DD4hep/pull/1338))
+  - CI: add macOS build again
+
+* 2024-10-18 Andre Sailer ([PR#1337](https://github.com/aidasoft/DD4hep/pull/1337))
+  - CMake: explicitly ask for ROOTEve component if it exists so we potentially find the non-builtin nlohmann_json
+
+* 2024-10-18 Markus Frank ([PR#1336](https://github.com/aidasoft/DD4hep/pull/1336))
+  Add implementation for signal handling. 
+  - The generic signal handler in DDCore may be used and specialized by applications as shon in the DDG4 package (see for details src/Geant4Kernel.h)
+  - Use generic signal handler in DDG4 for controlled shutdown on CTRL-C. 
+  - Add test DDG4_SIGINT_handler in examples/DDG4
+    to enable the signal handling use from python:
+    ```
+    geant4 = DDG4.Geant4(kernel, tracker='Geant4TrackerCombineAction')
+    geant4.registerInterruptHandler() 
+    ```
+    Please note: The signal handler must be explicitly installed. DDG4 is a library framework and does not intervene in actions which users possibly want to handle themselves! This mechanism looks simple enough that it should not be annoying.
+  - This MR should implement [issue#1330](https://github.com/AIDASoft/DD4hep/issues/1330) and supposedly supersedes [PR#1300](https://github.com/AIDASoft/DD4hep/pull/1300)
+
+* 2024-10-17 Andre Sailer ([PR#1334](https://github.com/aidasoft/DD4hep/pull/1334))
+  - checkOverlaps: move from DDG4 to DDCore as this does not depend on Geant4, no impact on users
+  - checkGeometry: move from DDG4 to DDCore as this does not depend on Geant4, no impact on users
+  - CI: Key4hep: set CMAKE_INSTALL_LIBDIR=lib because Qt6 sets GNUInstallDir
+
+* 2024-10-17 jmcarcell ([PR#1333](https://github.com/aidasoft/DD4hep/pull/1333))
+  - Use `edm4hep::labels::CellIDEncoding` instead of "CellIDEncoding"
+  - Use `podio::collMetadataParamName` instead of hardcoding the convention of adding `__`
+
+* 2024-10-17 Andre Sailer ([PR#1332](https://github.com/aidasoft/DD4hep/pull/1332))
+  - ImportTest: change 'error' to 'fehler' to avoid triggering test failures for spurious warning from gosam package in lcg stacks
+
+* 2024-10-16 Andre Sailer ([PR#1331](https://github.com/aidasoft/DD4hep/pull/1331))
+  - Conditions: change FIRST_KEY, LAST_KEY to constexpr instead of anonymous enum
+
+* 2024-10-15 BrieucF ([PR#1329](https://github.com/aidasoft/DD4hep/pull/1329))
+  - ddsim: Set `edm4hep` the default output format in case DD4hep is compiled with both `DDD4HEP_USE_LCIO` `DD4HEP_USE_EDM4HEP` ON
+  - ddsim: Change the name of the default output file from dummyOutput to ddsimOutput
+
+* 2024-10-15 Bohdan Dudar ([PR#1326](https://github.com/aidasoft/DD4hep/pull/1326))
+  - Add xercesc parsing of environment variables in the xml path https://github.com/iLCSoft/Marlin/issues/60
+
+* 2024-10-03 Dmitry Kalinkin ([PR#1327](https://github.com/aidasoft/DD4hep/pull/1327))
+  * ASSIMPWriter: fix "warning: unqualified call to 'std::move'"
+
+* 2024-09-19 Markus Frank ([PR#1324](https://github.com/aidasoft/DD4hep/pull/1324))
+  Add warning if TGeo materialScan hits TGeoTessellated volumes. 
+  
+  The DDRec MaterialManager and hence the corresponding MaterialScan use TGeo tracking through volumes.
+  Tracking in TGeo is not implemented for tessellated shapes as they result from CAD shapes. Though TGeo tracking is used
+  in the material scanner.... In TGeo tessellated surfaces behave like their bounding box. Hence they have no real shape 
+  and for this reason you only see a "box". 
+  TGeo tracking for tessellated shapes will only be implemented once TGeo moves to VecGeom. This will still take some time.
+  
+  
+  See github issue https://github.com/AIDASoft/DD4hep/issues/1322 for details about the discussion.
+
+# v01-30
+
+* 2024-08-25 Andre Sailer ([PR#1317](https://github.com/aidasoft/dd4hep/pull/1317))
+  - DDSim: regexSD fix infinite loop, but change the interface from assignment to dictionary entries. Have to ensure only a single entry of a detector is given to the RegexSD
+
+* 2024-08-15 Sanghyun Ko ([PR#1315](https://github.com/aidasoft/dd4hep/pull/1315))
+  - DDSim: prevent Geometry.regexSensitiveDetector from always throwing exception when called with argument.
+
+* 2024-08-13 Andre Sailer ([PR#1312](https://github.com/aidasoft/dd4hep/pull/1312))
+  - GitlabCI: drop Flake check, since we have that on github as well
+
+* 2024-08-12 Andre Sailer ([PR#1310](https://github.com/aidasoft/dd4hep/pull/1310))
+  - GitlabCI: Use an el9 container to build documentation for the webpage
+
+* 2024-08-12 Andre Sailer ([PR#1309](https://github.com/aidasoft/dd4hep/pull/1309))
+  - CLICSiD AClick tests: avoid running in parallel, tests might break
+
+* 2024-08-12 Andre Sailer ([PR#1308](https://github.com/aidasoft/dd4hep/pull/1308))
+  - Geant4RegexSensitivesConstruction: allow using regex that don't match the full volume path, reduce time by 40% or so
+  - DDSim: add interface for Geant4RegexSensitivesConstruction to geometry construction
+
+* 2024-07-30 Leonhard Reichenbach ([PR#1303](https://github.com/aidasoft/dd4hep/pull/1303))
+  - Added a Geant4TVUserParticleHandler that can utilise an arbitrary tracking volume as introduced in https://github.com/AIDASoft/DD4hep/pull/384
+
+* 2024-07-24 ybedfer ([PR#1294](https://github.com/aidasoft/dd4hep/pull/1294))
+  - Adding a "CylindricalGridPhiZ" segmentation class.
+     - N.B.: the class has a "radius" data member, registered by the constructors.
+
+* 2024-07-22 Markus Frank ([PR#1301](https://github.com/aidasoft/dd4hep/pull/1301))
+  - See issue https://github.com/AIDASoft/DD4hep/issues/1292 and PR https://github.com/AIDASoft/DD4hep/pull/1293 , fix crash when action dictionary not hashable.
+
+* 2024-07-22 Andre Sailer ([PR#1299](https://github.com/aidasoft/dd4hep/pull/1299))
+  - CI: use alma9 stack for python lint check
+  - CI: move key4hep stack to alma9
+
+* 2024-07-22 Sanghyun Ko ([PR#1298](https://github.com/aidasoft/dd4hep/pull/1298))
+  - Geant4Converter: Improve lookup speed of `GeoHandler::i_collect` by using `std::set` instead of `std::find` (issue #1291)
+
+* 2024-07-06 jmcarcell ([PR#1290](https://github.com/aidasoft/dd4hep/pull/1290))
+  - Add the missing header unistd.h in a file to find `::open` and `::close`
+  - Fix a few warnings about unused variables or shadowing
+  - Add .cache and compile_commands.json to .gitignore
+
+* 2024-07-05 Markus Frank ([PR#1289](https://github.com/aidasoft/dd4hep/pull/1289))
+  * Add RegexSD example for illustration: See https://github.com/AIDASoft/DD4hep/pull/1288
+
+* 2024-07-05 Markus Frank ([PR#1288](https://github.com/aidasoft/dd4hep/pull/1288))
+  - As reported in this issue https://github.com/AIDASoft/DD4hep/issues/1285 under certain circumstances the memory usage of DDG4 goes through the roof. This was traced back to the creation of excessive maps in the `Geant4VolumeManager`, if the number of sensitive pathes is very high like e.g. for straw detectors.
+  - To solve the problem, geometry constructors may not declare any sensitive volumes. Hence the `Geant4VolumeManager` will not be populated. To still make Geant4 functioning, the sensitive volumes may be declared a posterior after conversion using regular expressions as implemented in the class `Geant4RegexSensitivesConstruction`. This class is only an example how such functionality may be achieved: other solutions are possible as well. This functionality can be switched at the level of each subdetector participating in the experiment setup.
+  - To illustrate, an example detector `BoxOfStraws` was constructed with a flag in the xml description:
+
+  ```
+      <detector id="1" name="BoxOfStrawsDet" type="DD4hep_BoxOfStraws" readout="BoxOfStrawsHits" vis="VisibleGreen" region="StrawRegion" limits="BoxOfStrawsLimitSet">
+        <box      x="1*m"    y="1*m" z="1000*mm"  limits="BoxOfStrawsLimitSet" vis="VisibleRed"/>
+        <straw rmax="0.5*mm" y="1*m" thickness="0.1*mm" vis="VisibleBlue">
+          <material name="Iron"/>
+        </straw>
+        <gas vis="VisibleGreen">
+          <material name="Argon"/>
+          <non_sensitive/>
+        </gas>
+        <position x="0*m"   y="0*m"   z="0*m"/>
+        <rotation x="0"     y="0"     z="0"/>
+      </detector>
+  ```
+
+  Change `<non_sensitive/>` to `<sensitive/>` and the different behavor of memory allocation when starting Geant4 can be observed.
+  The corresponding Geant4 python script can be found here:
+
+  ```
+  <DD4hep>/examples/ClientTests/scripts/BoxOfStraws.py
+  ```
+
+  The memory consumption differs then as follows (depending on the thickness of the straws, which determine the number of sensitive pathes):
+
+  ```
+  With explicit sensitive volumes:   
+  before Geant4VolumeManager:    Virtual: 903.3m   resident: 690.5m
+  after Geant4VolumeManager:     Virtual: 1848.2m  resident: 1.6g   
+  
+  
+  With Sensitives matching regex and not sensitive volumes declared:
+  before Geant4VolumeManager:    Virtual: 903.3m   Resident: 690.6m 
+  after Geant4VolumeManager:     Virtual: 903.3m   Resident: 690.6m 
+  Simulating:                    Virtual: 903.5m   Resident: 692.6m 
+  ```
+
+  Hence this is a possibility to significantly reduce memory consumption for highly granular subdetectors.
+
+* 2024-07-01 Markus Frank ([PR#1287](https://github.com/aidasoft/dd4hep/pull/1287))
+  - As noted by Ben, the global alignment does not work in the presence of assemblies.
+    This PR together with https://github.com/root-project/root/pull/15905 fixes this deficiency.
+  - An example was added to convert a globally misaligned geometry to Geant4:
+    ` $ python examples/AlignDet/scripts/AlephTPC.py -batch -events 5 -alignments examples/AlignDet/compact/AlephTPC_alignment.xml`
+
+* 2024-07-01 jmcarcell ([PR#1286](https://github.com/aidasoft/dd4hep/pull/1286))
+  - Fix warnings related to unused variables and shadowing of already existing variables
+  - Don't use the deprecated `PySys_SetArgv`
+
+* 2024-06-26 Andre Sailer ([PR#1284](https://github.com/aidasoft/dd4hep/pull/1284))
+  - DDG4.inputHandling: do not simulate rejectPDG particles even if they are called stable by the generator file, fixes #1282
+
+* 2024-06-26 Andre Sailer ([PR#1283](https://github.com/aidasoft/dd4hep/pull/1283))
+  - DDSim: Do not check for existence of files behind a URL like root://, fixes #1281
+
+* 2024-06-24 jmcarcell ([PR#1280](https://github.com/aidasoft/dd4hep/pull/1280))
+  - CMake: Allow finding version 1.0 (and newer) for podio
+
+* 2024-06-21 Markus Frank ([PR#1279](https://github.com/aidasoft/dd4hep/pull/1279))
+  - The conquest against tainted variables in coverity
+
+* 2024-06-20 Markus Frank ([PR#1278](https://github.com/aidasoft/dd4hep/pull/1278))
+  - Fight coverity tainted variables.
+
+# v01-29
+
+* 2024-06-06 Andre Sailer ([PR#1277](https://github.com/aidasoft/DD4hep/pull/1277))
+  - Geant4Converter: fix the order of the TGeoNode conversion to Geant4 volumes, using vector instead of set. Maybe fixes #1271
+
+* 2024-05-26 Andre Sailer ([PR#1276](https://github.com/aidasoft/DD4hep/pull/1276))
+  - XMLElements: fix build when not using XercesC, failing to include header files
+
+* 2024-05-23 Markus Frank ([PR#1275](https://github.com/aidasoft/DD4hep/pull/1275))
+  - The battle agains coverity
+  - The last defects I know how to solve. For the rest more expertise is required.
+
+* 2024-05-23 MarkusFrankATcernch ([PR#1274](https://github.com/aidasoft/DD4hep/pull/1274))
+  - Allow coverity scans being started manually
+
+* 2024-05-23 Markus Frank ([PR#1272](https://github.com/aidasoft/DD4hep/pull/1272))
+  - The battle agains coverity. Try to fix various defects.
+
+* 2024-05-22 Markus Frank ([PR#1270](https://github.com/aidasoft/DD4hep/pull/1270))
+  - The battle agains coverity: Attack and reduce coverity errors
+
+* 2024-05-22 Markus Frank ([PR#1269](https://github.com/aidasoft/DD4hep/pull/1269))
+  - Code maintenance: change quoted include statements to angular brackets in subpackage DDG4.
+
+* 2024-05-22 Markus Frank ([PR#1268](https://github.com/aidasoft/DD4hep/pull/1268))
+  Code maintenance: 
+  - change quoted include statements in DDCore to angular brackets
+  - Add the odd licence statement
+  - Remove obsolete file DD4hep/TGeoUnits.h: Take TGeoUnits from ROOT if needed. 
+    This file dates back to the time TGeoUnits.h did not exist in ROOT.
+
+* 2024-05-21 Markus Frank ([PR#1267](https://github.com/aidasoft/DD4hep/pull/1267))
+  - Try to eliminate more coverity code deficiencies
+   (See https://scan.coverity.com/projects/dd4hep?tab=overview)
+
+* 2024-05-16 Andre Sailer ([PR#1266](https://github.com/aidasoft/DD4hep/pull/1266))
+  - DDSim: make setupUserFunction be documented in the steering file
+  - Fix random typos in comments and doxygen strings
+  - Geant4Handle: Fix error message when plugin casting did not succeed
+
+* 2024-05-16 Markus Frank ([PR#1265](https://github.com/aidasoft/DD4hep/pull/1265))
+  - Fix some coverity problems
+
+* 2024-05-16 tmadlener ([PR#1264](https://github.com/aidasoft/DD4hep/pull/1264))
+  - EDM4hepOUTPUT: Introduce pre-processor checks to transparently switch to the new `std::optional` return values of `podio::Frame::getParameter` (introduced with [AIDASoft/podio#580](https://github.com/AIDASoft/podio/pull/580))
+
+* 2024-05-16 Thomas Latham ([PR#1263](https://github.com/aidasoft/DD4hep/pull/1263))
+  - Enhance handling of transformations in VolumeBuilder
+
+* 2024-05-15 Markus Frank ([PR#1262](https://github.com/aidasoft/DD4hep/pull/1262))
+  - Add optional instantiation of the G4ScoringManager together with the G4RunManager.
+    The instantiation can be steered by option to the Geant4Kernel:
+  ```
+  import DDG4
+  g4 = DDG4.Geant4()
+  g4.kernel().HaveScoringManager = True
+  ```
+  For rational, please see issue: https://github.com/AIDASoft/DD4hep/issues/1261
+
+* 2024-05-13 Alvaro Tolosa Delgado ([PR#1253](https://github.com/aidasoft/DD4hep/pull/1253))
+  - DDRec/DCH_info.h: Add data extension class for FCCee Drift Chamber. This class provides data storage and ancillary functionalities needed to build the geometry.
+
+* 2024-05-10 Andre Sailer ([PR#1260](https://github.com/aidasoft/DD4hep/pull/1260))
+  - DDG4/DDSim: allow configuring of the unstable generator status codes with SIM.physics.alternativeDecayStatuses. This allows one to tweak which particles are passed to the Geant4 simulation. Fixes #1256 
+  - DDG4: Geant4InputAction: move setting of generator status bits to a common place, reduce code duplication.
+
+* 2024-05-07 Markus Frank ([PR#1259](https://github.com/aidasoft/DD4hep/pull/1259))
+  - Protect Geant4 Primary creation against negative masses.
+  - See issue https://github.com/AIDASoft/DD4hep/issues/1233 for a detailed discussion of the problem.
+  - Allow shapes to be defined recursively using shape creation plugin.
+  - Show how to properly use CAD shapes with a non-zero origin (Issue : https://github.com/AIDASoft/DD4hep/issues/1200)
+     examples/DDCAD/compact/DD4hep_Issue_1134_resolved.xml
+     Once the CAD shape (aka volume) is placed correctly into the origin of a mother mother, the mother can then be placed 
+     rotated and shifted according to the the boxed mother's origin like any other volume.
+
+* 2024-05-07 Andre Sailer ([PR#1258](https://github.com/aidasoft/DD4hep/pull/1258))
+  - DDSim: correct the number of events when running over all events (-1), fixes #1257 
+  - GenerationActionInit: declare properties to access number of processed runs (numberOfRuns) and events (numberOfEVents)
+  - DDG4: decode or eval all properties out of str or cppyy.gbl.string types
+
+* 2024-04-23 Andre Sailer ([PR#1255](https://github.com/aidasoft/DD4hep/pull/1255))
+  - Geant4GFlashShowerModel: remove wrong unit conversions from particleBound properties. Caused particle bounds to be off by 1e3 when GEANT_UNITS were enabled.
+
+* 2024-04-22 tmadlener ([PR#1252](https://github.com/aidasoft/DD4hep/pull/1252))
+  - DDDigiEDM4hep: Switch to the correct podio pre-processor version checks for switching to the non-deprecated readers / writers. Also simplify this such that choosing which type(name) to use is handled in one place rather than several.
+  - Geant4Output2EDM4hep: Switch to a non-deprecated setter for setting the MCParticle for a SimTrackerHit once EDM4hep ships with it.
+
+* 2024-04-19 Andre Sailer ([PR#1254](https://github.com/aidasoft/DD4hep/pull/1254))
+  - CMake: drop possible use of ROOT::PyROOT target, always use ROOT::ROOTTPython
+  - Python: remove the use of (dd)six, fix issues pointed out by new version of flake8
+
+* 2024-04-18 Andre Sailer ([PR#1242](https://github.com/aidasoft/DD4hep/pull/1242))
+  - CI: change which LCG_releases/ROOT versions DD4hep is tested.
+  - Fix various issues with latest version of ROOT (6-32-patches, master) and cppyy in ROOT.
+     - :warning: : You may encounter issues with python setup complaining about mismatched types, strings, conversions
+
+* 2024-04-04 Andre Sailer ([PR#1251](https://github.com/aidasoft/DD4hep/pull/1251))
+  - EDM4hepOutput: determine momentum vector type automagically. Make it work with any EDM4hep version correctly, fixes #1250
+
+* 2024-04-02 Andre Sailer ([PR#1248](https://github.com/aidasoft/DD4hep/pull/1248))
+  - ddsim now exits with non-zero exit code when something went wrong during simulation
+
+* 2024-04-02 Wouter Deconinck ([PR#1245](https://github.com/aidasoft/DD4hep/pull/1245))
+  - fix adding individual planes to existing Polycone
+
+* 2024-03-26 Andre Sailer ([PR#1247](https://github.com/aidasoft/DD4hep/pull/1247))
+  - DDSim: add checks that input files and compact files exist before doing anything extensive and provide proper error message. Fixes #1246
+
+* 2024-03-21 Markus Frank ([PR#1244](https://github.com/aidasoft/DD4hep/pull/1244))
+  * The build type flag was lost when including files from compact. This PR fixes this deficiency and ensures the flag propagation. Example:  'box_shape_build_type'
+
+* 2024-03-20 Alvaro Tolosa Delgado ([PR#1243](https://github.com/aidasoft/DD4hep/pull/1243))
+  - Fixed TwistedTube when only half-length is provided, making the tube is symmetric along Z axis
+
+* 2024-03-13 Andre Sailer ([PR#1241](https://github.com/aidasoft/DD4hep/pull/1241))
+  - CMake: dd4hep_add_dictionary: use temporary files to create dictionary to allow dependencies to use COMPILE_LANGUAGE, fixes #1239 . Add USE_COMMAND_TO_GENERATE option to fall back to previous implementation
+  - CMake: dd4hep_add_dictionary: remove duplicates from definition and include_directory options when calling rootcling
+
+* 2024-02-29 Markus Frank ([PR#1238](https://github.com/aidasoft/DD4hep/pull/1238))
+  - Adapt documentation for Tube(...) constructor to reality.
+    See issue https://github.com/AIDASoft/DD4hep/issues/1236
+
+# v01-28
+
+* 2024-02-19 Markus Frank ([PR#1228](https://github.com/aidasoft/dd4hep/pull/1228))
+  - Fix DD4hep_DetectorDump plugin to avoid crash if a DetElement placement is invalid,
+     which is not allowed, but also should not end up in a crash.
+  - Add test to check if DetElements have proper placement set using MiniTel example
+    (see examples/ClientTests/compact/MiniTel_err_place.xml) and
+    test MiniTel_check_missing_placements
+  - The fake DD4hep object TwistedTube  did not correctly emulate the different constructors when converted
+    to Geant4. This should be fixed with this PR.
+
+* 2024-02-16 Andre Sailer ([PR#1231](https://github.com/aidasoft/dd4hep/pull/1231))
+  - CMake: use the LCIO::lcio target instead of LCIO::LCIO
+
+* 2024-02-15 Andre Sailer ([PR#1230](https://github.com/aidasoft/dd4hep/pull/1230))
+  - XML: add missing std:: when building with TinyXML
+  - DetectorSurfaces: silence printout when creating SurfaceList, fixes #1229
+
+* 2024-02-13 Wouter Deconinck ([PR#1225](https://github.com/aidasoft/dd4hep/pull/1225))
+  - upgrade CI to checkout@v4, cvmfs@v4, upload-artifact@v4
+
+* 2024-02-12 Alvaro Tolosa Delgado ([PR#1227](https://github.com/aidasoft/dd4hep/pull/1227))
+  - Twisted tube: twisted angle unit conversion now works properly
+
+* 2024-02-12 Markus Frank ([PR#1226](https://github.com/aidasoft/dd4hep/pull/1226))
+  Multiple commits. Most important one (on user request):
+  - Implement CONST properties to optical sufaces. (Requires new release of ROOT)
+    See issue: https://github.com/AIDASoft/DD4hep/issues/1223
+  
+  Otherwise:
+  - Remove support for very old versions of ROOT < 6.10.0
+  - Remove support for very old versions of ROOT < 6.26.0. 
+  - Remove default use of std namespace from most implementation files.
+
+* 2024-02-12 Wouter Deconinck ([PR#1218](https://github.com/aidasoft/dd4hep/pull/1218))
+  - add command line options to pass stepping (etc) action plugins to ddsim
+
+* 2024-02-08 tmadlener ([PR#1219](https://github.com/aidasoft/dd4hep/pull/1219))
+  - Make the upcoming renaming of `edm4hep::TrackerHit` to `edm4hep::TrackerHit3D` (https://github.com/key4hep/EDM4hep/pull/252) transparent as far as DD4hep is concerned.
+
+* 2024-02-07 jmcarcell ([PR#1221](https://github.com/aidasoft/dd4hep/pull/1221))
+  - Change ROOTFrame{Writer,Reader} to ROOT{Writer,Reader} following https://github.com/AIDASoft/podio/pull/549
+
+* 2024-02-02 tmadlener ([PR#1198](https://github.com/aidasoft/dd4hep/pull/1198))
+  - Set the momenta of the `edm4hep::MCParticle` as double instead of float once it becomes possible.
+
+* 2024-01-18 Markus Frank ([PR#1217](https://github.com/aidasoft/dd4hep/pull/1217))
+  - Enable energy deposit collection in FiberTubeCalorimeter example.
+
+* 2024-01-18 Markus Frank ([PR#1216](https://github.com/aidasoft/dd4hep/pull/1216))
+  - Update FiberTubeCalorimeter example
+  - Fix overlapping volumes
+
+* 2024-01-17 Markus Frank ([PR#1215](https://github.com/aidasoft/dd4hep/pull/1215))
+  - Fix creation of tessellated shapes from CAD files.
+  -  Properly hand quadri-linear facets from CAD files.
+  -  See also: https://github.com/root-project/root/pull/14327
+  -  See also: https://github.com/AIDASoft/DD4hep/pull/1212
+
+* 2024-01-16 Markus Frank ([PR#1214](https://github.com/aidasoft/dd4hep/pull/1214))
+  - Fix to MR https://github.com/AIDASoft/DD4hep/pull/1212
+
+* 2024-01-15 Markus Frank ([PR#1213](https://github.com/aidasoft/dd4hep/pull/1213))
+  - Adapt material scan to be aware of the different compilation modes for TGeo units and Geant4 units.
+    See also issue https://github.com/AIDASoft/DD4hep/issues/1163.
+
+* 2024-01-15 Andre Sailer ([PR#1212](https://github.com/aidasoft/dd4hep/pull/1212))
+  - Assimp: adapt to changes in TGeoTessellated for ROOT 6.32
+  - ShapeUtilities: adapt to changes in TGeoTessellated for ROOT 6.32
+
+* 2024-01-12 Markus Frank ([PR#1211](https://github.com/aidasoft/dd4hep/pull/1211))
+  - Implement required chnges for new ROOT 6.31.X.
+    See issue https://github.com/AIDASoft/DD4hep/issues/1210 for details.
+
+* 2024-01-08 Markus Frank ([PR#1209](https://github.com/aidasoft/dd4hep/pull/1209))
+  - Restore behavior of teveDisplay. See issue https://github.com/AIDASoft/DD4hep/issues/1208 for details.
+
+* 2023-12-19 Andre Sailer ([PR#1206](https://github.com/aidasoft/dd4hep/pull/1206))
+  - CI: Coverity: use el9 based stack
+
+# v01-27-02
+
+* 2023-12-15 Andre Sailer ([PR#1205](https://github.com/aidasoft/dd4hep/pull/1205))
+  - Geant4PrimaryHandling: fix issue with multiple vertices in Geant4 GeneralParticleSource, fixes #1204
+
+* 2023-12-14 Markus Frank ([PR#1201](https://github.com/aidasoft/dd4hep/pull/1201))
+  - Incorporate type fix from https://github.com/AIDASoft/DD4hep/pull/1172
+  - Propagate polish setting from ROOT surfaces to Geant4
+  - Improve debugging capabilities of detector checksums by improved dumping possibilities.
+
+* 2023-12-14 Andre Sailer ([PR#1196](https://github.com/aidasoft/dd4hep/pull/1196))
+  - NestedBoxReflection_geo.cpp: use std::abs instead of abs
+  - HexGrid: use std::abs instead of abs
+  - DDSim: better logging of which sensitive detector is used when defaults are used
+
+* 2023-12-14 Paul Gessinger ([PR#1195](https://github.com/aidasoft/dd4hep/pull/1195))
+  - Replace usage of the `imp` module that was removed in Python 3.12 with `importlib` and `types`.
+
+* 2023-11-24 Andre Sailer ([PR#1192](https://github.com/aidasoft/dd4hep/pull/1192))
+  - DetectorChecksum: use fabs to check if values are 0.0, fixes  #1188
+
+# v01-27-01
+
+* 2023-11-20 jmcarcell ([PR#1191](https://github.com/aidasoft/DD4hep/pull/1191))
+  - CMake: Add a check for the c++ standard that Geant4 was compiled with, and fail if it is
+    different from the one required for DD4hep.
+
+* 2023-11-19 Wouter Deconinck ([PR#1190](https://github.com/aidasoft/DD4hep/pull/1190))
+  - Use TROOT::GetIconPath to find icons in DDEve
+
+* 2023-11-17 Markus Frank ([PR#1187](https://github.com/aidasoft/DD4hep/pull/1187))
+  - Implement startup flags to set the visualization depth in teveDisplay like for geoDisplay.
+    See  Issue: See deeper hierarchy in teveDisplay  https://github.com/AIDASoft/DD4hep/issues/1186 for details.
+
+* 2023-11-17 Dmitry Kalinkin ([PR#1184](https://github.com/aidasoft/DD4hep/pull/1184))
+  - Fixed runtime issues during initialization caused by incorrectly placed `DECLARE_SEGMENTATION` for CartesianGridXYStaggered and HexGrid.
+
+# v01-27
+
+* 2023-10-19 Alvaro Tolosa Delgado ([PR#1174](https://github.com/aidasoft/dd4hep/pull/1174))
+  - Geant4OpticalTracker: Kill optical photons (instead of all other particles) as soon they enter into a Optical Tracker sensitive detector
+
+* 2023-10-19 Wouter Deconinck ([PR#1148](https://github.com/aidasoft/dd4hep/pull/1148))
+  - Allow several DDRec c'tors to work on `const Detector&` instead of `Detector&`
+
+* 2023-10-18 Markus Frank ([PR#1181](https://github.com/aidasoft/dd4hep/pull/1181))
+  Allow for XML processing of files relative to xml tag location:
+  - For some tags the relative placement of include files was not possible.
+    This pull request is supposed to close these missing include features.
+  - See issue https://github.com/AIDASoft/DD4hep/issues/1180 for details)
+  - See the examples ClientTests: minitel_config_plugins_include_command_xml
+    with the compact file ClientTests/compact/IncludePlugins.xml for an example.
+
+* 2023-10-17 Alvaro Tolosa Delgado ([PR#1179](https://github.com/aidasoft/dd4hep/pull/1179))
+  - DDSim: Corrected documentation of `--gun.energy`. This corresponds to the total energy including the mass of the particle
+
+* 2023-10-11 Andre Sailer ([PR#1176](https://github.com/aidasoft/dd4hep/pull/1176))
+  - DDG4: G4VTouchable: for Geant4 11.1.ref09 cannot forward declare the class any more
+
+* 2023-10-11 Markus Frank ([PR#1175](https://github.com/aidasoft/dd4hep/pull/1175))
+  - Handle request from issue 1166: Allow to load CAD files with relative path w/r to declaring xml file 
+  - Add illustrating example: t_DDCAD_Check_Shape_RelativePath
+
+* 2023-09-20 Dhevan Gangadharan ([PR#1170](https://github.com/aidasoft/dd4hep/pull/1170))
+  - Extend usage of dumpBfield to asymmetric X,Y,Z ranges.
+
+* 2023-09-20 Sebouh Paul ([PR#1161](https://github.com/aidasoft/dd4hep/pull/1161))
+  - DDSegmentation: added segmentation HexGrid for hexagonal segmentation
+  - DDSegmentation: added CartesionGridXYStaggered for rectangular segmentation that can be staggered for every other layer
+
+* 2023-09-19 Dmitry Kalinkin ([PR#1171](https://github.com/aidasoft/dd4hep/pull/1171))
+
+
+* 2023-09-15 jmcarcell ([PR#1169](https://github.com/aidasoft/dd4hep/pull/1169))
+  - CMake: DDG4: Check if the CLHEP target exists before creating it in DD4hepBuild.cmake, since if it exists cmake will error.
+
+* 2023-09-15 Wouter Deconinck ([PR#1168](https://github.com/aidasoft/dd4hep/pull/1168))
+  - ddsim: handle run header exception when the user has no username.
+
+* 2023-08-31 Dmitry Kalinkin ([PR#1165](https://github.com/aidasoft/dd4hep/pull/1165))
+  - DDG4: HepMC3Input: Fix loading of run info for RootTree HepMC3 input format
+
+* 2023-08-25 Andre Sailer ([PR#1162](https://github.com/aidasoft/dd4hep/pull/1162))
+  - DDEve Webdisplay: fix issue with ROOT master with RGeomViewer no longer being in the experimental namespace.
+
+* 2023-08-24 Andre Sailer ([PR#1160](https://github.com/aidasoft/dd4hep/pull/1160))
+  - SiliconBlockGFlash: add maximal energy for using parametrisation, for electron and positron, fixes #1153
+
+* 2023-08-24 Markus Frank ([PR#1155](https://github.com/aidasoft/dd4hep/pull/1155))
+  - Implement correct transparency handling of ROOT:
+    The transparency setting was connected to the material of the volume.
+    This led to the same transparency setting for all volumes of the same material.
+    It was not possible to change them at the level of the volume though 
+    the API  suggested so.
+    See: https://github.com/AIDASoft/DD4hep/issues/1117
+    See: https://github.com/root-project/root/pull/13402
+  - Add test examples/ClientTests/compact/visTestEx.xml and visTest.xml.
+    From the inversion of tubes with the same material, for ROOT >= 6.29
+    the correct transparency settings are shown, whereas for ROOT < 6.29
+    the transparency settings are the same for all volumes.
+    Also see scripts/visTest.C
+
+* 2023-08-23 Ben Couturier ([PR#1159](https://github.com/aidasoft/dd4hep/pull/1159))
+  - Improved _getEnviron to deal with the case when multiple variables are to be evaluated in the string
+
+* 2023-08-22 Dmitry Kalinkin ([PR#1158](https://github.com/aidasoft/dd4hep/pull/1158))
+  - DDSim: Fix reading HepMC3 input files via xrootd, fixes #1156
+
+* 2023-08-22 Wouter Deconinck ([PR#1157](https://github.com/aidasoft/dd4hep/pull/1157))
+  - Geant4Output2EDM4hep: allow use of identical collection names across multiple detectors
+
+* 2023-08-04 Andre Sailer ([PR#1152](https://github.com/aidasoft/dd4hep/pull/1152))
+  - CI: use clang16 for header guards check
+
+* 2023-08-04 jmcarcell ([PR#1151](https://github.com/aidasoft/dd4hep/pull/1151))
+  - Limits object: fix string creation of Limit::toString, this will now also print the relevant "particles"
+  - Shapes: remove "move" from return of dimensions()
+
 # v01-26
 
 * 2023-07-24 Andre Sailer ([PR#1147](https://github.com/aidasoft/DD4hep/pull/1147))
@@ -4219,7 +5636,7 @@ Notes:
   
 * 2014/06/30 Markus Frank
 - DDG4: Support user (context-) extensions for Geant4.
-  User contexts are availible for events and runs. The contexts
+  User contexts are available for events and runs. The contexts
   are accessible from the Geant4Context meber of each Geant4Action,
   the base class for all processing entities.
    - Adding a context:
