@@ -409,14 +409,14 @@ macro ( dd4hep_configure_scripts _pkg )
   dd4hep_list_to_string( _dir_entries PREFIX "DIRS:" ENTRIES ${MACRO_ARG_UNPARSED_ARGUMENTS} )
   dd4hep_print ( "|++> Setting up test environment for ${PackageName}: Testing:${BUILD_TESTING} Setup:${MACRO_ARG_DEFAULT_SETUP} With Tests(${MACRO_ARG_WITH_TESTS}): ${_dir_entries}" )
   if ( (NOT "${MACRO_ARG_DEFAULT_SETUP}" STREQUAL "") OR (NOT "${_pkg}" STREQUAL "") )
-    configure_file( ${DD4hep_DIR}/cmake/run_test_package.sh ${EXECUTABLE_OUTPUT_PATH}/run_test_${_pkg}.sh @ONLY)
+    configure_file( ${DD4hep_SOURCE_DIR}/cmake/run_test_package.sh ${EXECUTABLE_OUTPUT_PATH}/run_test_${_pkg}.sh @ONLY)
     INSTALL(PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/run_test_${_pkg}.sh DESTINATION bin )
     #---- configure run environment ---------------
     set(DD4HEP_INSTALL_LIBDIR lib)
     if(CMAKE_INSTALL_LIBDIR)
       set(DD4HEP_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
     endif()
-    configure_file( ${DD4hep_DIR}/cmake/thisdd4hep_package.sh.in  ${EXECUTABLE_OUTPUT_PATH}/this${_pkg}.sh @ONLY)
+    configure_file( ${DD4hep_SOURCE_DIR}/cmake/thisdd4hep_package.sh.in  ${EXECUTABLE_OUTPUT_PATH}/this${_pkg}.sh @ONLY)
     unset(DD4HEP_INSTALL_LIBDIR)
     install(PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/this${_pkg}.sh DESTINATION bin )
     #--- install target-------------------------------------
@@ -813,7 +813,7 @@ MACRO(DD4HEP_SETUP_BOOST_TARGETS)
   # stdc++fs needed in gcc8, no lib for gcc9.1, c++fs for llvm
   FOREACH(FS_LIB_NAME stdc++fs "" c++fs )
     dd4hep_debug("|++++> linking against ${FS_LIB_NAME}")
-    try_compile(HAVE_FILESYSTEM ${CMAKE_BINARY_DIR}/try ${DD4hep_DIR}/cmake/TryFileSystem.cpp
+    try_compile(HAVE_FILESYSTEM ${CMAKE_BINARY_DIR}/try ${DD4hep_SOURCE_DIR}/cmake/TryFileSystem.cpp
       CXX_STANDARD ${CMAKE_CXX_STANDARD}
       CXX_EXTENSIONS False
       OUTPUT_VARIABLE HAVE_FS_OUTPUT
