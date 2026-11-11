@@ -46,7 +46,12 @@ jobs:
     - uses: cvmfs-contrib/github-action-cvmfs@bbbf3dbec6e6cea8f95fd9e1b5ff31e23bf33b8e
       with:
         cvmfs_repositories: sft.cern.ch,sft-nightlies.cern.ch,geant4.cern.ch
+    # DEBUG: CernVM-FS NFS backend diagnostics before the build
+    - name: CVMFS diagnostics (before build)
+      run: bash .github/scripts/cvmfs_macos_diag.sh before
     - uses: aidasoft/run-lcg-view@d8db17c61216548c9192889942d46ff2d7c3a3b6
+      # DEBUG: bound hangs on a dead NFS mount so the diagnostics below still run
+      timeout-minutes: 45
       with:
         release-platform: ${{ matrix.LCG }}
         ccache-key: ccache-${{ matrix.LCG }}
@@ -110,3 +115,13 @@ jobs:
         path: |
            ${{ github.workspace }}/build/TestResults_1.xml
            ${{ github.workspace }}/examples/build/TestResults_2.xml
+    # DEBUG: CernVM-FS NFS backend diagnostics after the build (also on failure/timeout)
+    - name: CVMFS diagnostics (after build)
+      if: always()
+      run: bash .github/scripts/cvmfs_macos_diag.sh after
+    - name: Upload CVMFS diagnostics
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: cvmfs-diag ${{ strategy.job-index }} ${{ env.ARTIFACT_NAME }}
+        path: ${{ github.workspace }}/cvmfs-diag
