@@ -21,9 +21,6 @@
 
 using namespace dd4hep::sim;
 
-namespace {
-  G4Mutex event_action_mutex=G4MUTEX_INITIALIZER;
-}
 
 /// Standard constructor
 Geant4EventAction::Geant4EventAction(Geant4Context* ctxt, const std::string& nam)
@@ -77,7 +74,7 @@ void Geant4SharedEventAction::use(Geant4EventAction* action)   {
 /// Begin-of-event callback
 void Geant4SharedEventAction::begin(const G4Event* event)   {
   if ( m_action )  {
-    G4AutoLock protection_lock(&event_action_mutex);    {
+    G4AutoLock protection_lock(m_action->mutex());    {
       ContextSwap swap(m_action,context());
       m_action->begin(event);
     }
@@ -87,7 +84,7 @@ void Geant4SharedEventAction::begin(const G4Event* event)   {
 /// End-of-event callback
 void Geant4SharedEventAction::end(const G4Event* event)   {
   if ( m_action )  {
-    G4AutoLock protection_lock(&event_action_mutex);  {
+    G4AutoLock protection_lock(m_action->mutex());  {
       ContextSwap swap(m_action,context());
       m_action->end(event);
     }
@@ -124,14 +121,27 @@ void Geant4EventActionSequence::configureFiber(Geant4Context* thread_context)   
 
 /// Get an action by name
 Geant4EventAction* Geant4EventActionSequence::get(const std::string& nam) const   {
-  return m_actors.get(FindByName(TypeName::split(nam).second));
+  return m_actors.get(FindByName(nam));
 }
 
 /// Add an actor responding to all callbacks. Sequence takes ownership.
 void Geant4EventActionSequence::adopt(Geant4EventAction* action) {
   if (action) {
-    G4AutoLock protection_lock(&event_action_mutex);
-    action->addRef();
+    //Shared actions should only be used in multi-threading. They can lead to duplicated invocations like output actions
+    //for example
+    if (dynamic_cast<Geant4SharedEventAction*>(action)) {
+      if (!G4Threading::IsMultithreadedApplication()) {
+        throw std::runtime_error(
+                                 "Geant4EventActionSequence: Cannot register shared action '" + action->name() +
+                                 "' in single-threaded execution mode. Register standard actions instead."
+                                 );
+      }
+    }
+    {
+      G4AutoLock actionLock(action->mutex());
+      action->addRef();
+    }
+    G4AutoLock protection_lock(mutex());
     m_actors.add(action);
     return;
   }

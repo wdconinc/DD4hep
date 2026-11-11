@@ -438,6 +438,9 @@ endmacro( dd4hep_configure_scripts )
 #  OUTPUT       Output file of the test (Default: empty)
 #  COMMAND      Command to execute
 #  EXEC_ARGS    Arguments to the command
+#  FIXTURES_SETUP    Fixtures provided by the test
+#  FIXTURES_REQUIRED Fixtures needed by the test
+#  FIXTURES_CLEANUP  Fixtures cleaned up by the test
 #  REGEX_PASS   Regular expression to indicate that the test succeeded
 #  REGEX_FAIL   Regular expression to indicate that the test failed
 #
@@ -446,7 +449,7 @@ endmacro( dd4hep_configure_scripts )
 #
 #---------------------------------------------------------------------------------------------------
 function ( dd4hep_add_test_reg test_name )
-  cmake_parse_arguments(ARG "" "OUTPUT" "COMMAND;DEPENDS;EXEC_ARGS;REGEX_PASS;REGEX_PASSED;REGEX_FAIL;REGEX_FAILED" ${ARGN} )
+  cmake_parse_arguments(ARG "" "OUTPUT" "COMMAND;DEPENDS;FIXTURES_SETUP;FIXTURES_REQUIRED;FIXTURES_CLEANUP;EXEC_ARGS;REGEX_PASS;REGEX_PASSED;REGEX_FAIL;REGEX_FAILED" ${ARGN} )
   set ( missing )
   set ( use_test 1 )
 
@@ -486,6 +489,11 @@ function ( dd4hep_add_test_reg test_name )
     # Set test dependencies if present
     foreach ( _dep ${ARG_DEPENDS} )
       set_property( TEST t_${test_name} APPEND PROPERTY DEPENDS t_${_dep} )
+    endforeach()
+    foreach ( _fixture_property FIXTURES_SETUP FIXTURES_REQUIRED FIXTURES_CLEANUP )
+      if ( ARG_${_fixture_property} )
+        set_property( TEST t_${test_name} PROPERTY ${_fixture_property} "${ARG_${_fixture_property}}" )
+      endif()
     endforeach()
   endif()
 endfunction()
@@ -701,7 +709,18 @@ endfunction(dd4hep_add_plugin)
 # Macro to set up ROOT:: targets so that we can use the same code for root 6.8 and for root 6.10 and beyond
 # This is called in dd4hep, and in DD4hepConfig
 #
+#  Arguments
+#  ---------
+#  PYTHON_INTERPRETER_ONLY: only the Python interpreter is looked for, not the
+# development components (which run python-config several times on every call)
+#
 macro(DD4HEP_SETUP_ROOT_TARGETS)
+  cmake_parse_arguments(_dd4hep_setup_root "PYTHON_INTERPRETER_ONLY" "" "" ${ARGN})
+  if(_dd4hep_setup_root_PYTHON_INTERPRETER_ONLY)
+    set(_dd4hep_python_interpreter_mode REQUIRED)
+  else()
+    set(_dd4hep_python_interpreter_mode QUIET)
+  endif()
 
   #Check if Python version detected matches the version used to build ROOT
   SET(Python_FIND_FRAMEWORK LAST)
@@ -715,11 +734,15 @@ macro(DD4HEP_SETUP_ROOT_TARGETS)
     dd4hep_debug("D++> Python version used for building ROOT ${ROOT_PYTHON_VERSION}" )
     if (NOT DD4HEP_RELAX_PYVER)
       dd4hep_debug("D++> Required python version ${REQUIRE_PYTHON_VERSION}")
-      FIND_PACKAGE(Python ${REQUIRE_PYTHON_VERSION} EXACT REQUIRED COMPONENTS Development)
-      FIND_PACKAGE(Python ${REQUIRE_PYTHON_VERSION} EXACT QUIET COMPONENTS Interpreter)
+      if(NOT _dd4hep_setup_root_PYTHON_INTERPRETER_ONLY)
+        FIND_PACKAGE(Python ${REQUIRE_PYTHON_VERSION} EXACT REQUIRED COMPONENTS Development)
+      endif()
+      FIND_PACKAGE(Python ${REQUIRE_PYTHON_VERSION} EXACT ${_dd4hep_python_interpreter_mode} COMPONENTS Interpreter)
     else()
-      FIND_PACKAGE(Python REQUIRED COMPONENTS Development)
-      FIND_PACKAGE(Python QUIET COMPONENTS Interpreter)
+      if(NOT _dd4hep_setup_root_PYTHON_INTERPRETER_ONLY)
+        FIND_PACKAGE(Python REQUIRED COMPONENTS Development)
+      endif()
+      FIND_PACKAGE(Python ${_dd4hep_python_interpreter_mode} COMPONENTS Interpreter)
       dd4hep_debug("D++> Found python version ${Python_VERSION}")
       string(REPLACE "." ";" _root_pyver_tuple ${REQUIRE_PYTHON_VERSION})
       list(GET _root_pyver_tuple 0 _root_pyver_major)
@@ -730,9 +753,13 @@ macro(DD4HEP_SETUP_ROOT_TARGETS)
       endif()
     endif()
   ELSE()
-    FIND_PACKAGE(Python COMPONENTS Development)
+    if(NOT _dd4hep_setup_root_PYTHON_INTERPRETER_ONLY)
+      FIND_PACKAGE(Python COMPONENTS Development)
+    endif()
     FIND_PACKAGE(Python QUIET COMPONENTS Interpreter)
   ENDIF()
+  unset(_dd4hep_python_interpreter_mode)
+  unset(_dd4hep_setup_root_PYTHON_INTERPRETER_ONLY)
   IF("${Python_EXECUTABLE}" STREQUAL "")
      set (Python_EXECUTABLE python${Python_VERSION_MAJOR})
   ENDIF()
@@ -792,9 +819,6 @@ ENDMACRO()
 
 #
 # Do some processing of the imported Boost Targets
-# Some libraries are only needed for cxx std 14
-# we also have to make sure the boost library location is known in that case
-#
 #
 
 MACRO(DD4HEP_SETUP_BOOST_TARGETS)
@@ -803,40 +827,6 @@ MACRO(DD4HEP_SETUP_BOOST_TARGETS)
   PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS BOOST_SPIRIT_USE_PHOENIX_V3
   )
-
-  # Try to compile with filesystem header linking against different FS libraries
-  SET(HAVE_FILESYSTEM False)
-  dd4hep_debug("|++> Checking if compiler supports filesystem library")
-  # stdc++fs needed in gcc8, no lib for gcc9.1, c++fs for llvm
-  FOREACH(FS_LIB_NAME stdc++fs "" c++fs )
-    dd4hep_debug("|++++> linking against ${FS_LIB_NAME}")
-    try_compile(HAVE_FILESYSTEM ${CMAKE_BINARY_DIR}/try ${DD4hep_DIR}/cmake/TryFileSystem.cpp
-      CXX_STANDARD ${CMAKE_CXX_STANDARD}
-      CXX_EXTENSIONS False
-      OUTPUT_VARIABLE HAVE_FS_OUTPUT
-      LINK_LIBRARIES ${FS_LIB_NAME}
-      )
-    dd4hep_debug("|++++> ${HAVE_FS_OUTPUT}")
-    IF(HAVE_FILESYSTEM)
-      dd4hep_print("|++> Compiler supports filesystem when linking against ${FS_LIB_NAME}")
-      SET(FS_LIBRARIES ${FS_LIB_NAME})
-      BREAK()
-    ENDIF()
-    dd4hep_debug("|++++> Compiler not compatible when linking against ${FS_LIB_NAME}")
-  ENDFOREACH()
-
-  IF(NOT HAVE_FILESYSTEM)
-    dd4hep_print("|++> Compiler does not have filesystem support, falling  back to Boost::filesystem")
-    FIND_PACKAGE(Boost 1.56 REQUIRED COMPONENTS filesystem system)
-    SET(FS_LIBRARIES Boost::filesystem Boost::system)
-    SET_TARGET_PROPERTIES(Boost::filesystem
-      PROPERTIES
-      INTERFACE_COMPILE_DEFINITIONS USE_BOOST_FILESYSTEM
-    )
-  GET_TARGET_PROPERTY(BOOST_FILESYSTEM_LOC Boost::filesystem IMPORTED_LOCATION)
-  GET_FILENAME_COMPONENT(BOOST_DIR ${BOOST_FILESYSTEM_LOC} DIRECTORY)
-ENDIF()
-
 
 ENDMACRO()
 

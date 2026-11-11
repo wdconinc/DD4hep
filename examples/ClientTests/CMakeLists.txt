@@ -246,6 +246,10 @@ foreach (test ${ClientTests_ShapeTests})
       EXEC_ARGS  geoDisplay file:${ClientTestsEx_INSTALL}/compact/Check_Shape_${test}.xml -load -destroy
       REGEX_PASS "Shape verification SUCCESSFUL"
       REGEX_FAIL "ERROR;FAILED" )
+    set_tests_properties( t_ClientTests_Check_Shape_${test} PROPERTIES ENVIRONMENT DD4HEP_PSEUDO_REFERENCE= )
+    if(CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16)
+      set_tests_properties( t_ClientTests_Check_Shape_${test} PROPERTIES ENVIRONMENT DD4HEP_PSEUDO_REFERENCE=_gcc16 )
+    endif()
 endforeach()
 #
 #  Test Volume division procedure.
@@ -396,7 +400,7 @@ dd4hep_add_test_reg( MiniTel_check_missing_placements
   COMMAND    "${CMAKE_INSTALL_PREFIX}/bin/run_test_ClientTests.sh"
   EXEC_ARGS  geoPluginRun -input ${ClientTestsEx_INSTALL}/compact/MiniTel_err_place.xml
               -plugin DD4hep_DetectorDump --volids --shapes --materials --positions
-  REGEX_PASS "ERROR 004         /MyLHCBdetector1/side_0/module_9 DetElement with INVALID PLACEMENT"
+  REGEX_PASS "ERROR 004         /world/MyLHCBdetector1/side_0/module_9 DetElement with INVALID PLACEMENT"
   REGEX_FAIL "Exception;EXCEPTION"
 )
 #

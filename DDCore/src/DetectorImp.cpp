@@ -32,6 +32,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cerrno>
+#include <cstdlib>
 #include <mutex>
 
 // ROOT inlcude files
@@ -622,14 +623,20 @@ Handle<NamedObject> DetectorImp::getRefChild(const HandleMap& e, const std::stri
     }
     std::stringstream err;
     err << "getRefChild: Failed to find child with name: " << name
-        << " Map " << nam << " contains " << e.size() << " elements: {";
-    for (it = e.begin(); it != e.end(); ++it) {
-      if (it != e.begin()) {
-        err << ", ";
+        << " Map " << nam << " contains " << e.size() << " elements";
+    if ( std::getenv("DD4HEP_LIST_CHILDREN") )  {
+      err << ": {";
+      for (it = e.begin(); it != e.end(); ++it) {
+        if (it != e.begin()) {
+          err << ", ";
+        }
+        err << it->first;
       }
-      err << it->first;
+      err << "}";
     }
-    err << "}";
+    else  {
+      err << ". Set the environment variable DD4HEP_LIST_CHILDREN to list them.";
+    }
     throw std::runtime_error(err.str());
   }
   return nullptr;
@@ -737,6 +744,8 @@ void DetectorImp::endDocument(const char* option)  {
       pv->SetUserExtension(extension);
     }
     m_world.setPlacement(pv);
+    // Paths cached while the geometry was built may be outdated
+    detail::tools::clearPathCaches(m_world);
   }
   // Patching shape names of anonymous shapes
   ShapePatcher patcher(m_volManager, m_world);
